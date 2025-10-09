@@ -12,17 +12,25 @@ interface DayCalendarProps {
 
 // Horaris de 12:00 a 24:00 (cada 15 minuts)
 const timeSlots = Array.from({ length: 49 }, (_, i) => {
-  const totalMinutes = 12 * 60 + i * 15; // Començar a les 12:00
+  const totalMinutes = 12 * 60 + i * 15;
   const hour = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
   
-  // Per l'última ranura, mostrar 24:00
   if (hour === 24 && minutes === 0) {
     return "24:00";
   }
   
   return `${hour.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
 });
+
+// Funció per parsejar timestamp ignorant timezone (tractar com a hora local)
+const parseAsLocalTime = (timestamp: string): Date => {
+  // Extreure només la part de data i hora, ignorant timezone
+  // "2025-10-09T21:00:00+00:00" -> "2025-10-09T21:00:00"
+  const withoutTz = timestamp.split('+')[0].split('Z')[0];
+  // Parsejar com a hora local
+  return new Date(withoutTz);
+};
 
 const DayCalendar = ({ selectedDate, onDateChange }: DayCalendarProps) => {
   const [selectedReservation, setSelectedReservation] = useState<any>(null);
@@ -42,7 +50,6 @@ const DayCalendar = ({ selectedDate, onDateChange }: DayCalendarProps) => {
   const reservations = allAppointments?.filter((r) => {
     if (r.status !== 'confirmed') return false;
     
-    // Parsejar la data de la reserva correctament
     try {
       const reservationDate = parseISO(r.date);
       const selectedDateStr = format(selectedDate, "yyyy-MM-dd");
@@ -74,7 +81,6 @@ const DayCalendar = ({ selectedDate, onDateChange }: DayCalendarProps) => {
   };
 
   const getStatusColor = (status: string, hasNotes: boolean = false) => {
-    // Si té notes, mostrar en blau
     if (hasNotes) {
       return "bg-blue-500/90 hover:bg-blue-600 border-blue-400/20 text-white";
     }
@@ -91,48 +97,54 @@ const DayCalendar = ({ selectedDate, onDateChange }: DayCalendarProps) => {
     }
   };
 
-  // Arrodonir hora al slot més proper de 15 minuts
   const roundToNearestSlot = (minutes: number): number => {
-    // Arrodonir al múltiple de 15 més proper
     return Math.round(minutes / 15) * 15;
   };
 
   const getReservationsForTableAndTime = (tableNumber: number, time: string) => {
-    return reservations?.filter((r) => {
+    const result = reservations?.filter((r) => {
       if (r.table_number !== tableNumber) return false;
       
       try {
-        const startTime = parseISO(r.start_time);
-        const endTime = parseISO(r.end_time);
+        // Usar parseAsLocalTime en lloc de parseISO per ignorar timezone
+        const startTime = parseAsLocalTime(r.start_time);
+        const endTime = parseAsLocalTime(r.end_time);
         
         const [slotHour, slotMin] = time.split(':').map(Number);
         
         const slotMinutes = slotHour * 60 + slotMin;
-        const startMinutes = startTime.getHours() * 60 + startTime.getMinutes();
-        const endMinutes = endTime.getHours() * 60 + endTime.getMinutes();
+        let startMinutes = startTime.getHours() * 60 + startTime.getMinutes();
+        let endMinutes = endTime.getHours() * 60 + endTime.getMinutes();
         
-        // Arrodonir l'hora d'inici al slot més proper
+        // Si endTime és del dia següent (hora < hora d'inici), afegir 24h
+        if (endMinutes < startMinutes) {
+          endMinutes += 24 * 60;
+        }
+        
         const roundedStartMinutes = roundToNearestSlot(startMinutes);
         
-        return slotMinutes >= roundedStartMinutes && slotMinutes < endMinutes;
+        const matches = slotMinutes >= roundedStartMinutes && slotMinutes < endMinutes;
+        
+        return matches;
       } catch (e) {
         console.error("Error parsing time:", r.start_time, r.end_time, e);
         return false;
       }
     }) || [];
+    
+    return result;
   };
 
   const isReservationStart = (reservation: any, time: string) => {
     try {
-      const startTime = parseISO(reservation.start_time);
+      // Usar parseAsLocalTime en lloc de parseISO
+      const startTime = parseAsLocalTime(reservation.start_time);
       const [slotHour, slotMin] = time.split(':').map(Number);
       const slotMinutes = slotHour * 60 + slotMin;
       const startMinutes = startTime.getHours() * 60 + startTime.getMinutes();
       
-      // Arrodonir l'hora d'inici al slot més proper de 15 minuts
       const roundedStartMinutes = roundToNearestSlot(startMinutes);
       
-      // La reserva comença en aquest slot si coincideix amb el slot arrodonit
       return roundedStartMinutes === slotMinutes;
     } catch (e) {
       console.error("Error checking reservation start:", reservation.start_time, e);
@@ -142,31 +154,28 @@ const DayCalendar = ({ selectedDate, onDateChange }: DayCalendarProps) => {
 
   const getReservationRowSpan = (reservation: any) => {
     try {
-      const start = parseISO(reservation.start_time);
-      const end = parseISO(reservation.end_time);
+      // Usar parseAsLocalTime en lloc de parseISO
+      const start = parseAsLocalTime(reservation.start_time);
+      const end = parseAsLocalTime(reservation.end_time);
       const durationMinutes = (end.getTime() - start.getTime()) / 60000;
-      // Ara cada slot és de 15 minuts
       const durationSlots = Math.ceil(durationMinutes / 15);
       return durationSlots;
     } catch (e) {
       console.error("Error calculating rowspan:", reservation.start_time, reservation.end_time, e);
-      return 4; // Default 1 hora (4 slots de 15 min)
+      return 4;
     }
   };
 
-  // Calcular l'hora actual per mostrar la línia vermella
   const getCurrentTimePosition = () => {
     const now = new Date();
     const selectedDateStr = format(selectedDate, "yyyy-MM-dd");
     const todayStr = format(now, "yyyy-MM-dd");
     
-    // Només mostrar la línia si estem veient el dia d'avui
     if (selectedDateStr !== todayStr) return null;
     
     const currentHour = now.getHours();
     const currentMinute = now.getMinutes();
     
-    // Si estem fora de l'horari (abans de les 12 o després de les 24)
     if (currentHour < 12 || currentHour >= 24) return null;
     
     const slotIndex = (currentHour - 12) * 4 + Math.floor(currentMinute / 15);
@@ -207,7 +216,6 @@ const DayCalendar = ({ selectedDate, onDateChange }: DayCalendarProps) => {
         <div className="border border-border/50 rounded-lg overflow-hidden bg-card">
           <div className="overflow-x-auto relative">
             <div className="inline-block min-w-full">
-              {/* Header amb les taules - MÉS ESTRET */}
               <div className="flex border-b border-border/50 bg-muted/50 sticky top-0 z-20">
                 <div className="w-12 px-1 py-1.5 text-[10px] font-semibold border-r border-border/50 flex-shrink-0">
                   Hora
@@ -225,11 +233,9 @@ const DayCalendar = ({ selectedDate, onDateChange }: DayCalendarProps) => {
                 ))}
               </div>
 
-              {/* Grid d'horaris - FILES MÉS BAIXES (ara cada 15 min) */}
               <div className="divide-y divide-border/50 relative">
                 {timeSlots.map((time, index) => (
                   <div key={time} className="flex min-h-[20px] relative">
-                    {/* Línia vermella de l'hora actual */}
                     {currentTimePosition !== null && index === Math.floor(currentTimePosition) && (
                       <div 
                         className="absolute left-0 right-0 border-t-2 border-red-500 z-10 pointer-events-none"
@@ -286,7 +292,6 @@ const DayCalendar = ({ selectedDate, onDateChange }: DayCalendarProps) => {
         </div>
       )}
       
-      {/* Dialog amb detalls de la reserva */}
       {selectedReservation && (
         <div 
           className={`fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 ${
@@ -313,7 +318,7 @@ const DayCalendar = ({ selectedDate, onDateChange }: DayCalendarProps) => {
                 <span className="font-semibold">📅 Data:</span> {format(parseISO(selectedReservation.date), "d 'de' MMMM 'de' yyyy")}
               </div>
               <div>
-                <span className="font-semibold">🕐 Hora:</span> {format(parseISO(selectedReservation.start_time), "HH:mm")}
+                <span className="font-semibold">🕐 Hora:</span> {format(parseAsLocalTime(selectedReservation.start_time), "HH:mm")}
               </div>
               <div>
                 <span className="font-semibold">🪑 Taula:</span> {selectedReservation.table_number} (capacitat {selectedReservation.table_capacity})
