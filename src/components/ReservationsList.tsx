@@ -23,10 +23,13 @@ const ReservationsList = ({ selectedDate, onEdit }: ReservationsListProps) => {
     queryFn: getAppointments,
   });
 
-  // Filtrar reserves per la data seleccionada
+  // Filtrar reserves per la data seleccionada i només confirmed
   const filteredReservations = reservations?.filter((r) => {
     const reservationDate = new Date(r.date);
-    return format(reservationDate, "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd");
+    return (
+      r.status === 'confirmed' &&
+      format(reservationDate, "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd")
+    );
   });
 
   const deleteMutation = useMutation({
