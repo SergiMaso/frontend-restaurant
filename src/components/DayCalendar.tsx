@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { Calendar } from "lucide-react";
@@ -9,13 +10,23 @@ interface DayCalendarProps {
   onDateChange: (date: Date) => void;
 }
 
-const timeSlots = Array.from({ length: 28 }, (_, i) => {
+// Horaris de 12:00 a 24:00 (cada 30 minuts)
+const timeSlots = Array.from({ length: 25 }, (_, i) => {
   const hour = Math.floor(i / 2) + 12;
   const minutes = (i % 2) * 30;
+  
+  // Per l'última ranura, mostrar 24:00
+  if (hour === 24 && minutes === 0) {
+    return "24:00";
+  }
+  
   return `${hour.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
 });
 
 const DayCalendar = ({ selectedDate, onDateChange }: DayCalendarProps) => {
+  const [selectedReservation, setSelectedReservation] = useState<any>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+
   const { data: tables, isLoading: tablesLoading } = useQuery({
     queryKey: ["tables"],
     queryFn: getTables,
@@ -53,7 +64,12 @@ const DayCalendar = ({ selectedDate, onDateChange }: DayCalendarProps) => {
     onDateChange(new Date());
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string, hasNotes: boolean = false) => {
+    // Si té notes, mostrar en blau
+    if (hasNotes) {
+      return "bg-blue-500/90 hover:bg-blue-600 border-blue-400/20 text-white";
+    }
+    
     switch (status) {
       case "confirmed":
         return "bg-primary/90 hover:bg-primary border-primary/20 text-primary-foreground";
@@ -73,7 +89,6 @@ const DayCalendar = ({ selectedDate, onDateChange }: DayCalendarProps) => {
       const startTime = new Date(r.start_time);
       const endTime = new Date(r.end_time);
       
-      const startHourMin = format(startTime, "HH:mm");
       const [slotHour, slotMin] = time.split(':').map(Number);
       
       const slotMinutes = slotHour * 60 + slotMin;
@@ -97,6 +112,29 @@ const DayCalendar = ({ selectedDate, onDateChange }: DayCalendarProps) => {
     const durationSlots = Math.ceil(durationMinutes / 30);
     return durationSlots;
   };
+
+  // Calcular l'hora actual per mostrar la línia vermella
+  const getCurrentTimePosition = () => {
+    const now = new Date();
+    const selectedDateStr = format(selectedDate, "yyyy-MM-dd");
+    const todayStr = format(now, "yyyy-MM-dd");
+    
+    // Només mostrar la línia si estem veient el dia d'avui
+    if (selectedDateStr !== todayStr) return null;
+    
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    
+    // Si estem fora de l'horari (abans de les 12 o després de les 24)
+    if (currentHour < 12 || currentHour >= 24) return null;
+    
+    const slotIndex = (currentHour - 12) * 2 + Math.floor(currentMinute / 30);
+    const minuteOffset = (currentMinute % 30) / 30;
+    
+    return slotIndex + minuteOffset;
+  };
+  
+  const currentTimePosition = getCurrentTimePosition();
 
   return (
     <div className="space-y-4">
@@ -126,31 +164,41 @@ const DayCalendar = ({ selectedDate, onDateChange }: DayCalendarProps) => {
         </div>
       ) : (
         <div className="border border-border/50 rounded-lg overflow-hidden bg-card">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto relative">
             <div className="inline-block min-w-full">
-              {/* Header amb les taules */}
-              <div className="flex border-b border-border/50 bg-muted/50 sticky top-0 z-10">
-                <div className="w-20 px-3 py-3 text-sm font-semibold border-r border-border/50 flex-shrink-0">
+              {/* Header amb les taules - MÉS ESTRET */}
+              <div className="flex border-b border-border/50 bg-muted/50 sticky top-0 z-20">
+                <div className="w-12 px-1 py-1.5 text-[10px] font-semibold border-r border-border/50 flex-shrink-0">
                   Hora
                 </div>
                 {tables.map((table) => (
                   <div
                     key={table.id}
-                    className="min-w-[140px] px-3 py-3 text-sm font-semibold text-center border-r border-border/50 flex-shrink-0"
+                    className="min-w-[60px] px-1 py-1.5 text-[10px] font-semibold text-center border-r border-border/50 flex-shrink-0"
                   >
-                    <div>Mesa {table.table_number}</div>
-                    <div className="text-xs text-muted-foreground font-normal">
-                      {table.capacity} pax
+                    <div>T{table.table_number}</div>
+                    <div className="text-[9px] text-muted-foreground font-normal">
+                      {table.capacity}p
                     </div>
                   </div>
                 ))}
               </div>
 
-              {/* Grid d'horaris */}
-              <div className="divide-y divide-border/50">
-                {timeSlots.map((time) => (
-                  <div key={time} className="flex min-h-[50px]">
-                    <div className="w-20 px-3 py-2 text-xs font-medium border-r border-border/50 flex-shrink-0 bg-muted/30">
+              {/* Grid d'horaris - FILES MÉS BAIXES */}
+              <div className="divide-y divide-border/50 relative">
+                {timeSlots.map((time, index) => (
+                  <div key={time} className="flex min-h-[24px] relative">
+                    {/* Línia vermella de l'hora actual */}
+                    {currentTimePosition !== null && index === Math.floor(currentTimePosition) && (
+                      <div 
+                        className="absolute left-0 right-0 border-t-2 border-red-500 z-10 pointer-events-none"
+                        style={{ 
+                          top: `${(currentTimePosition - Math.floor(currentTimePosition)) * 24}px`
+                        }}
+                      />
+                    )}
+                    
+                    <div className="w-12 px-1 py-0.5 text-[9px] font-medium border-r border-border/50 flex-shrink-0 bg-muted/30 flex items-center">
                       {time}
                     </div>
                     {tables.map((table) => {
@@ -161,25 +209,28 @@ const DayCalendar = ({ selectedDate, onDateChange }: DayCalendarProps) => {
                       return (
                         <div
                           key={table.id}
-                          className="min-w-[140px] border-r border-border/50 flex-shrink-0 relative"
+                          className="min-w-[60px] border-r border-border/50 flex-shrink-0 relative"
                         >
                           {isStart && (
                             <div
-                              className={`absolute inset-0 m-1 p-2 rounded-md border text-xs cursor-pointer transition-all z-10 ${getStatusColor(
-                                reservation.status
+                              className={`absolute inset-0 m-0.5 px-1 py-0.5 rounded text-[9px] cursor-pointer transition-all z-10 flex flex-col justify-center ${getStatusColor(
+                                reservation.status,
+                                !!reservation.notes
                               )}`}
                               style={{
-                                height: `calc(${getReservationRowSpan(reservation)} * 50px - 8px)`,
+                                height: `calc(${getReservationRowSpan(reservation)} * 24px - 4px)`,
                               }}
+                              onClick={() => {
+                                setSelectedReservation(reservation);
+                                setDialogOpen(true);
+                              }}
+                              title="Click per veure detalls"
                             >
-                              <div className="font-semibold truncate">
+                              <div className="font-semibold truncate text-[9px] leading-tight">
                                 {reservation.client_name}
                               </div>
-                              <div className="text-[10px] opacity-90 truncate">
-                                {reservation.phone}
-                              </div>
-                              <div className="text-[10px] opacity-80 mt-1">
-                                {reservation.num_people} pax
+                              <div className="text-[8px] opacity-90">
+                                {reservation.num_people}p
                               </div>
                             </div>
                           )}
@@ -190,6 +241,55 @@ const DayCalendar = ({ selectedDate, onDateChange }: DayCalendarProps) => {
                 ))}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Dialog amb detalls de la reserva */}
+      {selectedReservation && (
+        <div 
+          className={`fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 ${
+            dialogOpen ? 'block' : 'hidden'
+          }`}
+          onClick={() => setDialogOpen(false)}
+        >
+          <div 
+            className="bg-card border border-border rounded-lg p-6 max-w-md w-full shadow-elegant"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-xl font-bold mb-4">Detalls de la Reserva</h3>
+            <div className="space-y-3 text-sm">
+              <div>
+                <span className="font-semibold">👤 Nom:</span> {selectedReservation.client_name}
+              </div>
+              <div>
+                <span className="font-semibold">📞 Telèfon:</span> {selectedReservation.phone}
+              </div>
+              <div>
+                <span className="font-semibold">👥 Persones:</span> {selectedReservation.num_people}
+              </div>
+              <div>
+                <span className="font-semibold">📅 Data:</span> {new Date(selectedReservation.date).toLocaleDateString('ca-ES')}
+              </div>
+              <div>
+                <span className="font-semibold">🕐 Hora:</span> {new Date(selectedReservation.start_time).toLocaleTimeString('ca-ES', { hour: '2-digit', minute: '2-digit' })}
+              </div>
+              <div>
+                <span className="font-semibold">🪑 Taula:</span> {selectedReservation.table_number} (capacitat {selectedReservation.table_capacity})
+              </div>
+              {selectedReservation.notes && (
+                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-200 dark:border-blue-800">
+                  <span className="font-semibold">📝 Notes:</span>
+                  <p className="mt-1">{selectedReservation.notes}</p>
+                </div>
+              )}
+            </div>
+            <button
+              className="mt-6 w-full bg-primary text-primary-foreground py-2 rounded hover:bg-primary/90 transition-colors"
+              onClick={() => setDialogOpen(false)}
+            >
+              Tancar
+            </button>
           </div>
         </div>
       )}

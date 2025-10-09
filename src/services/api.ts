@@ -13,6 +13,7 @@ export interface Appointment {
   status: string;
   table_number: number;
   table_capacity: number;
+  notes?: string | null;
   created_at?: string;
 }
 
@@ -36,6 +37,14 @@ export interface UpdateAppointmentData {
   date?: string;
   time?: string;
   num_people?: number;
+}
+
+export interface Customer {
+  phone: string;
+  name: string;
+  language: string;
+  visit_count: number;
+  last_visit: string;
 }
 
 // ========================================
@@ -114,6 +123,18 @@ export async function getTables(): Promise<Table[]> {
   const response = await fetch(`${API_URL}/api/tables`);
   if (!response.ok) {
     throw new Error('Error obtenint taules');
+  }
+  return response.json();
+}
+
+// ========================================
+// CUSTOMERS
+// ========================================
+
+export async function getCustomers(): Promise<Customer[]> {
+  const response = await fetch(`${API_URL}/api/customers`);
+  if (!response.ok) {
+    throw new Error('Error obtenint clients');
   }
   return response.json();
 }

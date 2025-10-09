@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DayCalendar from "@/components/DayCalendar";
 import TablesList from "@/components/TablesList";
 import ReservationsList from "@/components/ReservationsList";
+import CustomersList from "@/components/CustomersList";
 import TableDialog from "@/components/TableDialog";
 import ReservationDialog from "@/components/ReservationDialog";
 import TableLayoutView from "@/components/TableLayoutView";
@@ -87,7 +88,7 @@ const Index = () => {
 
         {/* Main Content */}
         <Tabs defaultValue="calendar" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 max-w-2xl mx-auto">
+          <TabsList className="grid w-full grid-cols-5 max-w-3xl mx-auto">
             <TabsTrigger value="calendar">
               <Calendar className="h-4 w-4 mr-2" />
               Calendario
@@ -98,6 +99,10 @@ const Index = () => {
             </TabsTrigger>
             <TabsTrigger value="tables">Mesas</TabsTrigger>
             <TabsTrigger value="reservations">Reservas</TabsTrigger>
+            <TabsTrigger value="customers">
+              <Users className="h-4 w-4 mr-2" />
+              Clients
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="calendar" className="space-y-4">
@@ -173,6 +178,18 @@ const Index = () => {
                     setReservationDialogOpen(true);
                   }}
                 />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="customers" className="space-y-4">
+            <Card className="border-border/50 shadow-card">
+              <CardHeader>
+                <CardTitle>Clients</CardTitle>
+                <CardDescription>Llista de clients i històric de visites</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <CustomersList />
               </CardContent>
             </Card>
           </TabsContent>
