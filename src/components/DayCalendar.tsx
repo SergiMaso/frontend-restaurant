@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getTables, getAppointments } from "@/services/api";
@@ -39,11 +39,19 @@ const DayCalendar = ({ selectedDate, onDateChange }: DayCalendarProps) => {
 
   // Filtrar reserves per la data seleccionada i només confirmed
   const reservations = allAppointments?.filter((r) => {
-    const reservationDate = new Date(r.date);
-    return (
-      r.status === 'confirmed' &&
-      format(reservationDate, "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd")
-    );
+    if (r.status !== 'confirmed') return false;
+    
+    // Parsejar la data de la reserva correctament
+    try {
+      const reservationDate = parseISO(r.date);
+      const selectedDateStr = format(selectedDate, "yyyy-MM-dd");
+      const reservationDateStr = format(reservationDate, "yyyy-MM-dd");
+      
+      return reservationDateStr === selectedDateStr;
+    } catch (e) {
+      console.error("Error parsing date:", r.date, e);
+      return false;
+    }
   });
 
   const isLoading = tablesLoading || appointmentsLoading;
@@ -86,31 +94,46 @@ const DayCalendar = ({ selectedDate, onDateChange }: DayCalendarProps) => {
     return reservations?.filter((r) => {
       if (r.table_number !== tableNumber) return false;
       
-      const startTime = new Date(r.start_time);
-      const endTime = new Date(r.end_time);
-      
-      const [slotHour, slotMin] = time.split(':').map(Number);
-      
-      const slotMinutes = slotHour * 60 + slotMin;
-      const startMinutes = startTime.getHours() * 60 + startTime.getMinutes();
-      const endMinutes = endTime.getHours() * 60 + endTime.getMinutes();
-      
-      return slotMinutes >= startMinutes && slotMinutes < endMinutes;
+      try {
+        const startTime = parseISO(r.start_time);
+        const endTime = parseISO(r.end_time);
+        
+        const [slotHour, slotMin] = time.split(':').map(Number);
+        
+        const slotMinutes = slotHour * 60 + slotMin;
+        const startMinutes = startTime.getHours() * 60 + startTime.getMinutes();
+        const endMinutes = endTime.getHours() * 60 + endTime.getMinutes();
+        
+        return slotMinutes >= startMinutes && slotMinutes < endMinutes;
+      } catch (e) {
+        console.error("Error parsing time:", r.start_time, r.end_time, e);
+        return false;
+      }
     }) || [];
   };
 
   const isReservationStart = (reservation: any, time: string) => {
-    const startTime = new Date(reservation.start_time);
-    const formattedTime = format(startTime, "HH:mm");
-    return formattedTime === time;
+    try {
+      const startTime = parseISO(reservation.start_time);
+      const formattedTime = format(startTime, "HH:mm");
+      return formattedTime === time;
+    } catch (e) {
+      console.error("Error checking reservation start:", reservation.start_time, e);
+      return false;
+    }
   };
 
   const getReservationRowSpan = (reservation: any) => {
-    const start = new Date(reservation.start_time);
-    const end = new Date(reservation.end_time);
-    const durationMinutes = (end.getTime() - start.getTime()) / 60000;
-    const durationSlots = Math.ceil(durationMinutes / 30);
-    return durationSlots;
+    try {
+      const start = parseISO(reservation.start_time);
+      const end = parseISO(reservation.end_time);
+      const durationMinutes = (end.getTime() - start.getTime()) / 60000;
+      const durationSlots = Math.ceil(durationMinutes / 30);
+      return durationSlots;
+    } catch (e) {
+      console.error("Error calculating rowspan:", reservation.start_time, reservation.end_time, e);
+      return 2; // Default 1 hora
+    }
   };
 
   // Calcular l'hora actual per mostrar la línia vermella
@@ -269,10 +292,10 @@ const DayCalendar = ({ selectedDate, onDateChange }: DayCalendarProps) => {
                 <span className="font-semibold">👥 Persones:</span> {selectedReservation.num_people}
               </div>
               <div>
-                <span className="font-semibold">📅 Data:</span> {new Date(selectedReservation.date).toLocaleDateString('ca-ES')}
+                <span className="font-semibold">📅 Data:</span> {format(parseISO(selectedReservation.date), "d 'de' MMMM 'de' yyyy")}
               </div>
               <div>
-                <span className="font-semibold">🕐 Hora:</span> {new Date(selectedReservation.start_time).toLocaleTimeString('ca-ES', { hour: '2-digit', minute: '2-digit' })}
+                <span className="font-semibold">🕐 Hora:</span> {format(parseISO(selectedReservation.start_time), "HH:mm")}
               </div>
               <div>
                 <span className="font-semibold">🪑 Taula:</span> {selectedReservation.table_number} (capacitat {selectedReservation.table_capacity})
