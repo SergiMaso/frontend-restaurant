@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getTables, getAppointments } from "@/services/api";
 
 interface DayCalendarProps {
   selectedDate: Date;
@@ -18,31 +18,21 @@ const timeSlots = Array.from({ length: 28 }, (_, i) => {
 const DayCalendar = ({ selectedDate, onDateChange }: DayCalendarProps) => {
   const { data: tables, isLoading: tablesLoading } = useQuery({
     queryKey: ["tables"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("tables")
-        .select("*")
-        .order("table_number");
-      if (error) throw error;
-      return data;
-    },
+    queryFn: getTables,
   });
 
-  const { data: reservations, isLoading: reservationsLoading } = useQuery({
-    queryKey: ["reservations", format(selectedDate, "yyyy-MM-dd")],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("reservations")
-        .select("*")
-        .eq("reservation_date", format(selectedDate, "yyyy-MM-dd"))
-        .order("reservation_time");
-
-      if (error) throw error;
-      return data;
-    },
+  const { data: allAppointments, isLoading: appointmentsLoading } = useQuery({
+    queryKey: ["appointments"],
+    queryFn: getAppointments,
   });
 
-  const isLoading = tablesLoading || reservationsLoading;
+  // Filtrar reserves per la data seleccionada
+  const reservations = allAppointments?.filter((r) => {
+    const reservationDate = new Date(r.date);
+    return format(reservationDate, "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd");
+  });
+
+  const isLoading = tablesLoading || appointmentsLoading;
 
   const goToPreviousDay = () => {
     const newDate = new Date(selectedDate);
@@ -68,51 +58,41 @@ const DayCalendar = ({ selectedDate, onDateChange }: DayCalendarProps) => {
         return "bg-destructive/90 hover:bg-destructive border-destructive/20 text-destructive-foreground";
       case "completed":
         return "bg-muted hover:bg-muted/80 border-border text-foreground";
-      case "no-show":
-        return "bg-accent/90 hover:bg-accent border-accent/20 text-accent-foreground";
       default:
         return "bg-muted hover:bg-muted/80 border-border text-foreground";
     }
   };
 
-  const getReservationsForTableAndTime = (tableId: string, time: string) => {
+  const getReservationsForTableAndTime = (tableNumber: number, time: string) => {
     return reservations?.filter((r) => {
-      if (r.table_id !== tableId) return false;
+      if (r.table_number !== tableNumber) return false;
       
-      const startTime = r.reservation_time.substring(0, 5);
-      const [startHour, startMin] = startTime.split(':').map(Number);
+      const startTime = new Date(r.start_time);
+      const endTime = new Date(r.end_time);
+      
+      const startHourMin = format(startTime, "HH:mm");
       const [slotHour, slotMin] = time.split(':').map(Number);
       
-      const startMinutes = startHour * 60 + startMin;
       const slotMinutes = slotHour * 60 + slotMin;
-      const endMinutes = startMinutes + (r.duration_minutes || 120);
+      const startMinutes = startTime.getHours() * 60 + startTime.getMinutes();
+      const endMinutes = endTime.getHours() * 60 + endTime.getMinutes();
       
       return slotMinutes >= startMinutes && slotMinutes < endMinutes;
     }) || [];
   };
 
   const isReservationStart = (reservation: any, time: string) => {
-    return reservation.reservation_time.substring(0, 5) === time;
+    const startTime = new Date(reservation.start_time);
+    const formattedTime = format(startTime, "HH:mm");
+    return formattedTime === time;
   };
 
   const getReservationRowSpan = (reservation: any) => {
-    const durationSlots = Math.ceil((reservation.duration_minutes || 120) / 30);
+    const start = new Date(reservation.start_time);
+    const end = new Date(reservation.end_time);
+    const durationMinutes = (end.getTime() - start.getTime()) / 60000;
+    const durationSlots = Math.ceil(durationMinutes / 30);
     return durationSlots;
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case "confirmed":
-        return "Confirmada";
-      case "cancelled":
-        return "Cancelada";
-      case "completed":
-        return "Completada";
-      case "no-show":
-        return "No Show";
-      default:
-        return status;
-    }
   };
 
   return (
@@ -123,10 +103,10 @@ const DayCalendar = ({ selectedDate, onDateChange }: DayCalendarProps) => {
             ← Anterior
           </Button>
           <Button variant="outline" onClick={goToToday} size="sm">
-            Hoy
+            Avui
           </Button>
           <Button variant="outline" onClick={goToNextDay} size="sm">
-            Siguiente →
+            Següent →
           </Button>
         </div>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -136,16 +116,16 @@ const DayCalendar = ({ selectedDate, onDateChange }: DayCalendarProps) => {
       </div>
 
       {isLoading ? (
-        <div className="text-center py-8 text-muted-foreground">Cargando...</div>
+        <div className="text-center py-8 text-muted-foreground">Carregant...</div>
       ) : !tables || tables.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
-          No hay mesas configuradas. Añade mesas primero.
+          No hi ha taules configurades. Afegeix taules primer.
         </div>
       ) : (
         <div className="border border-border/50 rounded-lg overflow-hidden bg-card">
           <div className="overflow-x-auto">
             <div className="inline-block min-w-full">
-              {/* Header con las mesas */}
+              {/* Header amb les taules */}
               <div className="flex border-b border-border/50 bg-muted/50 sticky top-0 z-10">
                 <div className="w-20 px-3 py-3 text-sm font-semibold border-r border-border/50 flex-shrink-0">
                   Hora
@@ -163,7 +143,7 @@ const DayCalendar = ({ selectedDate, onDateChange }: DayCalendarProps) => {
                 ))}
               </div>
 
-              {/* Grid de horarios */}
+              {/* Grid d'horaris */}
               <div className="divide-y divide-border/50">
                 {timeSlots.map((time) => (
                   <div key={time} className="flex min-h-[50px]">
@@ -171,7 +151,7 @@ const DayCalendar = ({ selectedDate, onDateChange }: DayCalendarProps) => {
                       {time}
                     </div>
                     {tables.map((table) => {
-                      const tableReservations = getReservationsForTableAndTime(table.id, time);
+                      const tableReservations = getReservationsForTableAndTime(table.table_number, time);
                       const reservation = tableReservations[0];
                       const isStart = reservation && isReservationStart(reservation, time);
                       
@@ -190,13 +170,13 @@ const DayCalendar = ({ selectedDate, onDateChange }: DayCalendarProps) => {
                               }}
                             >
                               <div className="font-semibold truncate">
-                                {reservation.customer_name}
+                                {reservation.client_name}
                               </div>
                               <div className="text-[10px] opacity-90 truncate">
-                                {reservation.customer_phone}
+                                {reservation.phone}
                               </div>
                               <div className="text-[10px] opacity-80 mt-1">
-                                {reservation.party_size} pax • {reservation.duration_minutes}min
+                                {reservation.num_people} pax
                               </div>
                             </div>
                           )}

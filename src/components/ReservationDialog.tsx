@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
   DialogContent,
@@ -11,7 +10,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -21,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { getTables, createAppointment, updateAppointment } from "@/services/api";
 
 interface ReservationDialogProps {
   open: boolean;
@@ -30,71 +29,61 @@ interface ReservationDialogProps {
 
 const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialogProps) => {
   const queryClient = useQueryClient();
-  const [customerName, setCustomerName] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("");
-  const [customerEmail, setCustomerEmail] = useState("");
-  const [partySize, setPartySize] = useState("");
+  const [clientName, setClientName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [numPeople, setNumPeople] = useState("");
   const [reservationDate, setReservationDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [reservationTime, setReservationTime] = useState("20:00");
-  const [tableId, setTableId] = useState("");
-  const [status, setStatus] = useState("confirmed");
-  const [notes, setNotes] = useState("");
 
   const { data: tables } = useQuery({
     queryKey: ["tables"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("tables")
-        .select("*")
-        .order("table_number");
-      if (error) throw error;
-      return data;
-    },
+    queryFn: getTables,
   });
 
   useEffect(() => {
     if (reservation) {
-      setCustomerName(reservation.customer_name || "");
-      setCustomerPhone(reservation.customer_phone || "");
-      setCustomerEmail(reservation.customer_email || "");
-      setPartySize(reservation.party_size?.toString() || "");
-      setReservationDate(reservation.reservation_date || format(new Date(), "yyyy-MM-dd"));
-      setReservationTime(reservation.reservation_time?.substring(0, 5) || "20:00");
-      setTableId(reservation.table_id || "");
-      setStatus(reservation.status || "confirmed");
-      setNotes(reservation.notes || "");
+      setClientName(reservation.client_name || "");
+      setPhone(reservation.phone || "");
+      setNumPeople(reservation.num_people?.toString() || "");
+      
+      // Parsejar la data
+      if (reservation.date) {
+        const date = new Date(reservation.date);
+        setReservationDate(format(date, "yyyy-MM-dd"));
+      }
+      
+      // Parsejar l'hora
+      if (reservation.start_time) {
+        const time = new Date(reservation.start_time);
+        setReservationTime(format(time, "HH:mm"));
+      }
     } else {
-      setCustomerName("");
-      setCustomerPhone("");
-      setCustomerEmail("");
-      setPartySize("");
+      setClientName("");
+      setPhone("");
+      setNumPeople("");
       setReservationDate(format(new Date(), "yyyy-MM-dd"));
       setReservationTime("20:00");
-      setTableId("");
-      setStatus("confirmed");
-      setNotes("");
     }
-  }, [reservation]);
+  }, [reservation, open]);
 
   const mutation = useMutation({
     mutationFn: async (data: any) => {
       if (reservation) {
-        const { error } = await supabase
-          .from("reservations")
-          .update(data)
-          .eq("id", reservation.id);
-        if (error) throw error;
+        return updateAppointment(reservation.id, {
+          date: data.date,
+          time: data.time,
+          num_people: data.num_people
+        });
       } else {
-        const { error } = await supabase.from("reservations").insert([data]);
-        if (error) throw error;
+        return createAppointment(data);
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["reservations"] });
-      toast.success(reservation ? "Reserva actualizada correctamente" : "Reserva creada correctamente");
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      toast.success(reservation ? "Reserva actualitzada correctament" : "Reserva creada correctament");
       onOpenChange(false);
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error("Error: " + error.message);
     },
   });
@@ -102,21 +91,17 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!customerName || !customerPhone || !partySize || !tableId) {
-      toast.error("Por favor completa todos los campos obligatorios");
+    if (!clientName || !phone || !numPeople) {
+      toast.error("Si us plau, completa tots els camps obligatoris");
       return;
     }
 
     mutation.mutate({
-      customer_name: customerName,
-      customer_phone: customerPhone,
-      customer_email: customerEmail || null,
-      party_size: parseInt(partySize),
-      reservation_date: reservationDate,
-      reservation_time: reservationTime,
-      table_id: tableId,
-      status,
-      notes: notes || null,
+      client_name: clientName,
+      phone: phone,
+      date: reservationDate,
+      time: reservationTime,
+      num_people: parseInt(numPeople),
     });
   };
 
@@ -124,62 +109,52 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{reservation ? "Editar Reserva" : "Nueva Reserva"}</DialogTitle>
+          <DialogTitle>{reservation ? "Editar Reserva" : "Nova Reserva"}</DialogTitle>
           <DialogDescription>
-            {reservation ? "Modifica los datos de la reserva" : "Añade una nueva reserva"}
+            {reservation ? "Modifica les dades de la reserva" : "Afegeix una nova reserva"}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="customerName">
-                Nombre del Cliente <span className="text-destructive">*</span>
+              <Label htmlFor="clientName">
+                Nom del Client <span className="text-destructive">*</span>
               </Label>
               <Input
-                id="customerName"
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
-                placeholder="Juan Pérez"
+                id="clientName"
+                value={clientName}
+                onChange={(e) => setClientName(e.target.value)}
+                placeholder="Joan García"
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="customerPhone">
-                Teléfono <span className="text-destructive">*</span>
+              <Label htmlFor="phone">
+                Telèfon <span className="text-destructive">*</span>
               </Label>
               <Input
-                id="customerPhone"
+                id="phone"
                 type="tel"
-                value={customerPhone}
-                onChange={(e) => setCustomerPhone(e.target.value)}
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
                 placeholder="+34 600 000 000"
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="customerEmail">Email</Label>
-              <Input
-                id="customerEmail"
-                type="email"
-                value={customerEmail}
-                onChange={(e) => setCustomerEmail(e.target.value)}
-                placeholder="email@ejemplo.com"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="partySize">
-                Número de Personas <span className="text-destructive">*</span>
+              <Label htmlFor="numPeople">
+                Nombre de Persones <span className="text-destructive">*</span>
               </Label>
               <Input
-                id="partySize"
+                id="numPeople"
                 type="number"
                 min="1"
-                value={partySize}
-                onChange={(e) => setPartySize(e.target.value)}
+                max="8"
+                value={numPeople}
+                onChange={(e) => setNumPeople(e.target.value)}
                 placeholder="4"
                 required
               />
@@ -187,7 +162,7 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
 
             <div className="space-y-2">
               <Label htmlFor="reservationDate">
-                Fecha <span className="text-destructive">*</span>
+                Data <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="reservationDate"
@@ -210,59 +185,14 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
                 required
               />
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="tableId">
-                Mesa <span className="text-destructive">*</span>
-              </Label>
-              <Select value={tableId} onValueChange={setTableId} required>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecciona una mesa" />
-                </SelectTrigger>
-                <SelectContent>
-                  {tables?.map((table) => (
-                    <SelectItem key={table.id} value={table.id}>
-                      Mesa {table.table_number} - {table.capacity} personas
-                      {table.location && ` (${table.location})`}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="status">Estado</Label>
-              <Select value={status} onValueChange={setStatus}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="confirmed">Confirmada</SelectItem>
-                  <SelectItem value="cancelled">Cancelada</SelectItem>
-                  <SelectItem value="completed">Completada</SelectItem>
-                  <SelectItem value="no-show">No Show</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notas</Label>
-            <Textarea
-              id="notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Alergias, preferencias de mesa, etc."
-              rows={3}
-            />
           </div>
 
           <div className="flex gap-2 justify-end">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancelar
+              Cancel·lar
             </Button>
             <Button type="submit" disabled={mutation.isPending}>
-              {mutation.isPending ? "Guardando..." : reservation ? "Guardar Cambios" : "Crear Reserva"}
+              {mutation.isPending ? "Guardant..." : reservation ? "Guardar Canvis" : "Crear Reserva"}
             </Button>
           </div>
         </form>
