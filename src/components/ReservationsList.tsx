@@ -1,0 +1,186 @@
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Pencil, Trash2, Users, Phone, Clock } from "lucide-react";
+import { toast } from "sonner";
+import { useState } from "react";
+import { format } from "date-fns";
+import ReservationDialog from "./ReservationDialog";
+import { getAppointments, deleteAppointment, type Appointment } from "@/services/api";
+
+interface ReservationsListProps {
+  selectedDate: Date;
+  onEdit?: (reservation: any) => void;
+}
+
+const ReservationsList = ({ selectedDate, onEdit }: ReservationsListProps) => {
+  const queryClient = useQueryClient();
+  const [editingReservation, setEditingReservation] = useState<any>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  const { data: reservations, isLoading } = useQuery({
+    queryKey: ["appointments"],
+    queryFn: getAppointments,
+  });
+
+  // Filtrar reserves per la data seleccionada
+  const filteredReservations = reservations?.filter((r) => {
+    const reservationDate = new Date(r.date);
+    return format(reservationDate, "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd");
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteAppointment,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      toast.success("Reserva eliminada correctament");
+    },
+    onError: (error: Error) => {
+      toast.error("Error eliminant la reserva: " + error.message);
+    },
+  });
+
+  const handleEdit = (reservation: any) => {
+    if (onEdit) {
+      onEdit(reservation);
+    } else {
+      setEditingReservation(reservation);
+      setDialogOpen(true);
+    }
+  };
+
+  const handleDelete = (id: number) => {
+    if (confirm("Estàs segur que vols eliminar aquesta reserva?")) {
+      deleteMutation.mutate(id);
+    }
+  };
+
+  const handleDialogClose = () => {
+    setDialogOpen(false);
+    setEditingReservation(null);
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "confirmed":
+        return "bg-success/10 text-success border-success/20";
+      case "cancelled":
+        return "bg-destructive/10 text-destructive border-destructive/20";
+      case "completed":
+        return "bg-muted text-muted-foreground border-border";
+      default:
+        return "bg-muted text-muted-foreground border-border";
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "confirmed":
+        return "Confirmada";
+      case "cancelled":
+        return "Cancel·lada";
+      case "completed":
+        return "Completada";
+      default:
+        return status;
+    }
+  };
+
+  const formatTime = (isoString: string) => {
+    try {
+      const date = new Date(isoString);
+      return date.toLocaleTimeString('ca-ES', { hour: '2-digit', minute: '2-digit' });
+    } catch {
+      return isoString;
+    }
+  };
+
+  if (isLoading) {
+    return <div className="text-center py-8 text-muted-foreground">Carregant reserves...</div>;
+  }
+
+  return (
+    <>
+      <div className="space-y-4">
+        {filteredReservations?.map((reservation) => (
+          <div
+            key={reservation.id}
+            className="p-4 rounded-lg border border-border bg-card hover:shadow-elegant transition-all duration-300"
+          >
+            <div className="flex items-start justify-between mb-3">
+              <div className="space-y-1">
+                <h3 className="font-bold text-lg">{reservation.client_name}</h3>
+                <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    {formatTime(reservation.start_time)}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Users className="h-3 w-3" />
+                    {reservation.num_people} persones
+                  </span>
+                </div>
+              </div>
+              <Badge className={getStatusColor(reservation.status)}>
+                {getStatusLabel(reservation.status)}
+              </Badge>
+            </div>
+
+            <div className="space-y-2 mb-3 text-sm">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Phone className="h-3 w-3" />
+                {reservation.phone}
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline">
+                  Mesa {reservation.table_number}
+                </Badge>
+                <span className="text-xs text-muted-foreground">
+                  Capacitat: {reservation.table_capacity}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleEdit(reservation)}
+                className="flex-1"
+              >
+                <Pencil className="h-4 w-4 mr-1" />
+                Editar
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => handleDelete(reservation.id)}
+                className="flex-1"
+              >
+                <Trash2 className="h-4 w-4 mr-1" />
+                Eliminar
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {filteredReservations?.length === 0 && (
+        <div className="text-center py-12 text-muted-foreground">
+          <p>No hi ha reserves per aquesta data</p>
+          <p className="text-sm">Afegeix una nova reserva per començar</p>
+        </div>
+      )}
+
+      {!onEdit && (
+        <ReservationDialog
+          open={dialogOpen}
+          onOpenChange={handleDialogClose}
+          reservation={editingReservation}
+        />
+      )}
+    </>
+  );
+};
+
+export default ReservationsList;
