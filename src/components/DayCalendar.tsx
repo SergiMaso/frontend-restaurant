@@ -8,6 +8,7 @@ import { getTables, getAppointments } from "@/services/api";
 interface DayCalendarProps {
   selectedDate: Date;
   onDateChange: (date: Date) => void;
+  onEdit?: (reservation: any) => void;
 }
 
 // Horaris de 12:00 a 24:00 (cada 15 minuts)
@@ -32,7 +33,7 @@ const parseAsLocalTime = (timestamp: string): Date => {
   return new Date(withoutTz);
 };
 
-const DayCalendar = ({ selectedDate, onDateChange }: DayCalendarProps) => {
+const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) => {
   const [selectedReservation, setSelectedReservation] = useState<any>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -268,8 +269,12 @@ const DayCalendar = ({ selectedDate, onDateChange }: DayCalendarProps) => {
                                 height: `calc(${getReservationRowSpan(reservation)} * 20px - 4px)`,
                               }}
                               onClick={() => {
-                                setSelectedReservation(reservation);
-                                setDialogOpen(true);
+                                if (onEdit) {
+                                  onEdit(reservation);
+                                } else {
+                                  setSelectedReservation(reservation);
+                                  setDialogOpen(true);
+                                }
                               }}
                               title="Click per veure detalls"
                             >

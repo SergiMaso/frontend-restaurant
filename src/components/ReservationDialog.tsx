@@ -34,6 +34,7 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
   const [numPeople, setNumPeople] = useState("");
   const [reservationDate, setReservationDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [reservationTime, setReservationTime] = useState("20:00");
+  const [selectedTableId, setSelectedTableId] = useState<string>("");
 
   const { data: tables } = useQuery({
     queryKey: ["tables"],
@@ -45,6 +46,7 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
       setClientName(reservation.client_name || "");
       setPhone(reservation.phone || "");
       setNumPeople(reservation.num_people?.toString() || "");
+      setSelectedTableId(reservation.table_id?.toString() || "");
       
       // Parsejar la data
       if (reservation.date) {
@@ -61,6 +63,7 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
       setClientName("");
       setPhone("");
       setNumPeople("");
+      setSelectedTableId("");
       setReservationDate(format(new Date(), "yyyy-MM-dd"));
       setReservationTime("20:00");
     }
@@ -102,6 +105,7 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
       date: reservationDate,
       time: reservationTime,
       num_people: parseInt(numPeople),
+      table_id: selectedTableId ? parseInt(selectedTableId) : undefined,
     });
   };
 
@@ -185,6 +189,27 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
                 required
               />
             </div>
+
+            {reservation && (
+              <div className="space-y-2">
+                <Label htmlFor="tableId">
+                  Taula {selectedTableId && `(actual: ${reservation.table_number})`}
+                </Label>
+                <Select value={selectedTableId} onValueChange={setSelectedTableId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Deixar automàtic" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Automàtic</SelectItem>
+                    {tables?.filter(t => t.status === 'available').map((table) => (
+                      <SelectItem key={table.id} value={table.id.toString()}>
+                        Mesa {table.table_number} ({table.capacity} persones)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
 
           <div className="flex gap-2 justify-end">

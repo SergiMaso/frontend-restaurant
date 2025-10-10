@@ -13,6 +13,7 @@ export interface Appointment {
   status: string;
   table_number: number;
   table_capacity: number;
+  table_id?: number;
   notes?: string | null;
   created_at?: string;
 }
@@ -37,6 +38,7 @@ export interface UpdateAppointmentData {
   date?: string;
   time?: string;
   num_people?: number;
+  table_id?: number;
 }
 
 export interface Customer {

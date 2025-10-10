@@ -114,7 +114,14 @@ const Index = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <DayCalendar selectedDate={selectedDate} onDateChange={setSelectedDate} />
+                <DayCalendar 
+                  selectedDate={selectedDate} 
+                  onDateChange={setSelectedDate}
+                  onEdit={(reservation) => {
+                    setEditingReservation(reservation);
+                    setReservationDialogOpen(true);
+                  }}
+                />
               </CardContent>
             </Card>
           </TabsContent>
