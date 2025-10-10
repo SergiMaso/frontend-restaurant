@@ -47,6 +47,13 @@ export interface Customer {
   last_visit: string;
 }
 
+export interface Conversation {
+  id: number;
+  role: string;
+  content: string;
+  created_at: string;
+}
+
 // ========================================
 // APPOINTMENTS
 // ========================================
@@ -135,6 +142,14 @@ export async function getCustomers(): Promise<Customer[]> {
   const response = await fetch(`${API_URL}/api/customers`);
   if (!response.ok) {
     throw new Error('Error obtenint clients');
+  }
+  return response.json();
+}
+
+export async function getConversations(phone: string): Promise<Conversation[]> {
+  const response = await fetch(`${API_URL}/api/conversations/${encodeURIComponent(phone)}`);
+  if (!response.ok) {
+    throw new Error('Error obtenint converses');
   }
   return response.json();
 }

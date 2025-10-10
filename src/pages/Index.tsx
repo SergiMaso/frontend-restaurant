@@ -101,7 +101,7 @@ const Index = () => {
             <TabsTrigger value="reservations">Reservas</TabsTrigger>
             <TabsTrigger value="customers">
               <Users className="h-4 w-4 mr-2" />
-              Clients
+              Clientes
             </TabsTrigger>
           </TabsList>
 
@@ -186,7 +186,7 @@ const Index = () => {
           <TabsContent value="customers" className="space-y-4">
             <Card className="border-border/50 shadow-card">
               <CardHeader>
-                <CardTitle>Clients</CardTitle>
+                <CardTitle>Clientes</CardTitle>
                 <CardDescription>Llista de clients i històric de visites</CardDescription>
               </CardHeader>
               <CardContent>
