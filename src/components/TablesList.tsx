@@ -1,28 +1,51 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
-import { Users } from "lucide-react";
-import { getTables } from "@/services/api";
+import { Button } from "@/components/ui/button";
+import { Users, Ban, Check } from "lucide-react";
+import { getTables, updateTableStatus } from "@/services/api";
+import { toast } from "sonner";
 
 interface TablesListProps {
   onEdit?: (table: any) => void;
 }
 
 const TablesList = ({ onEdit }: TablesListProps = {}) => {
+  const queryClient = useQueryClient();
+
   const { data: tables, isLoading } = useQuery({
     queryKey: ["tables"],
     queryFn: getTables,
   });
 
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ tableId, status }: { tableId: number; status: string }) =>
+      updateTableStatus(tableId, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tables"] });
+      toast.success("Status de la taula actualitzat");
+    },
+    onError: (error: Error) => {
+      toast.error("Error actualitzant status: " + error.message);
+    },
+  });
+
+  const handleToggleStatus = (tableId: number, currentStatus: string) => {
+    const newStatus = currentStatus === 'available' ? 'unavailable' : 'available';
+    updateStatusMutation.mutate({ tableId, status: newStatus });
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "available":
-        return "bg-success/10 text-success";
+        return "bg-success/10 text-success border-success/20";
+      case "unavailable":
+        return "bg-destructive/10 text-destructive border-destructive/20";
       case "occupied":
-        return "bg-destructive/10 text-destructive";
+        return "bg-warning/10 text-warning border-warning/20";
       case "reserved":
-        return "bg-accent/10 text-accent";
+        return "bg-accent/10 text-accent border-accent/20";
       default:
-        return "bg-muted text-muted-foreground";
+        return "bg-muted text-muted-foreground border-border";
     }
   };
 
@@ -30,6 +53,8 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
     switch (status) {
       case "available":
         return "Disponible";
+      case "unavailable":
+        return "No disponible";
       case "occupied":
         return "Ocupada";
       case "reserved":
@@ -63,6 +88,25 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
                 {table.capacity}
               </Badge>
             </div>
+
+            <Button
+              variant={table.status === 'available' ? 'destructive' : 'default'}
+              size="sm"
+              onClick={() => handleToggleStatus(table.id, table.status)}
+              className="w-full mt-3"
+            >
+              {table.status === 'available' ? (
+                <>
+                  <Ban className="h-4 w-4 mr-2" />
+                  Deshabilitar
+                </>
+              ) : (
+                <>
+                  <Check className="h-4 w-4 mr-2" />
+                  Habilitar
+                </>
+              )}
+            </Button>
           </div>
         ))}
       </div>

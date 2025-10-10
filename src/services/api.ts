@@ -134,6 +134,24 @@ export async function getTables(): Promise<Table[]> {
   return response.json();
 }
 
+export async function updateTableStatus(
+  tableId: number,
+  status: string
+): Promise<void> {
+  const response = await fetch(`${API_URL}/api/tables/${tableId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ status }),
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Error actualitzant status');
+  }
+}
+
 // ========================================
 // CUSTOMERS
 // ========================================
