@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { format, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
-import { Calendar, Users, UtensilsCrossed, Plus, LayoutGrid, Clock } from "lucide-react";
+import { Calendar, Users, UtensilsCrossed, Plus, LayoutGrid, Clock, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery } from "@tanstack/react-query";
 import DayCalendar from "@/components/DayCalendar";
 import MonthCalendar from "@/components/MonthCalendar";
+import OpeningHoursCalendar from "@/components/OpeningHoursCalendar";
 import TablesList from "@/components/TablesList";
 import ReservationsList from "@/components/ReservationsList";
 import CustomersList from "@/components/CustomersList";
@@ -115,7 +116,7 @@ const Index = () => {
 
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 max-w-4xl mx-auto">
+          <TabsList className="grid w-full grid-cols-7 max-w-5xl mx-auto">
             <TabsTrigger value="calendario">
               <Calendar className="h-4 w-4 mr-2" />
               Calendario
@@ -123,6 +124,10 @@ const Index = () => {
             <TabsTrigger value="horario">
               <Clock className="h-4 w-4 mr-2" />
               Horario
+            </TabsTrigger>
+            <TabsTrigger value="opening-hours">
+              <Settings className="h-4 w-4 mr-2" />
+              Horarios
             </TabsTrigger>
             <TabsTrigger value="layout">
               <LayoutGrid className="h-4 w-4 mr-2" />
@@ -173,6 +178,20 @@ const Index = () => {
                     setReservationDialogOpen(true);
                   }}
                 />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="opening-hours" className="space-y-4">
+            <Card className="border-border/50 shadow-card">
+              <CardHeader>
+                <CardTitle>Configuración de Horarios</CardTitle>
+                <CardDescription>
+                  Gestiona los horarios de apertura del restaurante
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <OpeningHoursCalendar />
               </CardContent>
             </Card>
           </TabsContent>

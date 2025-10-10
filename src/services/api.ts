@@ -173,3 +173,77 @@ export async function getConversations(phone: string): Promise<Conversation[]> {
   }
   return response.json();
 }
+
+// ========================================
+// OPENING HOURS
+// ========================================
+
+export interface OpeningHours {
+  date: string;
+  status: 'closed' | 'lunch_only' | 'dinner_only' | 'full_day';
+  lunch_start?: string | null;
+  lunch_end?: string | null;
+  dinner_start?: string | null;
+  dinner_end?: string | null;
+  notes?: string | null;
+}
+
+export interface SetOpeningHoursData {
+  date: string;
+  status: 'closed' | 'lunch_only' | 'dinner_only' | 'full_day';
+  lunch_start?: string;
+  lunch_end?: string;
+  dinner_start?: string;
+  dinner_end?: string;
+  notes?: string;
+}
+
+export async function getOpeningHours(date: string): Promise<OpeningHours> {
+  const response = await fetch(`${API_URL}/api/opening-hours?date=${date}`);
+  if (!response.ok) {
+    throw new Error('Error obtenint horaris');
+  }
+  return response.json();
+}
+
+export async function getOpeningHoursRange(fromDate: string, toDate: string): Promise<OpeningHours[]> {
+  const response = await fetch(`${API_URL}/api/opening-hours?from=${fromDate}&to=${toDate}`);
+  if (!response.ok) {
+    throw new Error('Error obtenint horaris');
+  }
+  return response.json();
+}
+
+export async function setOpeningHours(data: SetOpeningHoursData): Promise<any> {
+  const response = await fetch(`${API_URL}/api/opening-hours`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Error guardant horaris');
+  }
+  
+  return response.json();
+}
+
+export async function updateOpeningHours(date: string, data: Partial<SetOpeningHoursData>): Promise<any> {
+  const response = await fetch(`${API_URL}/api/opening-hours/${date}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Error actualitzant horaris');
+  }
+  
+  return response.json();
+}
