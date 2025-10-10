@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { format } from "date-fns";
+import { format, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
 import { Calendar, Users, UtensilsCrossed, Plus, LayoutGrid, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useQuery } from "@tanstack/react-query";
 import DayCalendar from "@/components/DayCalendar";
 import MonthCalendar from "@/components/MonthCalendar";
 import TablesList from "@/components/TablesList";
@@ -13,6 +14,7 @@ import CustomersList from "@/components/CustomersList";
 import TableDialog from "@/components/TableDialog";
 import ReservationDialog from "@/components/ReservationDialog";
 import TableLayoutView from "@/components/TableLayoutView";
+import { getAppointments } from "@/services/api";
 
 const Index = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -21,6 +23,23 @@ const Index = () => {
   const [editingTable, setEditingTable] = useState<any>(null);
   const [editingReservation, setEditingReservation] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("horario");
+
+  // Obtenir reserves per calcular les d'avui
+  const { data: allAppointments } = useQuery({
+    queryKey: ["appointments"],
+    queryFn: getAppointments,
+  });
+
+  // Comptar reserves d'avui
+  const todayReservations = allAppointments?.filter((apt) => {
+    if (apt.status !== 'confirmed') return false;
+    try {
+      const aptDate = new Date(apt.date);
+      return isSameDay(aptDate, new Date());
+    } catch {
+      return false;
+    }
+  }).length || 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
@@ -42,10 +61,11 @@ const Index = () => {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          {/* 1. Fecha Seleccionada */}
           <Card className="border-border/50 shadow-card hover:shadow-elegant transition-all duration-300">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-primary" />
+              <CardTitle className="text-base font-semibold flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-primary" />
                 Fecha Seleccionada
               </CardTitle>
             </CardHeader>
@@ -54,36 +74,41 @@ const Index = () => {
             </CardContent>
           </Card>
 
+          {/* 2. Acciones Rápidas - SOLO Nueva Reserva */}
           <Card className="border-border/50 shadow-card hover:shadow-elegant transition-all duration-300">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <Users className="h-4 w-4 text-accent" />
-                Acciones Rápidas
+              <CardTitle className="text-base font-semibold flex items-center gap-2">
+                <Plus className="h-5 w-5 text-accent" />
+                Acción Rápida
               </CardTitle>
             </CardHeader>
-            <CardContent className="flex gap-2">
-              <Button onClick={() => setReservationDialogOpen(true)} className="flex-1" size="sm">
-                <Plus className="h-4 w-4 mr-1" />
-                Reserva
-              </Button>
-              <Button onClick={() => setTableDialogOpen(true)} variant="outline" className="flex-1" size="sm">
-                <Plus className="h-4 w-4 mr-1" />
-                Mesa
+            <CardContent className="flex items-center justify-center">
+              <Button 
+                onClick={() => setReservationDialogOpen(true)} 
+                size="lg"
+                className="w-full max-w-xs"
+              >
+                <Plus className="h-5 w-5 mr-2" />
+                Nueva Reserva
               </Button>
             </CardContent>
           </Card>
 
+          {/* 3. Reservas de Hoy */}
           <Card className="border-border/50 shadow-card hover:shadow-elegant transition-all duration-300">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <UtensilsCrossed className="h-4 w-4 text-success" />
-                Vista del Día
+              <CardTitle className="text-base font-semibold flex items-center gap-2">
+                <UtensilsCrossed className="h-5 w-5 text-success" />
+                Reservas de Hoy
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Gestiona mesas y reservas para hoy
-              </p>
+              <div className="flex items-baseline gap-2">
+                <p className="text-3xl font-bold text-primary">{todayReservations}</p>
+                <p className="text-sm text-muted-foreground">
+                  {todayReservations === 1 ? 'reserva' : 'reservas'}
+                </p>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -124,7 +149,7 @@ const Index = () => {
                   selectedDate={selectedDate} 
                   onDateChange={(date) => {
                     setSelectedDate(date);
-                    setActiveTab("horario"); // Canviar a horario quan es clica un dia
+                    setActiveTab("horario");
                   }}
                 />
               </CardContent>
