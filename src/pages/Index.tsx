@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Calendar, Users, UtensilsCrossed, Plus, LayoutGrid } from "lucide-react";
+import { Calendar, Users, UtensilsCrossed, Plus, LayoutGrid, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DayCalendar from "@/components/DayCalendar";
+import MonthCalendar from "@/components/MonthCalendar";
 import TablesList from "@/components/TablesList";
 import ReservationsList from "@/components/ReservationsList";
 import CustomersList from "@/components/CustomersList";
@@ -19,6 +20,7 @@ const Index = () => {
   const [reservationDialogOpen, setReservationDialogOpen] = useState(false);
   const [editingTable, setEditingTable] = useState<any>(null);
   const [editingReservation, setEditingReservation] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState("horario");
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
@@ -87,11 +89,15 @@ const Index = () => {
         </div>
 
         {/* Main Content */}
-        <Tabs defaultValue="calendar" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 max-w-3xl mx-auto">
-            <TabsTrigger value="calendar">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-6 max-w-4xl mx-auto">
+            <TabsTrigger value="calendario">
               <Calendar className="h-4 w-4 mr-2" />
               Calendario
+            </TabsTrigger>
+            <TabsTrigger value="horario">
+              <Clock className="h-4 w-4 mr-2" />
+              Horario
             </TabsTrigger>
             <TabsTrigger value="layout">
               <LayoutGrid className="h-4 w-4 mr-2" />
@@ -105,10 +111,30 @@ const Index = () => {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="calendar" className="space-y-4">
+          <TabsContent value="calendario" className="space-y-4">
             <Card className="border-border/50 shadow-card">
               <CardHeader>
-                <CardTitle>Vista del Día</CardTitle>
+                <CardTitle>Calendario Mensual</CardTitle>
+                <CardDescription>
+                  Vista mensual de todas las reservas
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <MonthCalendar 
+                  selectedDate={selectedDate} 
+                  onDateChange={(date) => {
+                    setSelectedDate(date);
+                    setActiveTab("horario"); // Canviar a horario quan es clica un dia
+                  }}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="horario" className="space-y-4">
+            <Card className="border-border/50 shadow-card">
+              <CardHeader>
+                <CardTitle>Horario del Día</CardTitle>
                 <CardDescription>
                   Gestiona las reservas para {format(selectedDate, "EEEE d 'de' MMMM", { locale: es })}
                 </CardDescription>
