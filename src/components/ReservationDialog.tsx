@@ -7,6 +7,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,8 +28,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { Trash2 } from "lucide-react";
 import { format } from "date-fns";
-import { getTables, createAppointment, updateAppointment } from "@/services/api";
+import { getTables, createAppointment, updateAppointment, deleteAppointment } from "@/services/api";
 
 interface ReservationDialogProps {
   open: boolean;
@@ -35,6 +46,7 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
   const [reservationDate, setReservationDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [reservationTime, setReservationTime] = useState("20:00");
   const [selectedTableId, setSelectedTableId] = useState<string>("auto");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const { data: tables } = useQuery({
     queryKey: ["tables"],
@@ -55,16 +67,13 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
       setClientName(reservation.client_name || "");
       setPhone(reservation.phone || "");
       setNumPeople(reservation.num_people?.toString() || "");
-      // Si té table_id, usar-lo, sinó "auto"
       setSelectedTableId(reservation.table_id ? reservation.table_id.toString() : "auto");
       
-      // Parsejar la data
       if (reservation.date) {
         const date = new Date(reservation.date);
         setReservationDate(format(date, "yyyy-MM-dd"));
       }
       
-      // Parsejar l'hora
       if (reservation.start_time) {
         try {
           const withoutTz = reservation.start_time.split('+')[0].split('Z')[0];
@@ -92,16 +101,14 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
     }
   }, [reservation, open]);
 
-  const mutation = useMutation({
+  const updateMutation = useMutation({
     mutationFn: async (data: any) => {
       console.log("🚀 Enviant petició:", data);
       
       if (reservation) {
-        // Actualitzar reserva existent
         console.log(`📤 PUT /api/appointments/${reservation.id}`, data);
         return updateAppointment(reservation.id, data);
       } else {
-        // Crear nova reserva
         console.log("📤 POST /api/appointments", data);
         return createAppointment(data);
       }
@@ -115,6 +122,19 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
     onError: (error: Error) => {
       console.error("❌ Error:", error);
       toast.error("Error: " + error.message);
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteAppointment,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      toast.success("Reserva eliminada correctament");
+      setDeleteDialogOpen(false);
+      onOpenChange(false);
+    },
+    onError: (error: Error) => {
+      toast.error("Error eliminant la reserva: " + error.message);
     },
   });
 
@@ -134,7 +154,6 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
       num_people: parseInt(numPeople),
     };
 
-    // Afegir table_id si NO és "auto"
     if (selectedTableId && selectedTableId !== "auto") {
       dataToSend.table_id = parseInt(selectedTableId);
       console.log(`📍 Taula seleccionada: ${selectedTableId}`);
@@ -143,132 +162,180 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
     }
 
     console.log("📦 Dades finals a enviar:", dataToSend);
-    mutation.mutate(dataToSend);
+    updateMutation.mutate(dataToSend);
+  };
+
+  const handleDelete = () => {
+    if (reservation) {
+      deleteMutation.mutate(reservation.id);
+    }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{reservation ? "Editar Reserva" : "Nova Reserva"}</DialogTitle>
-          <DialogDescription>
-            {reservation ? "Modifica les dades de la reserva" : "Afegeix una nova reserva"}
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{reservation ? "Editar Reserva" : "Nova Reserva"}</DialogTitle>
+            <DialogDescription>
+              {reservation ? "Modifica les dades de la reserva" : "Afegeix una nova reserva"}
+            </DialogDescription>
+          </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="clientName">
-                Nom del Client <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="clientName"
-                value={clientName}
-                onChange={(e) => setClientName(e.target.value)}
-                placeholder="Joan García"
-                required
-                disabled={!!reservation}
-              />
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="clientName">
+                  Nom del Client <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="clientName"
+                  value={clientName}
+                  onChange={(e) => setClientName(e.target.value)}
+                  placeholder="Joan García"
+                  required
+                  disabled={!!reservation}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="phone">
+                  Telèfon <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="+34 600 000 000"
+                  required
+                  disabled={!!reservation}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="numPeople">
+                  Nombre de Persones <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="numPeople"
+                  type="number"
+                  min="1"
+                  max="8"
+                  value={numPeople}
+                  onChange={(e) => setNumPeople(e.target.value)}
+                  placeholder="4"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="reservationDate">
+                  Data <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="reservationDate"
+                  type="date"
+                  value={reservationDate}
+                  onChange={(e) => setReservationDate(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="reservationTime">
+                  Hora <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="reservationTime"
+                  type="time"
+                  value={reservationTime}
+                  onChange={(e) => setReservationTime(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="tableId">
+                  Taula {reservation && reservation.table_number && `(actual: Mesa ${reservation.table_number})`}
+                </Label>
+                <Select 
+                  value={selectedTableId} 
+                  onValueChange={(value) => {
+                    console.log("🎯 Taula seleccionada:", value);
+                    setSelectedTableId(value);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Assignació automàtica" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="auto">Automàtic</SelectItem>
+                    {tables?.filter(t => t.status === 'available').map((table) => (
+                      <SelectItem key={table.id} value={table.id.toString()}>
+                        Mesa {table.table_number} ({table.capacity} persones)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Selecciona "Automàtic" per assignació automàtica
+                </p>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="phone">
-                Telèfon <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="phone"
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+34 600 000 000"
-                required
-                disabled={!!reservation}
-              />
+            <div className="flex gap-2 justify-between pt-4">
+              {/* Botó eliminar a l'esquerra (només si s'està editant) */}
+              {reservation && (
+                <Button 
+                  type="button" 
+                  variant="destructive" 
+                  onClick={() => setDeleteDialogOpen(true)}
+                  disabled={deleteMutation.isPending}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Eliminar
+                </Button>
+              )}
+              
+              {/* Botons cancel·lar i guardar a la dreta */}
+              <div className="flex gap-2 ml-auto">
+                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                  Cancel·lar
+                </Button>
+                <Button type="submit" disabled={updateMutation.isPending}>
+                  {updateMutation.isPending ? "Guardant..." : reservation ? "Guardar Canvis" : "Crear Reserva"}
+                </Button>
+              </div>
             </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
-            <div className="space-y-2">
-              <Label htmlFor="numPeople">
-                Nombre de Persones <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="numPeople"
-                type="number"
-                min="1"
-                max="8"
-                value={numPeople}
-                onChange={(e) => setNumPeople(e.target.value)}
-                placeholder="4"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="reservationDate">
-                Data <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="reservationDate"
-                type="date"
-                value={reservationDate}
-                onChange={(e) => setReservationDate(e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="reservationTime">
-                Hora <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="reservationTime"
-                type="time"
-                value={reservationTime}
-                onChange={(e) => setReservationTime(e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="tableId">
-                Taula {reservation && reservation.table_number && `(actual: Mesa ${reservation.table_number})`}
-              </Label>
-              <Select 
-                value={selectedTableId} 
-                onValueChange={(value) => {
-                  console.log("🎯 Taula seleccionada:", value);
-                  setSelectedTableId(value);
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Assignació automàtica" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="auto">Automàtic</SelectItem>
-                  {tables?.filter(t => t.status === 'available').map((table) => (
-                    <SelectItem key={table.id} value={table.id.toString()}>
-                      Mesa {table.table_number} ({table.capacity} persones)
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                Selecciona "Automàtic" per assignació automàtica
-              </p>
-            </div>
-          </div>
-
-          <div className="flex gap-2 justify-end">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel·lar
-            </Button>
-            <Button type="submit" disabled={mutation.isPending}>
-              {mutation.isPending ? "Guardant..." : reservation ? "Guardar Canvis" : "Crear Reserva"}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+      {/* Diàleg de confirmació per eliminar */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Estàs segur?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Aquesta acció no es pot desfer. S'eliminarà permanentment la reserva de{" "}
+              <span className="font-semibold">{clientName}</span> per al{" "}
+              <span className="font-semibold">{reservationDate}</span> a les{" "}
+              <span className="font-semibold">{reservationTime}</span>.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel·lar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteMutation.isPending ? "Eliminant..." : "Sí, eliminar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
 

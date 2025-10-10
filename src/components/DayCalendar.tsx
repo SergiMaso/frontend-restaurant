@@ -1,7 +1,14 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
-import { Calendar } from "lucide-react";
+import { Calendar, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { getTables, getAppointments } from "@/services/api";
 
 interface DayCalendarProps {
@@ -30,6 +37,9 @@ const parseAsLocalTime = (timestamp: string): Date => {
 };
 
 const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) => {
+  const [selectedReservation, setSelectedReservation] = useState<any>(null);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+
   const { data: tables, isLoading: tablesLoading } = useQuery({
     queryKey: ["tables"],
     queryFn: getTables,
@@ -74,6 +84,18 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
     onDateChange(new Date());
   };
 
+  const handleReservationClick = (reservation: any) => {
+    setSelectedReservation(reservation);
+    setDetailsDialogOpen(true);
+  };
+
+  const handleEdit = () => {
+    setDetailsDialogOpen(false);
+    if (onEdit && selectedReservation) {
+      onEdit(selectedReservation);
+    }
+  };
+
   const getStatusColor = (status: string, hasNotes: boolean = false) => {
     if (hasNotes) {
       return "bg-blue-500/90 hover:bg-blue-600 border-blue-400/20 text-white";
@@ -109,7 +131,6 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
         let startMinutes = startTime.getHours() * 60 + startTime.getMinutes();
         let endMinutes = endTime.getHours() * 60 + endTime.getMinutes();
         
-        // Si endTime és del dia següent (hora < hora d'inici), afegir 24h
         if (endMinutes < startMinutes) {
           endMinutes += 24 * 60;
         }
@@ -258,12 +279,8 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
                               style={{
                                 height: `calc(${getReservationRowSpan(reservation)} * 20px - 4px)`,
                               }}
-                              onClick={() => {
-                                if (onEdit) {
-                                  onEdit(reservation);
-                                }
-                              }}
-                              title="Click per editar"
+                              onClick={() => handleReservationClick(reservation)}
+                              title="Click per veure detalls"
                             >
                               <div className="font-semibold truncate text-[9px] leading-tight">
                                 {reservation.client_name}
@@ -283,6 +300,70 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
           </div>
         </div>
       )}
+
+      {/* Diàleg de detalls de la reserva */}
+      <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Detalls de la Reserva</DialogTitle>
+          </DialogHeader>
+          
+          {selectedReservation && (
+            <div className="space-y-4">
+              <div className="space-y-3 text-sm">
+                <div className="flex items-start gap-2">
+                  <span className="font-semibold min-w-[100px]">👤 Nom:</span>
+                  <span>{selectedReservation.client_name}</span>
+                </div>
+                
+                <div className="flex items-start gap-2">
+                  <span className="font-semibold min-w-[100px]">📞 Telèfon:</span>
+                  <span>{selectedReservation.phone}</span>
+                </div>
+                
+                <div className="flex items-start gap-2">
+                  <span className="font-semibold min-w-[100px]">👥 Persones:</span>
+                  <span>{selectedReservation.num_people}</span>
+                </div>
+                
+                <div className="flex items-start gap-2">
+                  <span className="font-semibold min-w-[100px]">📅 Data:</span>
+                  <span>{format(parseISO(selectedReservation.date), "d 'de' MMMM 'de' yyyy")}</span>
+                </div>
+                
+                <div className="flex items-start gap-2">
+                  <span className="font-semibold min-w-[100px]">🕐 Hora:</span>
+                  <span>{format(parseAsLocalTime(selectedReservation.start_time), "HH:mm")}</span>
+                </div>
+                
+                <div className="flex items-start gap-2">
+                  <span className="font-semibold min-w-[100px]">🪑 Taula:</span>
+                  <span>Mesa {selectedReservation.table_number} (capacitat {selectedReservation.table_capacity})</span>
+                </div>
+                
+                {selectedReservation.notes && (
+                  <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-200 dark:border-blue-800">
+                    <div className="flex items-start gap-2">
+                      <span className="font-semibold">📝 Notes:</span>
+                    </div>
+                    <p className="mt-1 text-sm whitespace-pre-wrap">{selectedReservation.notes}</p>
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex gap-2 justify-end pt-4 border-t">
+                <Button variant="outline" onClick={() => setDetailsDialogOpen(false)}>
+                  Tancar
+                </Button>
+                <Button onClick={handleEdit}>
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Editar
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
