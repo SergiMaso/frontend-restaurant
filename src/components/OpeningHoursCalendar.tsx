@@ -1,14 +1,18 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths, isSameDay, parseISO } from "date-fns";
 import { ca } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock, Eye, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { getOpeningHoursRange } from "@/services/api";
+import { getOpeningHoursRange, getAppointments } from "@/services/api";
 import OpeningHoursDialog from "./OpeningHoursDialog";
 
-const OpeningHoursCalendar = () => {
+interface OpeningHoursCalendarProps {
+  onViewDay?: (date: Date) => void;
+}
+
+const OpeningHoursCalendar = ({ onViewDay }: OpeningHoursCalendarProps) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -26,11 +30,34 @@ const OpeningHoursCalendar = () => {
     queryFn: () => getOpeningHoursRange(format(monthStart, "yyyy-MM-dd"), format(monthEnd, "yyyy-MM-dd")),
   });
 
+  // Obtenir reserves
+  const { data: allAppointments } = useQuery({
+    queryKey: ["appointments"],
+    queryFn: getAppointments,
+  });
+
   // Crear mapa de dates amb horaris
   const hoursMap = new Map();
   openingHoursData?.forEach((hours) => {
     hoursMap.set(hours.date, hours);
   });
+
+  // Comptar reserves per dia
+  const getReservationsForDay = (day: Date) => {
+    if (!allAppointments) return 0;
+    
+    const dayStr = format(day, "yyyy-MM-dd");
+    return allAppointments.filter((apt) => {
+      if (apt.status !== 'confirmed') return false;
+      try {
+        const aptDate = parseISO(apt.date);
+        const aptDateStr = format(aptDate, "yyyy-MM-dd");
+        return aptDateStr === dayStr;
+      } catch {
+        return false;
+      }
+    }).length;
+  };
 
   const goToPreviousMonth = () => {
     setCurrentMonth(subMonths(currentMonth, 1));
@@ -44,6 +71,19 @@ const OpeningHoursCalendar = () => {
     setCurrentMonth(new Date());
   };
 
+  const handleEditClick = (day: Date, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedDate(day);
+    setDialogOpen(true);
+  };
+
+  const handleViewDayClick = (day: Date, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onViewDay) {
+      onViewDay(day);
+    }
+  };
+
   const handleDayClick = (day: Date) => {
     setSelectedDate(day);
     setDialogOpen(true);
@@ -52,7 +92,7 @@ const OpeningHoursCalendar = () => {
   const getStatusForDay = (day: Date) => {
     const dayStr = format(day, "yyyy-MM-dd");
     const hours = hoursMap.get(dayStr);
-    return hours?.status || "full_day"; // Per defecte: obert tot el dia
+    return hours?.status || "full_day";
   };
 
   const getStatusColor = (status: string) => {
@@ -85,25 +125,14 @@ const OpeningHoursCalendar = () => {
     }
   };
 
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case "closed":
-        return "Tancat";
-      case "lunch_only":
-        return "Només dinar";
-      case "dinner_only":
-        return "Només sopar";
-      case "full_day":
-        return "Tot el dia";
-      default:
-        return "";
-    }
-  };
-
   const getHoursForSelectedDay = () => {
     if (!selectedDate) return undefined;
     const dayStr = format(selectedDate, "yyyy-MM-dd");
     return hoursMap.get(dayStr);
+  };
+
+  const isToday = (day: Date) => {
+    return isSameDay(day, new Date());
   };
 
   return (
@@ -144,6 +173,10 @@ const OpeningHoursCalendar = () => {
           <div className="w-4 h-4 rounded bg-red-500" />
           <span>Tancat</span>
         </div>
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary" className="text-xs">3</Badge>
+          <span>Reserves</span>
+        </div>
       </div>
 
       {/* Calendari */}
@@ -172,48 +205,84 @@ const OpeningHoursCalendar = () => {
             const status = getStatusForDay(day);
             const dayStr = format(day, "yyyy-MM-dd");
             const hours = hoursMap.get(dayStr);
+            const reservationsCount = getReservationsForDay(day);
+            const today = isToday(day);
 
             return (
               <div
                 key={day.toISOString()}
-                className={`aspect-square border-r border-b border-border/30 p-3 cursor-pointer transition-all ${getStatusColor(
+                className={`aspect-square border-r border-b border-border/30 p-2 cursor-pointer transition-all relative group ${getStatusColor(
                   status
-                )}`}
+                )} ${today ? "ring-2 ring-primary ring-inset" : ""}`}
                 onClick={() => handleDayClick(day)}
               >
                 <div className="flex flex-col h-full">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-lg font-semibold">{format(day, "d")}</span>
+                  {/* Header del dia */}
+                  <div className="flex items-center justify-between mb-1">
+                    <span className={`text-lg font-semibold ${today ? "text-primary" : ""}`}>
+                      {format(day, "d")}
+                    </span>
                     <span className="text-xl">{getStatusIcon(status)}</span>
                   </div>
 
-                  {/* Informació addicional */}
-                  {hours && (
-                    <div className="mt-auto space-y-1">
+                  {/* Nombre de reserves */}
+                  {reservationsCount > 0 && (
+                    <div className="mb-2">
+                      <Badge variant="secondary" className="text-xs px-1.5 py-0">
+                        {reservationsCount} {reservationsCount === 1 ? "reserva" : "reserves"}
+                      </Badge>
+                    </div>
+                  )}
+
+                  {/* Horaris */}
+                  {hours && (status === "full_day" || status === "lunch_only" || status === "dinner_only") && (
+                    <div className="mt-auto space-y-0.5">
                       {(status === "full_day" || status === "lunch_only") && hours.lunch_start && (
                         <div className="text-xs flex items-center gap-1">
                           <Clock className="h-3 w-3" />
-                          <span>
-                            {hours.lunch_start} - {hours.lunch_end}
-                          </span>
+                          <span>{hours.lunch_start}-{hours.lunch_end}</span>
                         </div>
                       )}
                       {(status === "full_day" || status === "dinner_only") && hours.dinner_start && (
                         <div className="text-xs flex items-center gap-1">
                           <Clock className="h-3 w-3" />
-                          <span>
-                            {hours.dinner_start} - {hours.dinner_end}
-                          </span>
+                          <span>{hours.dinner_start}-{hours.dinner_end}</span>
                         </div>
-                      )}
-                      {hours.notes && (
-                        <Badge variant="outline" className="text-xs mt-1">
-                          {hours.notes.substring(0, 20)}
-                          {hours.notes.length > 20 ? "..." : ""}
-                        </Badge>
                       )}
                     </div>
                   )}
+
+                  {/* Notes */}
+                  {hours?.notes && (
+                    <div className="mt-1">
+                      <Badge variant="outline" className="text-xs">
+                        {hours.notes.substring(0, 15)}
+                        {hours.notes.length > 15 ? "..." : ""}
+                      </Badge>
+                    </div>
+                  )}
+
+                  {/* Botons d'acció (apareixen en hover) */}
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-2">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={(e) => handleEditClick(day, e)}
+                      className="text-xs w-full"
+                    >
+                      <Edit className="h-3 w-3 mr-1" />
+                      Editar
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="default"
+                      onClick={(e) => handleViewDayClick(day, e)}
+                      className="text-xs w-full"
+                    >
+                      <Eye className="h-3 w-3 mr-1" />
+                      Ver día
+                    </Button>
+                  </div>
                 </div>
               </div>
             );
@@ -225,9 +294,10 @@ const OpeningHoursCalendar = () => {
       <div className="text-sm text-muted-foreground bg-muted/30 p-4 rounded-lg">
         <p className="font-semibold mb-2">ℹ️ Informació:</p>
         <ul className="space-y-1 list-disc list-inside">
-          <li>Clica en qualsevol dia per configurar els horaris</li>
-          <li>Els dies sense configuració específica utilitzaran l'horari per defecte (12:00-15:00 i 19:00-22:30)</li>
-          <li>Les notes només són visibles internament</li>
+          <li>Passa el cursor per sobre de qualsevol dia per veure les opcions</li>
+          <li><strong>Editar</strong>: Configura els horaris d'obertura del restaurant</li>
+          <li><strong>Ver día</strong>: Veure l'horari detallat de reserves d'aquell dia</li>
+          <li>Els dies sense configuració utilitzaran l'horari per defecte (12:00-15:00 i 19:00-22:30)</li>
         </ul>
       </div>
 

@@ -7,7 +7,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery } from "@tanstack/react-query";
 import DayCalendar from "@/components/DayCalendar";
-import MonthCalendar from "@/components/MonthCalendar";
 import OpeningHoursCalendar from "@/components/OpeningHoursCalendar";
 import TablesList from "@/components/TablesList";
 import ReservationsList from "@/components/ReservationsList";
@@ -141,28 +140,14 @@ const Index = () => {
             {/* Configuración de Horarios */}
             <Card className="border-border/50 shadow-card">
               <CardHeader>
-                <CardTitle>Configuración de Horarios</CardTitle>
+                <CardTitle>Calendario</CardTitle>
                 <CardDescription>
-                  Gestiona los horarios de apertura del restaurante
+                  Gestiona los horarios de apertura y visualiza las reservas
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <OpeningHoursCalendar />
-              </CardContent>
-            </Card>
-
-            {/* Calendario de Reservas */}
-            <Card className="border-border/50 shadow-card">
-              <CardHeader>
-                <CardTitle>Calendario de Reservas</CardTitle>
-                <CardDescription>
-                  Vista mensual de todas las reservas
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <MonthCalendar 
-                  selectedDate={selectedDate} 
-                  onDateChange={(date) => {
+                <OpeningHoursCalendar 
+                  onViewDay={(date) => {
                     setSelectedDate(date);
                     setActiveTab("horario");
                   }}
