@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import { Calendar } from "lucide-react";
@@ -26,17 +25,11 @@ const timeSlots = Array.from({ length: 49 }, (_, i) => {
 
 // Funció per parsejar timestamp ignorant timezone (tractar com a hora local)
 const parseAsLocalTime = (timestamp: string): Date => {
-  // Extreure només la part de data i hora, ignorant timezone
-  // "2025-10-09T21:00:00+00:00" -> "2025-10-09T21:00:00"
   const withoutTz = timestamp.split('+')[0].split('Z')[0];
-  // Parsejar com a hora local
   return new Date(withoutTz);
 };
 
 const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) => {
-  const [selectedReservation, setSelectedReservation] = useState<any>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
-
   const { data: tables, isLoading: tablesLoading } = useQuery({
     queryKey: ["tables"],
     queryFn: getTables,
@@ -107,7 +100,6 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
       if (r.table_number !== tableNumber) return false;
       
       try {
-        // Usar parseAsLocalTime en lloc de parseISO per ignorar timezone
         const startTime = parseAsLocalTime(r.start_time);
         const endTime = parseAsLocalTime(r.end_time);
         
@@ -138,7 +130,6 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
 
   const isReservationStart = (reservation: any, time: string) => {
     try {
-      // Usar parseAsLocalTime en lloc de parseISO
       const startTime = parseAsLocalTime(reservation.start_time);
       const [slotHour, slotMin] = time.split(':').map(Number);
       const slotMinutes = slotHour * 60 + slotMin;
@@ -155,7 +146,6 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
 
   const getReservationRowSpan = (reservation: any) => {
     try {
-      // Usar parseAsLocalTime en lloc de parseISO
       const start = parseAsLocalTime(reservation.start_time);
       const end = parseAsLocalTime(reservation.end_time);
       const durationMinutes = (end.getTime() - start.getTime()) / 60000;
@@ -271,12 +261,9 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
                               onClick={() => {
                                 if (onEdit) {
                                   onEdit(reservation);
-                                } else {
-                                  setSelectedReservation(reservation);
-                                  setDialogOpen(true);
                                 }
                               }}
-                              title="Click per veure detalls"
+                              title="Click per editar"
                             >
                               <div className="font-semibold truncate text-[9px] leading-tight">
                                 {reservation.client_name}
@@ -293,54 +280,6 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
                 ))}
               </div>
             </div>
-          </div>
-        </div>
-      )}
-      
-      {selectedReservation && (
-        <div 
-          className={`fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 ${
-            dialogOpen ? 'block' : 'hidden'
-          }`}
-          onClick={() => setDialogOpen(false)}
-        >
-          <div 
-            className="bg-card border border-border rounded-lg p-6 max-w-md w-full shadow-elegant"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="text-xl font-bold mb-4">Detalls de la Reserva</h3>
-            <div className="space-y-3 text-sm">
-              <div>
-                <span className="font-semibold">👤 Nom:</span> {selectedReservation.client_name}
-              </div>
-              <div>
-                <span className="font-semibold">📞 Telèfon:</span> {selectedReservation.phone}
-              </div>
-              <div>
-                <span className="font-semibold">👥 Persones:</span> {selectedReservation.num_people}
-              </div>
-              <div>
-                <span className="font-semibold">📅 Data:</span> {format(parseISO(selectedReservation.date), "d 'de' MMMM 'de' yyyy")}
-              </div>
-              <div>
-                <span className="font-semibold">🕐 Hora:</span> {format(parseAsLocalTime(selectedReservation.start_time), "HH:mm")}
-              </div>
-              <div>
-                <span className="font-semibold">🪑 Taula:</span> {selectedReservation.table_number} (capacitat {selectedReservation.table_capacity})
-              </div>
-              {selectedReservation.notes && (
-                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-200 dark:border-blue-800">
-                  <span className="font-semibold">📝 Notes:</span>
-                  <p className="mt-1">{selectedReservation.notes}</p>
-                </div>
-              )}
-            </div>
-            <button
-              className="mt-6 w-full bg-primary text-primary-foreground py-2 rounded hover:bg-primary/90 transition-colors"
-              onClick={() => setDialogOpen(false)}
-            >
-              Tancar
-            </button>
           </div>
         </div>
       )}
