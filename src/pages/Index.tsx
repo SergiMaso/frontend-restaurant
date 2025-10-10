@@ -172,7 +172,8 @@ const Index = () => {
               </CardHeader>
               <CardContent>
                 <ReservationsList 
-                  selectedDate={selectedDate} 
+                  selectedDate={selectedDate}
+                  onDateChange={setSelectedDate}
                   onEdit={(reservation) => {
                     setEditingReservation(reservation);
                     setReservationDialogOpen(true);

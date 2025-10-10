@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Pencil, Trash2, Users, Phone, Clock } from "lucide-react";
+import { Pencil, Trash2, Users, Phone, Clock, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
 import { format } from "date-fns";
@@ -11,9 +11,10 @@ import { getAppointments, deleteAppointment, type Appointment } from "@/services
 interface ReservationsListProps {
   selectedDate: Date;
   onEdit?: (reservation: any) => void;
+  onDateChange?: (date: Date) => void;
 }
 
-const ReservationsList = ({ selectedDate, onEdit }: ReservationsListProps) => {
+const ReservationsList = ({ selectedDate, onEdit, onDateChange }: ReservationsListProps) => {
   const queryClient = useQueryClient();
   const [editingReservation, setEditingReservation] = useState<any>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -91,11 +92,32 @@ const ReservationsList = ({ selectedDate, onEdit }: ReservationsListProps) => {
 
   const formatTime = (isoString: string) => {
     try {
-      const date = new Date(isoString);
+      // Parsejar com a hora local ignorant timezone (igual que DayCalendar)
+      const withoutTz = isoString.split('+')[0].split('Z')[0];
+      const date = new Date(withoutTz);
       return date.toLocaleTimeString('ca-ES', { hour: '2-digit', minute: '2-digit' });
     } catch {
       return isoString;
     }
+  };
+
+  const goToPreviousDay = () => {
+    if (!onDateChange) return;
+    const newDate = new Date(selectedDate);
+    newDate.setDate(newDate.getDate() - 1);
+    onDateChange(newDate);
+  };
+
+  const goToNextDay = () => {
+    if (!onDateChange) return;
+    const newDate = new Date(selectedDate);
+    newDate.setDate(newDate.getDate() + 1);
+    onDateChange(newDate);
+  };
+
+  const goToToday = () => {
+    if (!onDateChange) return;
+    onDateChange(new Date());
   };
 
   if (isLoading) {
@@ -104,6 +126,29 @@ const ReservationsList = ({ selectedDate, onEdit }: ReservationsListProps) => {
 
   return (
     <>
+      {/* Botons de navegació de dates */}
+      {onDateChange && (
+        <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={goToPreviousDay} size="sm">
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              Anterior
+            </Button>
+            <Button variant="outline" onClick={goToToday} size="sm">
+              Avui
+            </Button>
+            <Button variant="outline" onClick={goToNextDay} size="sm">
+              Següent
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Calendar className="h-4 w-4" />
+            {format(selectedDate, "d 'de' MMMM 'de' yyyy")}
+          </div>
+        </div>
+      )}
+
       <div className="space-y-4">
         {filteredReservations?.map((reservation) => (
           <div
