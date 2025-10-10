@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery } from "@tanstack/react-query";
 import DayCalendar from "@/components/DayCalendar";
 import OpeningHoursCalendar from "@/components/OpeningHoursCalendar";
+import WeeklyScheduleManager from "@/components/WeeklyScheduleManager";
 import TablesList from "@/components/TablesList";
 import ReservationsList from "@/components/ReservationsList";
 import CustomersList from "@/components/CustomersList";
@@ -137,10 +138,23 @@ const Index = () => {
           </TabsList>
 
           <TabsContent value="calendario" className="space-y-6">
-            {/* Configuración de Horarios */}
+            {/* Horaris per dia de la setmana */}
             <Card className="border-border/50 shadow-card">
               <CardHeader>
-                <CardTitle>Calendario</CardTitle>
+                <CardTitle>Configuración Semanal</CardTitle>
+                <CardDescription>
+                  Define los horarios por defecto para cada día de la semana
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <WeeklyScheduleManager />
+              </CardContent>
+            </Card>
+
+            {/* Calendari amb excepcions */}
+            <Card className="border-border/50 shadow-card">
+              <CardHeader>
+                <CardTitle>Calendario y Excepciones</CardTitle>
                 <CardDescription>
                   Gestiona los horarios de apertura y visualiza las reservas
                 </CardDescription>

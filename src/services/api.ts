@@ -247,3 +247,53 @@ export async function updateOpeningHours(date: string, data: Partial<SetOpeningH
   
   return response.json();
 }
+
+// ========================================
+// WEEKLY DEFAULTS
+// ========================================
+
+export interface WeeklyDefault {
+  day_of_week: number;
+  day_name: string;
+  status: 'closed' | 'lunch_only' | 'dinner_only' | 'full_day';
+  lunch_start?: string | null;
+  lunch_end?: string | null;
+  dinner_start?: string | null;
+  dinner_end?: string | null;
+}
+
+export interface UpdateWeeklyDefaultData {
+  status: 'closed' | 'lunch_only' | 'dinner_only' | 'full_day';
+  lunch_start?: string;
+  lunch_end?: string;
+  dinner_start?: string;
+  dinner_end?: string;
+}
+
+export async function getWeeklyDefaults(): Promise<WeeklyDefault[]> {
+  const response = await fetch(`${API_URL}/api/weekly-defaults`);
+  if (!response.ok) {
+    throw new Error('Error obtenint configuració setmanal');
+  }
+  return response.json();
+}
+
+export async function updateWeeklyDefault(
+  dayOfWeek: number,
+  data: UpdateWeeklyDefaultData
+): Promise<any> {
+  const response = await fetch(`${API_URL}/api/weekly-defaults/${dayOfWeek}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Error actualitzant configuració setmanal');
+  }
+  
+  return response.json();
+}

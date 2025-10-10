@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths, isSameDay, parseISO } from "date-fns";
-import { ca } from "date-fns/locale";
+import { es } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, Clock, Eye, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -140,14 +140,14 @@ const OpeningHoursCalendar = ({ onViewDay }: OpeningHoursCalendarProps) => {
       {/* Header amb navegació */}
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold capitalize">
-          {format(currentMonth, "MMMM yyyy", { locale: ca })}
+          {format(currentMonth, "MMMM yyyy", { locale: es })}
         </h2>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={goToPreviousMonth}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <Button variant="outline" size="sm" onClick={goToToday}>
-            Avui
+            Hoy
           </Button>
           <Button variant="outline" size="sm" onClick={goToNextMonth}>
             <ChevronRight className="h-4 w-4" />
@@ -159,23 +159,19 @@ const OpeningHoursCalendar = ({ onViewDay }: OpeningHoursCalendarProps) => {
       <div className="flex flex-wrap gap-3 text-sm">
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded bg-green-500" />
-          <span>Tot el dia</span>
+          <span>Todo el día</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded bg-yellow-500" />
-          <span>Només dinar</span>
+          <span>Solo comida</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded bg-orange-500" />
-          <span>Només sopar</span>
+          <span>Solo cena</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded bg-red-500" />
-          <span>Tancat</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Badge variant="secondary" className="text-xs">3</Badge>
-          <span>Reserves</span>
+          <span>Cerrado</span>
         </div>
       </div>
 
@@ -183,7 +179,7 @@ const OpeningHoursCalendar = ({ onViewDay }: OpeningHoursCalendarProps) => {
       <div className="border border-border/50 rounded-lg overflow-hidden bg-card">
         {/* Dies de la setmana */}
         <div className="grid grid-cols-7 border-b border-border/50 bg-muted/50">
-          {["Dl", "Dm", "Dc", "Dj", "Dv", "Ds", "Dg"].map((day) => (
+          {["L", "M", "X", "J", "V", "S", "D"].map((day) => (
             <div
               key={day}
               className="p-3 text-center text-sm font-semibold text-muted-foreground"
@@ -292,12 +288,12 @@ const OpeningHoursCalendar = ({ onViewDay }: OpeningHoursCalendarProps) => {
 
       {/* Informació addicional */}
       <div className="text-sm text-muted-foreground bg-muted/30 p-4 rounded-lg">
-        <p className="font-semibold mb-2">ℹ️ Informació:</p>
+        <p className="font-semibold mb-2">ℹ️ Información:</p>
         <ul className="space-y-1 list-disc list-inside">
-          <li>Passa el cursor per sobre de qualsevol dia per veure les opcions</li>
-          <li><strong>Editar</strong>: Configura els horaris d'obertura del restaurant</li>
-          <li><strong>Ver día</strong>: Veure l'horari detallat de reserves d'aquell dia</li>
-          <li>Els dies sense configuració utilitzaran l'horari per defecte (12:00-15:00 i 19:00-22:30)</li>
+          <li>Pasa el cursor por encima de cualquier día para ver las opciones</li>
+          <li><strong>Editar</strong>: Configura los horarios de apertura del restaurante</li>
+          <li><strong>Ver día</strong>: Ver el horario detallado de reservas de ese día</li>
+          <li>Los días sin configuración utilizarán el horario por defecto (12:00-15:00 y 19:00-22:30)</li>
         </ul>
       </div>
 
