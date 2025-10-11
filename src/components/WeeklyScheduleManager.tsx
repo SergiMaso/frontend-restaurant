@@ -99,34 +99,25 @@ const WeeklyScheduleManager = () => {
   }
 
   return (
-    <div className="space-y-4">
-      <Alert>
-        <AlertCircle className="h-4 w-4" />
-        <AlertDescription>
-          <strong>ℹ️ Cómo funciona:</strong> Selecciona un día de la semana para configurar su horario por defecto. 
-          Los cambios se aplicarán a todos los días futuros del mismo tipo que no tengan configuración personalizada.
-        </AlertDescription>
-      </Alert>
-
-      {/* Grid de botons amb els dies */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+    <div className="space-y-3">
+      {/* Grid de botons més petit i compacte */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
         {weeklyDefaults?.map((day) => (
           <Button
             key={day.day_of_week}
             onClick={() => handleDayClick(day)}
             variant="outline"
-            className={`h-auto py-4 flex flex-col items-center gap-2 transition-all ${getDayColor(day.status)}`}
+            className={`h-16 flex flex-col items-center justify-center gap-1 transition-all text-xs ${getDayColor(day.status)}`}
           >
-            <span className="text-2xl">{getStatusIcon(day.status)}</span>
-            <span className="font-semibold">{day.day_name}</span>
-            <span className="text-xs opacity-75">
-              {day.status === "closed" ? "Cerrado" : 
-               day.status === "lunch_only" ? "Solo comida" :
-               day.status === "dinner_only" ? "Solo cena" : "Todo el día"}
-            </span>
+            <span className="text-lg">{getStatusIcon(day.status)}</span>
+            <span className="font-semibold text-xs">{day.day_name}</span>
           </Button>
         ))}
       </div>
+
+      <p className="text-xs text-muted-foreground text-center">
+        Clica un día para configurar su horario por defecto
+      </p>
 
       {/* Modal d'edició */}
       {selectedDay && (
