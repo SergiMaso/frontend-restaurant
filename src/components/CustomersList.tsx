@@ -1,14 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Users, Phone, Calendar, MessageCircle, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Users, Phone, Calendar, MessageCircle, X, Search } from "lucide-react";
 import { getCustomers, getConversations, type Conversation } from "@/services/api";
 import { format } from "date-fns";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 
 const CustomersList = () => {
   const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null);
   const [conversationsDialogOpen, setConversationsDialogOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { data: customers, isLoading } = useQuery({
     queryKey: ["customers"],
@@ -20,6 +22,19 @@ const CustomersList = () => {
     queryFn: () => getConversations(selectedCustomer!),
     enabled: !!selectedCustomer && conversationsDialogOpen,
   });
+
+  // Filtrar clients per telèfon o nom
+  const filteredCustomers = useMemo(() => {
+    if (!customers) return [];
+    if (!searchQuery.trim()) return customers;
+
+    const query = searchQuery.toLowerCase().trim();
+    return customers.filter(
+      (customer) =>
+        customer.phone.includes(query) ||
+        customer.name.toLowerCase().includes(query)
+    );
+  }, [customers, searchQuery]);
 
   const handleViewConversations = (phone: string) => {
     setSelectedCustomer(phone);
@@ -45,12 +60,25 @@ const CustomersList = () => {
   };
 
   if (isLoading) {
-    return <div className="text-center py-8 text-muted-foreground">Carregant clients...</div>;
+    return <div className="text-center py-8 text-muted-foreground">Cargando clientes...</div>;
   }
 
   return (
     <div className="space-y-4">
-      {customers?.map((customer) => (
+      {/* Buscador */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          type="text"
+          placeholder="Buscar por teléfono o nombre..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-10"
+        />
+      </div>
+
+      {/* Llista de clients */}
+      {filteredCustomers?.map((customer) => (
         <div
           key={customer.phone}
           className="p-4 rounded-lg border border-border bg-card hover:shadow-elegant transition-all duration-300"
@@ -67,7 +95,7 @@ const CustomersList = () => {
             </div>
             <Badge variant="outline" className="flex items-center gap-1">
               <Users className="h-3 w-3" />
-              {customer.visit_count} {customer.visit_count === 1 ? 'visita' : 'visites'}
+              {customer.visit_count} {customer.visit_count === 1 ? 'visita' : 'visitas'}
             </Badge>
           </div>
 
@@ -90,14 +118,20 @@ const CustomersList = () => {
             className="w-full mt-3"
           >
             <MessageCircle className="h-4 w-4 mr-2" />
-            Veure converses
+            Ver conversaciones
           </Button>
         </div>
       ))}
 
-      {customers?.length === 0 && (
+      {filteredCustomers?.length === 0 && searchQuery && (
         <div className="text-center py-12 text-muted-foreground">
-          <p>No hi ha clients registrats</p>
+          <p>No se encontraron clientes con "{searchQuery}"</p>
+        </div>
+      )}
+
+      {filteredCustomers?.length === 0 && !searchQuery && (
+        <div className="text-center py-12 text-muted-foreground">
+          <p>No hay clientes registrados</p>
         </div>
       )}
 
@@ -132,7 +166,7 @@ const CustomersList = () => {
             {/* Missatges */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {conversationsLoading ? (
-                <div className="text-center py-8 text-muted-foreground">Carregant converses...</div>
+                <div className="text-center py-8 text-muted-foreground">Cargando conversaciones...</div>
               ) : conversations && conversations.length > 0 ? (
                 conversations.map((conv) => (
                   <div
@@ -155,7 +189,7 @@ const CustomersList = () => {
                 ))
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
-                  No hi ha converses per mostrar
+                  No hay conversaciones para mostrar
                 </div>
               )}
             </div>
