@@ -12,10 +12,17 @@ interface TablesListProps {
 const TablesList = ({ onEdit }: TablesListProps = {}) => {
   const queryClient = useQueryClient();
 
-  const { data: tables, isLoading } = useQuery({
+  const { data: tables, isLoading, error } = useQuery({
     queryKey: ["tables"],
     queryFn: getTables,
   });
+
+  // Debug logging
+  console.log('🎲 TablesList component:');
+  console.log('  Loading:', isLoading);
+  console.log('  Error:', error);
+  console.log('  Tables data:', tables);
+  console.log('  Tables count:', tables?.length || 0);
 
   const updateStatusMutation = useMutation({
     mutationFn: ({ tableId, status }: { tableId: number; status: string }) =>

@@ -1,73 +1,200 @@
-# Welcome to your Lovable project
+# Restaurant Management System
 
-## Project info
+A professional restaurant management application built with React, TypeScript, and modern web technologies. This system provides comprehensive tools for managing reservations, tables, customers, and restaurant schedules.
 
-**URL**: https://lovable.dev/projects/a541d88f-2eec-4f37-9067-fbbc9c2f69ad
+## Features
 
-## How can I edit this code?
+- 📅 **Reservation Management**: Create, edit, and track customer reservations
+- 🪑 **Table Management**: Configure restaurant layout and table arrangements
+- 👥 **Customer Database**: Maintain customer information and visit history
+- ⏰ **Schedule Management**: Set opening hours and manage weekly schedules
+- 📊 **Dashboard**: Real-time overview of daily operations
+- 🎨 **Modern UI**: Built with shadcn/ui components and Tailwind CSS
 
-There are several ways of editing your application.
+## Tech Stack
 
-**Use Lovable**
+- **Frontend**: React 18, TypeScript
+- **Build Tool**: Vite
+- **UI Components**: shadcn/ui, Radix UI
+- **Styling**: Tailwind CSS
+- **State Management**: TanStack Query
+- **Routing**: React Router DOM
+- **Forms**: React Hook Form with Zod validation
+- **Date Handling**: date-fns
+- **Icons**: Lucide React
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/a541d88f-2eec-4f37-9067-fbbc9c2f69ad) and start prompting.
+## Getting Started
 
-Changes made via Lovable will be committed automatically to this repo.
+### Prerequisites
 
-**Use your preferred IDE**
+- Node.js 18+ and npm
+- Docker (optional, for containerized deployment)
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Local Development
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd restaurant-management-app
+   ```
 
-Follow these steps:
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+3. **Start development server**
+   ```bash
+   npm run dev
+   ```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+4. **Open your browser**
+   Navigate to `http://localhost:5173`
 
-# Step 3: Install the necessary dependencies.
-npm i
+### Docker Development
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+1. **Run development environment**
+   ```bash
+   npm run docker:dev
+   ```
+
+2. **Access the application**
+   Navigate to `http://localhost:5173`
+
+## Docker Deployment
+
+### Using Docker Compose (Recommended)
+
+#### Development Mode
+```bash
+# Start development environment with hot reload
+docker-compose --profile dev up
+
+# Run in background
+docker-compose --profile dev up -d
+
+# Stop development environment
+docker-compose --profile dev down
 ```
 
-**Edit a file directly in GitHub**
+#### Production Mode
+```bash
+# Build and start production environment
+docker-compose up
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+# Run in background
+docker-compose up -d
 
-**Use GitHub Codespaces**
+# Stop production environment
+docker-compose down
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+# Rebuild and start (after code changes)
+docker-compose up --build
+```
 
-## What technologies are used for this project?
+### Using Docker Commands
 
-This project is built with:
+#### Development
+```bash
+# Build development image
+docker build -f Dockerfile.dev -t restaurant-app:dev .
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+# Run development container
+docker run -p 5173:5173 -v $(pwd):/app -v /app/node_modules restaurant-app:dev
+```
 
-## How can I deploy this project?
+#### Production
+```bash
+# Build production image
+docker build -t restaurant-app:prod .
 
-Simply open [Lovable](https://lovable.dev/projects/a541d88f-2eec-4f37-9067-fbbc9c2f69ad) and click on Share -> Publish.
+# Run production container
+docker run -p 3000:80 restaurant-app:prod
 
-## Can I connect a custom domain to my Lovable project?
+# Run in background
+docker run -d -p 3000:80 --name restaurant-app restaurant-app:prod
+```
 
-Yes, you can!
+### Docker Management Commands
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+```bash
+# View running containers
+docker ps
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+# View logs
+docker logs restaurant-app
+
+# Stop container
+docker stop restaurant-app
+
+# Remove container
+docker rm restaurant-app
+
+# Remove image
+docker rmi restaurant-app:prod
+```
+
+## Production Deployment
+
+### Manual Build
+
+1. **Build the application**
+   ```bash
+   npm run build
+   ```
+
+2. **Preview the build**
+   ```bash
+   npm run preview
+   ```
+
+## Available Scripts
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+- `npm run lint` - Run ESLint
+- `npm run lint:fix` - Fix ESLint issues
+- `npm run docker:build` - Build Docker image
+- `npm run docker:run` - Run Docker container
+- `npm run docker:dev` - Run development with Docker
+- `npm run docker:prod` - Run production with Docker
+
+## Project Structure
+
+```
+src/
+├── components/          # Reusable UI components
+│   ├── ui/             # shadcn/ui components
+│   └── ...             # Custom components
+├── hooks/              # Custom React hooks
+├── lib/                # Utility functions
+├── pages/              # Page components
+├── services/           # API services
+└── types/              # TypeScript type definitions
+```
+
+## Environment Variables
+
+Create a `.env` file in the root directory:
+
+```env
+# Add your environment variables here
+VITE_API_URL=your_api_url
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Support
+
+For support, please open an issue in the GitHub repository.

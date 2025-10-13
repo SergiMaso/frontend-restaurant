@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Test</title>
+</head>
+<body>
+    <h1>API Connection Test</h1>
+    <div id="results"></div>
+    
+    <script>
+        const API_URL = 'https://web-production-e9f4b.up.railway.app';
+        const results = document.getElementById('results');
+        
+        function log(message) {
+            console.log(message);
+            results.innerHTML += '<p>' + message + '</p>';
+        }
+        
+        async function testAPI() {
+            log('🔍 Testing API connection...');
+            log('API URL: ' + API_URL);
+            
+            try {
+                // Test health
+                log('1. Testing /health...');
+                const healthRes = await fetch(API_URL + '/health');
+                log('Health status: ' + healthRes.status);
+                const healthData = await healthRes.json();
+                log('Health data: ' + JSON.stringify(healthData));
+                
+                // Test tables
+                log('2. Testing /api/tables...');
+                const tablesRes = await fetch(API_URL + '/api/tables');
+                log('Tables status: ' + tablesRes.status);
+                const tablesData = await tablesRes.json();
+                log('Tables count: ' + tablesData.length);
+                log('Tables: ' + JSON.stringify(tablesData));
+                
+            } catch (error) {
+                log('❌ Error: ' + error.message);
+            }
+        }
+        
+        testAPI();
+    </script>
+</body>
+</html>

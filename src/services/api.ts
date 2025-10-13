@@ -2,6 +2,12 @@
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
+// Debug logging
+console.log('🔧 API Configuration:');
+console.log('  VITE_API_URL:', import.meta.env.VITE_API_URL);
+console.log('  Final API_URL:', API_URL);
+console.log('  Environment:', import.meta.env.MODE);
+
 export interface Appointment {
   id: number;
   phone: string;
@@ -61,11 +67,23 @@ export interface Conversation {
 // ========================================
 
 export async function getAppointments(): Promise<Appointment[]> {
+  console.log('📞 API Call: GET /api/appointments');
+  console.log('  URL:', `${API_URL}/api/appointments`);
+  
   const response = await fetch(`${API_URL}/api/appointments`);
+  
+  console.log('  Response status:', response.status);
+  console.log('  Response ok:', response.ok);
+  
   if (!response.ok) {
+    const errorText = await response.text();
+    console.error('  Error response:', errorText);
     throw new Error('Error obtenint reserves');
   }
-  return response.json();
+  
+  const data = await response.json();
+  console.log('  Data received:', data.length, 'appointments');
+  return data;
 }
 
 export async function getAppointment(id: number): Promise<Appointment> {
@@ -124,16 +142,44 @@ export async function deleteAppointment(id: number): Promise<void> {
   }
 }
 
+export async function addNotesToAppointment(id: number, notes: string): Promise<void> {
+  const response = await fetch(`${API_URL}/api/appointments/${id}/notes`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ notes }),
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Error afegint notes');
+  }
+}
+
 // ========================================
 // TABLES
 // ========================================
 
 export async function getTables(): Promise<Table[]> {
+  console.log('🎲 API Call: GET /api/tables');
+  console.log('  URL:', `${API_URL}/api/tables`);
+  
   const response = await fetch(`${API_URL}/api/tables`);
+  
+  console.log('  Response status:', response.status);
+  console.log('  Response ok:', response.ok);
+  
   if (!response.ok) {
+    const errorText = await response.text();
+    console.error('  Error response:', errorText);
     throw new Error('Error obtenint taules');
   }
-  return response.json();
+  
+  const data = await response.json();
+  console.log('  Tables received:', data.length, 'tables');
+  console.log('  Tables data:', data);
+  return data;
 }
 
 export async function updateTableStatus(
@@ -296,4 +342,26 @@ export async function updateWeeklyDefault(
   }
   
   return response.json();
+}
+
+export async function initTables(): Promise<void> {
+  console.log('⚙️ API Call: POST /api/init-tables');
+  console.log('  URL:', `${API_URL}/api/init-tables`);
+  
+  const response = await fetch(`${API_URL}/api/init-tables`, {
+    method: 'POST',
+  });
+  
+  console.log('  Response status:', response.status);
+  console.log('  Response ok:', response.ok);
+  
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('  Error response:', errorText);
+    const error = await response.json().catch(() => ({ error: errorText }));
+    throw new Error(error.error || 'Error inicialitzant taules');
+  }
+  
+  const data = await response.json();
+  console.log('  Init tables result:', data);
 }

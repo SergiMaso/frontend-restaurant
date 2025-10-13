@@ -1,14 +1,20 @@
 {
-  "name": "vite_react_shadcn_ts",
+  "name": "restaurant-management-app",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "Professional restaurant management system built with React, TypeScript, and shadcn/ui",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "lint:fix": "eslint . --fix",
+    "preview": "vite preview",
+    "docker:build": "docker build -t restaurant-app .",
+    "docker:run": "docker run -p 3000:80 restaurant-app",
+    "docker:dev": "docker-compose --profile dev up",
+    "docker:prod": "docker-compose up"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
