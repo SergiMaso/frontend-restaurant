@@ -1,9 +1,21 @@
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Users, Ban, Check } from "lucide-react";
-import { getTables, updateTableStatus } from "@/services/api";
+import { Users, Ban, Check, Edit, Trash2, Link } from "lucide-react";
+import { getTables, updateTable, deleteTable, createTable } from "@/services/api";
 import { toast } from "sonner";
+import TableDialog from "./TableDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface TablesListProps {
   onEdit?: (table: any) => void;
@@ -11,27 +23,91 @@ interface TablesListProps {
 
 const TablesList = ({ onEdit }: TablesListProps = {}) => {
   const queryClient = useQueryClient();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedTable, setSelectedTable] = useState<any | null>(null);
+  const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [tableToDelete, setTableToDelete] = useState<any | null>(null);
 
   const { data: tables, isLoading } = useQuery({
     queryKey: ["tables"],
     queryFn: getTables,
   });
 
-  const updateStatusMutation = useMutation({
-    mutationFn: ({ tableId, status }: { tableId: number; status: string }) =>
-      updateTableStatus(tableId, status),
+  const updateTableMutation = useMutation({
+    mutationFn: ({ tableId, data }: { tableId: number; data: any }) =>
+      updateTable(tableId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tables"] });
-      toast.success("Status de la taula actualitzat");
+      toast.success("Taula actualitzada correctament");
+      setDialogOpen(false);
     },
     onError: (error: Error) => {
-      toast.error("Error actualitzant status: " + error.message);
+      toast.error("Error actualitzant taula: " + error.message);
     },
   });
 
-  const handleToggleStatus = (tableId: number, currentStatus: string) => {
-    const newStatus = currentStatus === 'available' ? 'unavailable' : 'available';
-    updateStatusMutation.mutate({ tableId, status: newStatus });
+  const createTableMutation = useMutation({
+    mutationFn: createTable,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tables"] });
+      toast.success("Taula creada correctament");
+      setDialogOpen(false);
+    },
+    onError: (error: Error) => {
+      toast.error("Error creant taula: " + error.message);
+    },
+  });
+
+  const deleteTableMutation = useMutation({
+    mutationFn: deleteTable,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tables"] });
+      toast.success("Taula eliminada correctament");
+      setDeleteDialogOpen(false);
+    },
+    onError: (error: Error) => {
+      toast.error("Error eliminant taula: " + error.message);
+    },
+  });
+
+  const handleToggleStatus = (table: any) => {
+    const newStatus = table.status === 'available' ? 'unavailable' : 'available';
+    updateTableMutation.mutate({ 
+      tableId: table.id, 
+      data: { status: newStatus } 
+    });
+  };
+
+  const handleEdit = (table: any) => {
+    setSelectedTable(table);
+    setDialogMode('edit');
+    setDialogOpen(true);
+  };
+
+  const handleCreate = () => {
+    setSelectedTable(null);
+    setDialogMode('create');
+    setDialogOpen(true);
+  };
+
+  const handleSave = (data: any) => {
+    if (dialogMode === 'edit' && selectedTable) {
+      updateTableMutation.mutate({ tableId: selectedTable.id, data });
+    } else {
+      createTableMutation.mutate(data);
+    }
+  };
+
+  const handleDeleteClick = (table: any) => {
+    setTableToDelete(table);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (tableToDelete) {
+      deleteTableMutation.mutate(tableToDelete.id);
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -89,24 +165,60 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
               </Badge>
             </div>
 
-            <Button
-              variant={table.status === 'available' ? 'destructive' : 'default'}
-              size="sm"
-              onClick={() => handleToggleStatus(table.id, table.status)}
-              className="w-full mt-3"
-            >
-              {table.status === 'available' ? (
-                <>
-                  <Ban className="h-4 w-4 mr-2" />
-                  Deshabilitar
-                </>
-              ) : (
-                <>
-                  <Check className="h-4 w-4 mr-2" />
-                  Habilitar
-                </>
-              )}
-            </Button>
+            {table.pairing && table.pairing.length > 0 && (
+              <div className="mb-3">
+                <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                  <Link className="h-3 w-3" />
+                  <span>Pairing:</span>
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {table.pairing.map((pairNum: number) => (
+                    <Badge key={pairNum} variant="secondary" className="text-xs">
+                      Mesa {pairNum}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-2 mt-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleEdit(table)}
+                className="flex-1"
+              >
+                <Edit className="h-4 w-4 mr-1" />
+                Editar
+              </Button>
+
+              <Button
+                variant={table.status === 'available' ? 'outline' : 'default'}
+                size="sm"
+                onClick={() => handleToggleStatus(table)}
+                className="flex-1"
+              >
+                {table.status === 'available' ? (
+                  <>
+                    <Ban className="h-4 w-4 mr-1" />
+                    Deshabilitar
+                  </>
+                ) : (
+                  <>
+                    <Check className="h-4 w-4 mr-1" />
+                    Habilitar
+                  </>
+                )}
+              </Button>
+
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => handleDeleteClick(table)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         ))}
       </div>
@@ -116,6 +228,36 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
           <p>No hi ha taules registrades</p>
         </div>
       )}
+
+      <TableDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        table={selectedTable}
+        allTables={tables || []}
+        onSave={handleSave}
+        mode={dialogMode}
+      />
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Estàs segur?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Aquesta acció eliminarà la taula {tableToDelete?.table_number} permanentment.
+              Només es pot eliminar si no té reserves futures.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel·lar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };

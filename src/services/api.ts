@@ -23,6 +23,21 @@ export interface Table {
   table_number: number;
   capacity: number;
   status: string;
+  pairing: number[];
+}
+
+export interface CreateTableData {
+  table_number: number;
+  capacity: number;
+  status?: string;
+  pairing?: number[];
+}
+
+export interface UpdateTableData {
+  table_number?: number;
+  capacity?: number;
+  status?: string;
+  pairing?: number[] | null;
 }
 
 export interface CreateAppointmentData {
@@ -136,6 +151,43 @@ export async function getTables(): Promise<Table[]> {
   return response.json();
 }
 
+export async function createTable(data: CreateTableData): Promise<any> {
+  const response = await fetch(`${API_URL}/api/tables`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Error creant taula');
+  }
+  
+  return response.json();
+}
+
+export async function updateTable(
+  tableId: number,
+  data: UpdateTableData
+): Promise<any> {
+  const response = await fetch(`${API_URL}/api/tables/${tableId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Error actualitzant taula');
+  }
+  
+  return response.json();
+}
+
 export async function updateTableStatus(
   tableId: number,
   status: string
@@ -151,6 +203,17 @@ export async function updateTableStatus(
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.error || 'Error actualitzant status');
+  }
+}
+
+export async function deleteTable(tableId: number): Promise<void> {
+  const response = await fetch(`${API_URL}/api/tables/${tableId}`, {
+    method: 'DELETE',
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Error eliminant taula');
   }
 }
 

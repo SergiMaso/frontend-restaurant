@@ -149,17 +149,14 @@ const DayEditorDialog = ({ day, open, onOpenChange, onSave, isLoading }: DayEdit
   const [dinnerEnd, setDinnerEnd] = useState(day.dinner_end || "22:30");
 
   const handleSave = () => {
-    const data: any = { status };
-
-    if (status === "full_day" || status === "lunch_only") {
-      data.lunch_start = lunchStart;
-      data.lunch_end = lunchEnd;
-    }
-
-    if (status === "full_day" || status === "dinner_only") {
-      data.dinner_start = dinnerStart;
-      data.dinner_end = dinnerEnd;
-    }
+    // SEMPRE enviar TOTES les hores, independentment de l'estat
+    const data: any = {
+      status,
+      lunch_start: lunchStart,
+      lunch_end: lunchEnd,
+      dinner_start: dinnerStart,
+      dinner_end: dinnerEnd
+    };
 
     onSave(data);
   };
