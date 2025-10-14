@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { format, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
-import { Calendar, Users, UtensilsCrossed, Plus, LayoutGrid, Clock } from "lucide-react";
+import { Calendar, Users, UtensilsCrossed, Plus, LayoutGrid, Clock, FileImage } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,6 +12,7 @@ import WeeklyScheduleManager from "@/components/WeeklyScheduleManager";
 import TablesList from "@/components/TablesList";
 import ReservationsList from "@/components/ReservationsList";
 import CustomersList from "@/components/CustomersList";
+import MediaManager from "@/components/MediaManager";
 import TableDialog from "@/components/TableDialog";
 import ReservationDialog from "@/components/ReservationDialog";
 import TableLayoutView from "@/components/TableLayoutView";
@@ -116,7 +117,7 @@ const Index = () => {
 
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 max-w-4xl mx-auto">
+          <TabsList className="grid w-full grid-cols-7 max-w-5xl mx-auto">
             <TabsTrigger value="calendario">
               <Calendar className="h-4 w-4 mr-2" />
               Calendario
@@ -134,6 +135,10 @@ const Index = () => {
             <TabsTrigger value="customers">
               <Users className="h-4 w-4 mr-2" />
               Clientes
+            </TabsTrigger>
+            <TabsTrigger value="media">
+              <FileImage className="h-4 w-4 mr-2" />
+              Media
             </TabsTrigger>
           </TabsList>
 
@@ -259,10 +264,18 @@ const Index = () => {
             <Card className="border-border/50 shadow-card">
               <CardHeader>
                 <CardTitle>Clientes</CardTitle>
-                <CardDescription>Llista de clients i històric de visites</CardDescription>
+                <CardDescription>Lista de clientes registrados y conversaciones</CardDescription>
               </CardHeader>
               <CardContent>
                 <CustomersList />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="media" className="space-y-4">
+            <Card className="border-border/50 shadow-card">
+              <CardContent className="pt-6">
+                <MediaManager />
               </CardContent>
             </Card>
           </TabsContent>
