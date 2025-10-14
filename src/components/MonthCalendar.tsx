@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, parseISO, addMonths, subMonths } from "date-fns";
-import { ca } from "date-fns/locale";
+import { es } from "date-fns/locale";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -84,14 +84,14 @@ const MonthCalendar = ({ selectedDate, onDateChange, onDateClick }: MonthCalenda
       {/* Header amb navegació */}
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">
-          {format(currentMonth, "MMMM yyyy", { locale: ca })}
+          {format(currentMonth, "MMMM yyyy", { locale: es })}
         </h2>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={goToPreviousMonth}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <Button variant="outline" size="sm" onClick={goToToday}>
-            Avui
+            Hoy
           </Button>
           <Button variant="outline" size="sm" onClick={goToNextMonth}>
             <ChevronRight className="h-4 w-4" />
@@ -103,7 +103,7 @@ const MonthCalendar = ({ selectedDate, onDateChange, onDateClick }: MonthCalenda
       <div className="border border-border/50 rounded-lg overflow-hidden bg-card">
         {/* Dies de la setmana */}
         <div className="grid grid-cols-7 border-b border-border/50 bg-muted/50">
-          {["Dl", "Dm", "Dc", "Dj", "Dv", "Ds", "Dg"].map((day) => (
+          {["L", "M", "X", "J", "V", "S", "D"].map((day) => (
             <div
               key={day}
               className="p-2 text-center text-sm font-semibold text-muted-foreground"
@@ -183,17 +183,17 @@ const MonthCalendar = ({ selectedDate, onDateChange, onDateClick }: MonthCalenda
       <div className="flex items-center gap-4 text-sm text-muted-foreground">
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-primary" />
-          <span>Avui</span>
+          <span>Hoy</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-sm ring-2 ring-primary" />
-          <span>Seleccionat</span>
+          <span>Seleccionado</span>
         </div>
         <div className="flex items-center gap-2">
           <Badge variant="secondary" className="text-xs">
             3
           </Badge>
-          <span>Nombre de reserves</span>
+          <span>Número de reservas</span>
         </div>
       </div>
     </div>

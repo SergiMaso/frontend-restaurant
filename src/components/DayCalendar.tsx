@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
+import { es } from "date-fns/locale";
 import { Calendar, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -206,15 +207,15 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
             ← Anterior
           </Button>
           <Button variant="outline" onClick={goToToday} size="sm">
-            Avui
+            Hoy
           </Button>
           <Button variant="outline" onClick={goToNextDay} size="sm">
-            Següent →
+            Siguiente →
           </Button>
         </div>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Calendar className="h-4 w-4" />
-          {format(selectedDate, "EEEE, d 'de' MMMM 'de' yyyy")}
+          {format(selectedDate, "EEEE, d 'de' MMMM 'de' yyyy", { locale: es })}
         </div>
       </div>
 
