@@ -33,7 +33,7 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
 // API functions
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 const getMedia = async (type?: string, date?: string) => {
   const params = new URLSearchParams();
@@ -76,7 +76,7 @@ const MediaManager = () => {
 
   // Form state
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [mediaType, setMediaType] = useState<string>("menu_dia");
+  const [mediaType, setMediaType] = useState<string>("carta");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
@@ -115,7 +115,7 @@ const MediaManager = () => {
 
   const resetForm = () => {
     setSelectedFile(null);
-    setMediaType("menu_dia");
+    setMediaType("carta");
     setTitle("");
     setDescription("");
     setDate(format(new Date(), "yyyy-MM-dd"));
@@ -178,7 +178,7 @@ const MediaManager = () => {
   const getTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
       menu_dia: "📋 Menú del día",
-      menu_carta: "📖 Carta",
+      carta: "📖 Carta",
       promocio: "🎉 Promoción",
       event: "🎊 Evento",
     };
@@ -188,7 +188,7 @@ const MediaManager = () => {
   const getTypeColor = (type: string) => {
     const colors: Record<string, string> = {
       menu_dia: "bg-blue-100 text-blue-700 border-blue-300",
-      menu_carta: "bg-green-100 text-green-700 border-green-300",
+      carta: "bg-green-100 text-green-700 border-green-300",
       promocio: "bg-yellow-100 text-yellow-700 border-yellow-300",
       event: "bg-purple-100 text-purple-700 border-purple-300",
     };
@@ -223,7 +223,7 @@ const MediaManager = () => {
       </div>
 
       {/* Filtres */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         <Button
           variant={filterType === "all" ? "default" : "outline"}
           size="sm"
@@ -239,9 +239,9 @@ const MediaManager = () => {
           📋 Menú del día
         </Button>
         <Button
-          variant={filterType === "menu_carta" ? "default" : "outline"}
+          variant={filterType === "carta" ? "default" : "outline"}
           size="sm"
-          onClick={() => setFilterType("menu_carta")}
+          onClick={() => setFilterType("carta")}
         >
           📖 Carta
         </Button>
@@ -374,7 +374,7 @@ const MediaManager = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="menu_dia">📋 Menú del día</SelectItem>
-                  <SelectItem value="menu_carta">📖 Carta</SelectItem>
+                  <SelectItem value="carta">📖 Carta</SelectItem>
                   <SelectItem value="promocio">🎉 Promoción</SelectItem>
                   <SelectItem value="event">🎊 Evento</SelectItem>
                 </SelectContent>
