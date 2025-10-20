@@ -97,6 +97,11 @@ const CustomersList = () => {
               <Users className="h-3 w-3" />
               {customer.visit_count} {customer.visit_count === 1 ? 'visita' : 'visitas'}
             </Badge>
+            {customer.no_show_count > 0 && (
+              <Badge variant="destructive" className="flex items-center gap-1">
+                ❌ {customer.no_show_count} no-show{customer.no_show_count > 1 ? 's' : ''}
+              </Badge>
+            )}
           </div>
 
           <div className="space-y-2 text-sm">

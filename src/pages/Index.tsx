@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { format, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
-import { Calendar, Users, UtensilsCrossed, Plus, LayoutGrid, Clock, FileImage } from "lucide-react";
+import { Calendar, Users, UtensilsCrossed, Plus, LayoutGrid, Clock, FileImage, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,6 +13,7 @@ import TablesList from "@/components/TablesList";
 import ReservationsList from "@/components/ReservationsList";
 import CustomersList from "@/components/CustomersList";
 import MediaManager from "@/components/MediaManager";
+import StatsView from "@/components/StatsView";
 import TableDialog from "@/components/TableDialog";
 import ReservationDialog from "@/components/ReservationDialog";
 import TableLayoutView from "@/components/TableLayoutView";
@@ -117,7 +118,7 @@ const Index = () => {
 
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7 max-w-5xl mx-auto">
+          <TabsList className="grid w-full grid-cols-8 max-w-6xl mx-auto">
             <TabsTrigger value="calendario">
               <Calendar className="h-4 w-4 mr-2" />
               Calendario
@@ -139,6 +140,10 @@ const Index = () => {
             <TabsTrigger value="media">
               <FileImage className="h-4 w-4 mr-2" />
               Media
+            </TabsTrigger>
+            <TabsTrigger value="stats">
+              <BarChart3 className="h-4 w-4 mr-2" />
+              Estadísticas
             </TabsTrigger>
           </TabsList>
 
@@ -276,6 +281,18 @@ const Index = () => {
             <Card className="border-border/50 shadow-card">
               <CardContent className="pt-6">
                 <MediaManager />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="stats" className="space-y-4">
+            <Card className="border-border/50 shadow-card">
+              <CardHeader>
+                <CardTitle>Estadísticas</CardTitle>
+                <CardDescription>Visión general del rendimiento del restaurante</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <StatsView />
               </CardContent>
             </Card>
           </TabsContent>

@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
-import { Calendar, Pencil } from "lucide-react";
+import { Calendar, Pencil, User, UserCheck, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -11,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { getTables, getAppointments } from "@/services/api";
+import { toast } from "sonner";
 
 interface DayCalendarProps {
   selectedDate: Date;
@@ -40,6 +42,7 @@ const parseAsLocalTime = (timestamp: string): Date => {
 const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) => {
   const [selectedReservation, setSelectedReservation] = useState<any>(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const queryClient = useQueryClient();
 
   const { data: tables, isLoading: tablesLoading } = useQuery({
     queryKey: ["tables"],
@@ -51,9 +54,110 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
     queryFn: getAppointments,
   });
 
-  // Filtrar reserves per la data seleccionada i només confirmed
+  // Mutations per tracking
+  const seatedMutation = useMutation({
+    mutationFn: async (appointmentId: number) => {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/appointments/${appointmentId}/seated`, {
+        method: 'POST',
+      });
+      if (!response.ok) throw new Error('Error marcant seated');
+      return response.json();
+    },
+    onSuccess: async (data) => {
+      // Refrescar les dades del servidor
+      await queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      
+      const delayMsg = data.delay_minutes 
+        ? ` (Retraso: ${data.delay_minutes > 0 ? '+' : ''}${data.delay_minutes} min)`
+        : '';
+      toast.success(`✅ Cliente sentado!${delayMsg}`);
+      
+      // Esperar una mica i reobrir amb dades fresques
+      setTimeout(async () => {
+        const appointments = await queryClient.fetchQuery({ queryKey: ["appointments"] });
+        const updated = appointments.find((apt: any) => apt.id === selectedReservation?.id);
+        if (updated) {
+          setSelectedReservation(updated);
+        }
+      }, 500);
+    },
+    onError: () => {
+      toast.error("❌ Error marcando como sentado");
+    },
+  });
+
+  const leftMutation = useMutation({
+    mutationFn: async (appointmentId: number) => {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/appointments/${appointmentId}/left`, {
+        method: 'POST',
+      });
+      if (!response.ok) throw new Error('Error marcant left');
+      return response.json();
+    },
+    onSuccess: async (data) => {
+      // Refrescar les dades del servidor
+      await queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      
+      toast.success(`👋 Cliente marchó! Duración: ${data.duration_minutes} min`);
+      
+      // Esperar una mica i reobrir amb dades fresques
+      setTimeout(async () => {
+        const appointments = await queryClient.fetchQuery({ queryKey: ["appointments"] });
+        const updated = appointments.find((apt: any) => apt.id === selectedReservation?.id);
+        if (updated) {
+          setSelectedReservation(updated);
+        }
+      }, 500);
+    },
+    onError: () => {
+      toast.error("❌ Error marcando salida");
+    },
+  });
+
+  const noShowMutation = useMutation({
+    mutationFn: async ({ appointmentId, phone }: { appointmentId: number, phone: string }) => {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/appointments/${appointmentId}/no-show`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone }),
+      });
+      if (!response.ok) throw new Error('Error marcant no-show');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      toast.success("❌ No-show registrado");
+      setDetailsDialogOpen(false);
+    },
+    onError: () => {
+      toast.error("❌ Error registrando no-show");
+    },
+  });
+
+  const handleSeated = () => {
+    if (selectedReservation) {
+      seatedMutation.mutate(selectedReservation.id);
+    }
+  };
+
+  const handleLeft = () => {
+    if (selectedReservation) {
+      leftMutation.mutate(selectedReservation.id);
+    }
+  };
+
+  const handleNoShow = () => {
+    if (selectedReservation && window.confirm("¿Estás seguro de que quieres marcar esta reserva como no-show?")) {
+      noShowMutation.mutate({ 
+        appointmentId: selectedReservation.id, 
+        phone: selectedReservation.phone 
+      });
+    }
+  };
+
+  // Filtrar reserves per la data seleccionada i només confirmed o completed
   const reservations = allAppointments?.filter((r) => {
-    if (r.status !== 'confirmed') return false;
+    if (r.status !== 'confirmed' && r.status !== 'completed') return false;
     
     try {
       const reservationDate = parseISO(r.date);
@@ -98,6 +202,12 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
   };
 
   const getStatusColor = (status: string, hasNotes: boolean = false) => {
+    // Si està completat (ha marxat), color verd
+    if (status === "completed") {
+      return "bg-green-500/90 hover:bg-green-600 border-green-400/20 text-white";
+    }
+    
+    // Si té notes, color blau
     if (hasNotes) {
       return "bg-blue-500/90 hover:bg-blue-600 border-blue-400/20 text-white";
     }
@@ -107,8 +217,6 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
         return "bg-primary/90 hover:bg-primary border-primary/20 text-primary-foreground";
       case "cancelled":
         return "bg-destructive/90 hover:bg-destructive border-destructive/20 text-destructive-foreground";
-      case "completed":
-        return "bg-muted hover:bg-muted/80 border-border text-foreground";
       default:
         return "bg-muted hover:bg-muted/80 border-border text-foreground";
     }
@@ -311,6 +419,36 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
           
           {selectedReservation && (
             <div className="space-y-4">
+              {/* Badges d'estat */}
+              <div className="flex gap-2 flex-wrap">
+                {selectedReservation.status === 'completed' && (
+                  <Badge className="bg-green-500 text-white border-green-400">
+                    ✅ Finalizado
+                  </Badge>
+                )}
+                {selectedReservation.seated_at && (
+                  <Badge variant="success" className="bg-green-100 text-green-700 border-green-300">
+                    🪑 Sentado: {format(parseAsLocalTime(selectedReservation.seated_at), "HH:mm")}
+                    {selectedReservation.delay_minutes && (
+                      <span className="ml-1">
+                        ({selectedReservation.delay_minutes > 0 ? '+' : ''}{selectedReservation.delay_minutes} min)
+                      </span>
+                    )}
+                  </Badge>
+                )}
+                {selectedReservation.left_at && (
+                  <Badge variant="secondary">
+                    👋 Salió: {format(parseAsLocalTime(selectedReservation.left_at), "HH:mm")} 
+                    ({selectedReservation.duration_minutes} min)
+                  </Badge>
+                )}
+                {selectedReservation.no_show && (
+                  <Badge variant="destructive">
+                    ❌ No-show
+                  </Badge>
+                )}
+              </div>
+
               <div className="space-y-3 text-sm">
                 <div className="flex items-start gap-2">
                   <span className="font-semibold min-w-[100px]">👤 Nom:</span>
@@ -351,6 +489,47 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
                   </div>
                 )}
               </div>
+              
+              {/* Botons de tracking */}
+              {!selectedReservation.no_show && selectedReservation.status !== 'completed' && (
+                <div className="flex gap-2 flex-wrap pt-2 border-t">
+                  {!selectedReservation.seated_at && (
+                    <Button 
+                      onClick={handleSeated} 
+                      size="sm"
+                      variant="outline"
+                      className="flex-1"
+                    >
+                      <User className="h-4 w-4 mr-2" />
+                      Sentado
+                    </Button>
+                  )}
+                  
+                  {selectedReservation.seated_at && !selectedReservation.left_at && (
+                    <Button 
+                      onClick={handleLeft} 
+                      size="sm"
+                      variant="outline"
+                      className="flex-1"
+                    >
+                      <UserCheck className="h-4 w-4 mr-2" />
+                      Ha salido
+                    </Button>
+                  )}
+                  
+                  {!selectedReservation.seated_at && (
+                    <Button 
+                      onClick={handleNoShow} 
+                      size="sm" 
+                      variant="destructive"
+                      className="flex-1"
+                    >
+                      <XCircle className="h-4 w-4 mr-2" />
+                      No show
+                    </Button>
+                  )}
+                </div>
+              )}
               
               <div className="flex gap-2 justify-end pt-4 border-t">
                 <Button variant="outline" onClick={() => setDetailsDialogOpen(false)}>
