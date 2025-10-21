@@ -33,9 +33,9 @@ const Index = () => {
     queryFn: getAppointments,
   });
 
-  // Comptar reserves d'avui
+  // Comptar reserves d'avui (confirmed + completed)
   const todayReservations = allAppointments?.filter((apt) => {
-    if (apt.status !== 'confirmed') return false;
+    if (apt.status !== 'confirmed' && apt.status !== 'completed') return false;
     try {
       const aptDate = new Date(apt.date);
       return isSameDay(aptDate, new Date());
