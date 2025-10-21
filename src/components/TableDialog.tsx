@@ -90,18 +90,18 @@ const TableDialog = ({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {mode === 'create' ? 'Crear Nova Taula' : `Editar Taula ${table?.table_number}`}
+            {mode === 'create' ? 'Crear Nueva Mesa' : `Editar Mesa ${table?.table_number}`}
           </DialogTitle>
           <DialogDescription>
             {mode === 'create' 
-              ? 'Afegeix una nova taula al restaurant' 
-              : 'Modifica els paràmetres de la taula'}
+              ? 'Añadir una nueva mesa' 
+              : 'Modificar los parametros de la mesa'}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="table_number">Número de Taula</Label>
+            <Label htmlFor="table_number">Número de mesa</Label>
             <Input
               id="table_number"
               type="number"
@@ -113,7 +113,7 @@ const TableDialog = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="capacity">Capacitat (persones)</Label>
+            <Label htmlFor="capacity">Capacidad (personas)</Label>
             <Input
               id="capacity"
               type="number"
@@ -139,10 +139,10 @@ const TableDialog = ({
           </div>
 
           <div className="space-y-2">
-            <Label>Pairing (combinació amb altres taules)</Label>
+            <Label>Pairing (combinación con otras mesas)</Label>
             <Select onValueChange={(value) => addPairing(parseInt(value))}>
               <SelectTrigger>
-                <SelectValue placeholder="Selecciona taules per combinar" />
+                <SelectValue placeholder="Selecciona mesas para combinar" />
               </SelectTrigger>
               <SelectContent>
                 {availableTablesForPairing.map((t) => (
@@ -174,16 +174,16 @@ const TableDialog = ({
               </div>
             )}
             <p className="text-xs text-muted-foreground">
-              Selecciona les taules que es poden combinar amb aquesta
+              Selecciona las mesas que deseas combinar con esta mesa.
             </p>
           </div>
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel·lar
+              Cancelar
             </Button>
             <Button type="submit">
-              {mode === 'create' ? 'Crear Taula' : 'Guardar Canvis'}
+              {mode === 'create' ? 'Crear Mesa' : 'Guardar Cambios'}
             </Button>
           </DialogFooter>
         </form>

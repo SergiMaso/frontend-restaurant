@@ -62,6 +62,8 @@ export interface Customer {
   language: string;
   visit_count: number;
   last_visit: string;
+  has_reservation_today?: boolean;  // NOU: indica si té reserva avui
+  no_show_count?: number;           // Opcional: comptador de no-shows
 }
 
 export interface Conversation {

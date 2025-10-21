@@ -31,6 +31,7 @@ import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { getTables, createAppointment, updateAppointment, deleteAppointment } from "@/services/api";
+import CustomerAutocomplete from "@/components/CustomerAutocomplete";
 
 interface ReservationDialogProps {
   open: boolean;
@@ -51,6 +52,16 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
   const { data: tables } = useQuery({
     queryKey: ["tables"],
     queryFn: getTables,
+  });
+
+  // Obtenir clients per autocompletat
+  const { data: customers } = useQuery({
+    queryKey: ["customers"],
+    queryFn: async () => {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/customers`);
+      if (!response.ok) throw new Error('Error obtenint clients');
+      return response.json();
+    },
   });
 
   useEffect(() => {
@@ -116,7 +127,7 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
     onSuccess: (response) => {
       console.log("✅ Resposta del servidor:", response);
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
-      toast.success(reservation ? "Reserva actualitzada correctament" : "Reserva creada correctament");
+      toast.success(reservation ? "Reserva actualizada correctamente" : "Reserva creada correctamente");
       onOpenChange(false);
     },
     onError: (error: Error) => {
@@ -129,12 +140,12 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
     mutationFn: deleteAppointment,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
-      toast.success("Reserva eliminada correctament");
+      toast.success("Reserva eliminada correctamente");
       setDeleteDialogOpen(false);
       onOpenChange(false);
     },
     onError: (error: Error) => {
-      toast.error("Error eliminant la reserva: " + error.message);
+      toast.error("Error eliminando la reserva: " + error.message);
     },
   });
 
@@ -142,7 +153,7 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
     e.preventDefault();
     
     if (!clientName || !phone || !numPeople) {
-      toast.error("Si us plau, completa tots els camps obligatoris");
+      toast.error("Por favor, completa todos los campos obligatorios");
       return;
     }
 
@@ -171,51 +182,55 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
     }
   };
 
+  // Callback quan es selecciona un client de l'autocompletat
+  const handleSelectCustomer = (customer: any) => {
+    console.log("✅ Client seleccionat:", customer);
+    setClientName(customer.name);
+    setPhone(customer.phone);
+  };
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{reservation ? "Editar Reserva" : "Nova Reserva"}</DialogTitle>
+            <DialogTitle>{reservation ? "Editar Reserva" : "Nueva Reserva"}</DialogTitle>
             <DialogDescription>
-              {reservation ? "Modifica les dades de la reserva" : "Afegeix una nova reserva"}
+              {reservation ? "Modifica los datos de la reserva" : "Añade una nueva reserva"}
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="clientName">
-                  Nom del Client <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="clientName"
-                  value={clientName}
-                  onChange={(e) => setClientName(e.target.value)}
-                  placeholder="Joan García"
-                  required
-                  disabled={!!reservation}
-                />
-              </div>
+              {/* Autocompletat per NOM */}
+              <CustomerAutocomplete
+                customers={customers}
+                value={clientName}
+                onChange={setClientName}
+                onSelectCustomer={handleSelectCustomer}
+                label="Nombre del Cliente"
+                placeholder="Joan García"
+                type="name"
+                disabled={!!reservation}
+                required
+              />
 
-              <div className="space-y-2">
-                <Label htmlFor="phone">
-                  Telèfon <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+34 600 000 000"
-                  required
-                  disabled={!!reservation}
-                />
-              </div>
+              {/* Autocompletat per TELÈFON */}
+              <CustomerAutocomplete
+                customers={customers}
+                value={phone}
+                onChange={setPhone}
+                onSelectCustomer={handleSelectCustomer}
+                label="Teléfono"
+                placeholder="+34 600 000 000"
+                type="phone"
+                disabled={!!reservation}
+                required
+              />
 
               <div className="space-y-2">
                 <Label htmlFor="numPeople">
-                  Nombre de Persones <span className="text-destructive">*</span>
+                  Número de Personas <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="numPeople"
@@ -231,7 +246,7 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
 
               <div className="space-y-2">
                 <Label htmlFor="reservationDate">
-                  Data <span className="text-destructive">*</span>
+                  Fecha <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="reservationDate"
@@ -257,7 +272,7 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
 
               <div className="space-y-2">
                 <Label htmlFor="tableId">
-                  Taula {reservation && reservation.table_number && `(actual: Mesa ${reservation.table_number})`}
+                  Mesa {reservation && reservation.table_number && `(actual: Mesa ${reservation.table_number})`}
                 </Label>
                 <Select 
                   value={selectedTableId} 
@@ -267,19 +282,19 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
                   }}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Assignació automàtica" />
+                    <SelectValue placeholder="Asignación automática" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="auto">Automàtic</SelectItem>
+                    <SelectItem value="auto">Automático</SelectItem>
                     {tables?.filter(t => t.status === 'available').map((table) => (
                       <SelectItem key={table.id} value={table.id.toString()}>
-                        Mesa {table.table_number} ({table.capacity} persones)
+                        Mesa {table.table_number} ({table.capacity} personas)
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  Selecciona "Automàtic" per assignació automàtica
+                  Selecciona "Automático" para asignar la mesa automáticamente.
                 </p>
               </div>
             </div>
@@ -301,10 +316,10 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
               {/* Botons cancel·lar i guardar a la dreta */}
               <div className="flex gap-2 ml-auto">
                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                  Cancel·lar
+                  Cancelar
                 </Button>
                 <Button type="submit" disabled={updateMutation.isPending}>
-                  {updateMutation.isPending ? "Guardant..." : reservation ? "Guardar Canvis" : "Crear Reserva"}
+                  {updateMutation.isPending ? "Guardando..." : reservation ? "Guardar Cambios" : "Crear Reserva"}
                 </Button>
               </div>
             </div>
@@ -316,21 +331,21 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Estàs segur?</AlertDialogTitle>
+            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
             <AlertDialogDescription>
-              Aquesta acció no es pot desfer. S'eliminarà permanentment la reserva de{" "}
-              <span className="font-semibold">{clientName}</span> per al{" "}
-              <span className="font-semibold">{reservationDate}</span> a les{" "}
+              Esta acción no se puede deshacer. Se eliminará permanentemente la reserva de{" "}
+              <span className="font-semibold">{clientName}</span> para el{" "}
+              <span className="font-semibold">{reservationDate}</span> a las{" "}
               <span className="font-semibold">{reservationTime}</span>.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel·lar</AlertDialogCancel>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deleteMutation.isPending ? "Eliminant..." : "Sí, eliminar"}
+              {deleteMutation.isPending ? "Eliminando..." : "Sí, eliminar"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

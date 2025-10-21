@@ -177,7 +177,7 @@ const DayEditorDialog = ({ day, open, onOpenChange, onSave, isLoading }: DayEdit
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5" />
-            Configurar todos los {day.day_name.toLowerCase()}s
+            Configurar todos los {day.day_name.toLowerCase()}
           </DialogTitle>
           <DialogDescription>
             Define el horario por defecto para este día de la semana
@@ -204,7 +204,7 @@ const DayEditorDialog = ({ day, open, onOpenChange, onSave, isLoading }: DayEdit
           {/* Horaris de dinar */}
           {(status === "full_day" || status === "lunch_only") && (
             <div className="space-y-2">
-              <Label className="text-base font-semibold">🍽️ Horario de comida</Label>
+              <Label className="text-base font-semibold">🍽️ Horario mediodía</Label>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="lunch-start">Apertura</Label>
@@ -231,7 +231,7 @@ const DayEditorDialog = ({ day, open, onOpenChange, onSave, isLoading }: DayEdit
           {/* Horaris de sopar */}
           {(status === "full_day" || status === "dinner_only") && (
             <div className="space-y-2">
-              <Label className="text-base font-semibold">🌙 Horario de cena</Label>
+              <Label className="text-base font-semibold">🌙 Horario noche</Label>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="dinner-start">Apertura</Label>

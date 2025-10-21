@@ -135,10 +135,10 @@ const ReservationsList = ({ selectedDate, onEdit, onDateChange }: ReservationsLi
               Anterior
             </Button>
             <Button variant="outline" onClick={goToToday} size="sm">
-              Avui
+              Hoy
             </Button>
             <Button variant="outline" onClick={goToNextDay} size="sm">
-              Següent
+              Siguiente
               <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
           </div>
@@ -184,7 +184,7 @@ const ReservationsList = ({ selectedDate, onEdit, onDateChange }: ReservationsLi
                   Mesa {reservation.table_number}
                 </Badge>
                 <span className="text-xs text-muted-foreground">
-                  Capacitat: {reservation.table_capacity}
+                  Capacidad: {reservation.table_capacity}
                 </span>
               </div>
             </div>
@@ -215,8 +215,8 @@ const ReservationsList = ({ selectedDate, onEdit, onDateChange }: ReservationsLi
 
       {filteredReservations?.length === 0 && (
         <div className="text-center py-12 text-muted-foreground">
-          <p>No hi ha reserves per aquesta data</p>
-          <p className="text-sm">Afegeix una nova reserva per començar</p>
+          <p>No hay reservas para esta fecha</p>
+          <p className="text-sm">Añade una nueva reserva para empezar</p>
         </div>
       )}
 

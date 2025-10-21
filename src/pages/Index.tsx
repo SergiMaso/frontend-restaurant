@@ -44,6 +44,7 @@ const Index = () => {
     }
   }).length || 0;
 
+  // Nom restaurant
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
       <div className="container mx-auto p-4 md:p-8">
@@ -55,9 +56,9 @@ const Index = () => {
             </div>
             <div>
               <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                Gestión de Reservas
+                AMARU 
               </h1>
-              <p className="text-muted-foreground">Sistema de gestión para tu restaurante</p>
+              <p className="text-muted-foreground">Sistema de gestión de reservas</p>
             </div>
           </div>
         </div>

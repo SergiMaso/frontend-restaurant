@@ -103,7 +103,7 @@ const RecurringHoursDialog = ({ open, onOpenChange }: RecurringHoursDialogProps)
   };
 
   const getDayName = (value: string) => {
-    const days = ["Dilluns", "Dimarts", "Dimecres", "Dijous", "Divendres", "Dissabte", "Diumenge"];
+    const days = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
     return days[parseInt(value)];
   };
 
@@ -111,54 +111,54 @@ const RecurringHoursDialog = ({ open, onOpenChange }: RecurringHoursDialogProps)
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Configurar horaris recurrents</DialogTitle>
+          <DialogTitle>Configurar horarios recurrentes</DialogTitle>
           <DialogDescription>
-            Aplica el mateix horari a tots els dies d'una setmana concreta
+            Aplicar el mismo horario a todos los dias de una semana concreta
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Dia de la setmana */}
           <div className="space-y-2">
-            <Label htmlFor="dayOfWeek">Dia de la setmana</Label>
+            <Label htmlFor="dayOfWeek">Día de la semana</Label>
             <Select value={dayOfWeek} onValueChange={setDayOfWeek}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="0">📅 Dilluns</SelectItem>
-                <SelectItem value="1">📅 Dimarts</SelectItem>
-                <SelectItem value="2">📅 Dimecres</SelectItem>
-                <SelectItem value="3">📅 Dijous</SelectItem>
-                <SelectItem value="4">📅 Divendres</SelectItem>
-                <SelectItem value="5">📅 Dissabte</SelectItem>
-                <SelectItem value="6">📅 Diumenge</SelectItem>
+                <SelectItem value="0">📅 Lunes</SelectItem>
+                <SelectItem value="1">📅 Martes</SelectItem>
+                <SelectItem value="2">📅 Miércoles</SelectItem>
+                <SelectItem value="3">📅 Jueves</SelectItem>
+                <SelectItem value="4">📅 Viernes</SelectItem>
+                <SelectItem value="5">📅 Sábado</SelectItem>
+                <SelectItem value="6">📅 Domingo</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {/* Període d'aplicació */}
           <div className="space-y-2">
-            <Label htmlFor="applyMonths">Aplicar durant</Label>
+            <Label htmlFor="applyMonths">Aplicar durante</Label>
             <Select value={applyMonths} onValueChange={setApplyMonths}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="1">1 mes</SelectItem>
-                <SelectItem value="3">3 mesos</SelectItem>
-                <SelectItem value="6">6 mesos</SelectItem>
-                <SelectItem value="12">1 any</SelectItem>
+                <SelectItem value="3">3 meses</SelectItem>
+                <SelectItem value="6">6 meses</SelectItem>
+                <SelectItem value="12">1 año</SelectItem>
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">
-              S'aplicarà a tots els {getDayName(dayOfWeek).toLowerCase()}s des d'avui fins d'aquí {applyMonths} {parseInt(applyMonths) === 1 ? "mes" : "mesos"}
+              Se aplicará a todos los {getDayName(dayOfWeek).toLowerCase()}s des de hoy hasta {applyMonths} {parseInt(applyMonths) === 1 ? "mes" : "meses"}
             </p>
           </div>
 
           {/* Estat del restaurant */}
           <div className="space-y-2">
-            <Label htmlFor="status">Estat del restaurant</Label>
+            <Label htmlFor="status">Estado del restaurante</Label>
             <Select value={status} onValueChange={setStatus}>
               <SelectTrigger>
                 <SelectValue />
@@ -175,10 +175,10 @@ const RecurringHoursDialog = ({ open, onOpenChange }: RecurringHoursDialogProps)
           {/* Horaris de dinar */}
           {(status === "full_day" || status === "lunch_only") && (
             <div className="space-y-2">
-              <Label className="text-base font-semibold">🍽️ Horari de dinar</Label>
+              <Label className="text-base font-semibold">🍽️ Horario de mediodía</Label>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="lunchStart">Obertura</Label>
+                  <Label htmlFor="lunchStart">Apertura</Label>
                   <Input
                     id="lunchStart"
                     type="time"
@@ -187,7 +187,7 @@ const RecurringHoursDialog = ({ open, onOpenChange }: RecurringHoursDialogProps)
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="lunchEnd">Tancament</Label>
+                  <Label htmlFor="lunchEnd">Cierre</Label>
                   <Input
                     id="lunchEnd"
                     type="time"
@@ -202,10 +202,10 @@ const RecurringHoursDialog = ({ open, onOpenChange }: RecurringHoursDialogProps)
           {/* Horaris de sopar */}
           {(status === "full_day" || status === "dinner_only") && (
             <div className="space-y-2">
-              <Label className="text-base font-semibold">🌙 Horari de sopar</Label>
+              <Label className="text-base font-semibold">🌙 Horario de noche</Label>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="dinnerStart">Obertura</Label>
+                  <Label htmlFor="dinnerStart">Apertura</Label>
                   <Input
                     id="dinnerStart"
                     type="time"
@@ -214,7 +214,7 @@ const RecurringHoursDialog = ({ open, onOpenChange }: RecurringHoursDialogProps)
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="dinnerEnd">Tancament</Label>
+                  <Label htmlFor="dinnerEnd">Cierre</Label>
                   <Input
                     id="dinnerEnd"
                     type="time"
@@ -229,14 +229,14 @@ const RecurringHoursDialog = ({ open, onOpenChange }: RecurringHoursDialogProps)
           {/* Advertència */}
           <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800">
             <p className="text-sm text-yellow-800 dark:text-yellow-200">
-              ⚠️ <strong>Atenció:</strong> Això sobreescriurà la configuració existent per a tots els {getDayName(dayOfWeek).toLowerCase()}s en el període seleccionat.
+              ⚠️ <strong>Atención:</strong> Estos horarios se aplicarán a todos los {getDayName(dayOfWeek).toLowerCase()}s en el periodo seleccionado.
             </p>
           </div>
 
           {/* Botons */}
           <div className="flex gap-2 justify-end pt-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel·lar
+              Cancelar
             </Button>
             <Button type="submit" disabled={mutation.isPending}>
               {mutation.isPending ? "Aplicant..." : "Aplicar horaris"}

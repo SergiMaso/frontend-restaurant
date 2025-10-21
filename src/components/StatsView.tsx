@@ -3,20 +3,25 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { Clock, Users, XCircle, TrendingUp, Award, AlertCircle, Calendar as CalendarIcon, Search } from "lucide-react";
-import { useState, useMemo } from "react";
+import { Clock, Users, XCircle, TrendingUp, Award, AlertCircle, Calendar as CalendarIcon, User, Phone } from "lucide-react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, isWithinInterval, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
+import { Input } from "@/components/ui/input";
+import { Command, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
 
 type TimeFilter = 'all' | 'today' | 'week' | 'month' | 'year' | 'custom';
 
 const StatsView = () => {
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
   const [customerFilter, setCustomerFilter] = useState('');
+  const [selectedCustomerPhone, setSelectedCustomerPhone] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
+  const [customerDropdownOpen, setCustomerDropdownOpen] = useState(false);
+  const [filteredCustomersDropdown, setFilteredCustomersDropdown] = useState<any[]>([]);
+  const customerInputRef = useRef<HTMLDivElement>(null);
 
   const { data: globalStats, isLoading: globalLoading } = useQuery({
     queryKey: ["globalStats"],
@@ -45,6 +50,50 @@ const StatsView = () => {
       return response.json();
     },
   });
+
+  // Filtrar clients pel dropdown quan canvia el text
+  useEffect(() => {
+    if (!customerFilter || customerFilter.length < 2) {
+      setFilteredCustomersDropdown([]);
+      setCustomerDropdownOpen(false);
+      return;
+    }
+
+    // Si ja hi ha un client seleccionat, no mostrar dropdown
+    if (selectedCustomerPhone) {
+      setCustomerDropdownOpen(false);
+      return;
+    }
+
+    const query = customerFilter.toLowerCase().trim();
+    
+    const filtered = (customers || [])
+      .filter((customer: any) => {
+        if (customer.name === 'TEMP') return false;
+        
+        const cleanPhone = customer.phone.replace(/[\s-]/g, '');
+        const cleanQuery = query.replace(/[\s-]/g, '');
+        
+        return customer.name.toLowerCase().includes(query) || 
+               cleanPhone.includes(cleanQuery);
+      })
+      .slice(0, 5);
+
+    setFilteredCustomersDropdown(filtered);
+    setCustomerDropdownOpen(filtered.length > 0);
+  }, [customerFilter, customers, selectedCustomerPhone]);
+
+  // Tancar dropdown quan es fa clic fora
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (customerInputRef.current && !customerInputRef.current.contains(event.target as Node)) {
+        setCustomerDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Calcular rango de fechas según filtro
   const getDateRange = () => {
@@ -91,8 +140,12 @@ const StatsView = () => {
       });
     }
 
-    // Filtro por cliente
-    if (customerFilter.trim()) {
+    // Filtro por cliente - MODIFICAT per usar el telèfon si està seleccionat
+    if (selectedCustomerPhone) {
+      // Si hi ha un client seleccionat, filtrar només per telèfon
+      filtered = filtered.filter((apt: any) => apt.phone === selectedCustomerPhone);
+    } else if (customerFilter.trim()) {
+      // Si només hi ha text escrit (sense seleccionar), buscar per nom o telèfon
       const query = customerFilter.toLowerCase();
       filtered = filtered.filter((apt: any) => 
         apt.client_name?.toLowerCase().includes(query) ||
@@ -101,16 +154,11 @@ const StatsView = () => {
     }
 
     return filtered;
-  }, [allAppointments, timeFilter, customerFilter, dateRange]);
+  }, [allAppointments, timeFilter, selectedCustomerPhone, customerFilter, dateRange]);
 
   // Calcular estadísticas filtradas
   const stats = useMemo(() => {
-    // Si no hay filtros, usar estadísticas globales del backend
-    if (timeFilter === 'all' && !customerFilter.trim()) {
-      return globalStats;
-    }
-
-    // Si hay filtros, calcular desde appointments filtrados
+    // SIEMPRE calcular desde appointments filtrados (incluye hoy)
     const completed = filteredAppointments.filter((apt: any) => apt.duration_minutes && !apt.no_show);
     const noShows = filteredAppointments.filter((apt: any) => apt.no_show);
     const withDelay = filteredAppointments.filter((apt: any) => apt.delay_minutes !== null && apt.delay_minutes !== undefined);
@@ -178,7 +226,7 @@ const StatsView = () => {
       total_with_delay: delays.length,
       top_customers: topCustomers,
     };
-  }, [filteredAppointments, globalStats, timeFilter, customerFilter]);
+  }, [filteredAppointments, globalStats, timeFilter, selectedCustomerPhone]);
 
   const getFilterLabel = () => {
     switch (timeFilter) {
@@ -193,6 +241,20 @@ const StatsView = () => {
         return 'Rango personalizado';
       default: return 'Siempre';
     }
+  };
+
+  const handleSelectCustomer = (customer: any) => {
+    console.log("✅ Client seleccionat per estadístiques:", customer);
+    setCustomerFilter(`${customer.name} (${customer.phone})`);
+    setSelectedCustomerPhone(customer.phone);
+    setCustomerDropdownOpen(false);
+  };
+
+  const handleClearFilters = () => {
+    setTimeFilter('all');
+    setCustomerFilter('');
+    setSelectedCustomerPhone(null);
+    setDateRange({});
   };
 
   if (globalLoading || appointmentsLoading) {
@@ -248,27 +310,63 @@ const StatsView = () => {
           </Popover>
         )}
 
-        <div className="flex-1">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder="Buscar cliente..."
-              value={customerFilter}
-              onChange={(e) => setCustomerFilter(e.target.value)}
-              className="pl-10"
-            />
-          </div>
+        {/* Campo de búsqueda de cliente con autocompletar */}
+        <div className="flex-1 relative" ref={customerInputRef}>
+          <Input
+            type="text"
+            placeholder="Buscar cliente (nombre o teléfono)..."
+            value={customerFilter}
+            onChange={(e) => {
+              setCustomerFilter(e.target.value);
+              // Si l'usuari esborra el text, netegem la selecció
+              if (e.target.value === '') {
+                setSelectedCustomerPhone(null);
+              }
+            }}
+            onFocus={() => {
+              if (customerFilter.length >= 2 && filteredCustomersDropdown.length > 0 && !selectedCustomerPhone) {
+                setCustomerDropdownOpen(true);
+              }
+            }}
+            className="w-full"
+          />
+          
+          {/* Dropdown de resultats */}
+          {customerDropdownOpen && filteredCustomersDropdown.length > 0 && (
+            <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-md shadow-lg">
+              <Command>
+                <CommandList>
+                  <CommandGroup>
+                    {filteredCustomersDropdown.map((customer) => (
+                      <CommandItem
+                        key={customer.phone}
+                        value={customer.phone}
+                        onSelect={() => handleSelectCustomer(customer)}
+                        className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-accent"
+                      >
+                        <div className="flex items-center gap-2 flex-1">
+                          <User className="h-4 w-4 text-muted-foreground" />
+                          <div className="flex flex-col">
+                            <span className="font-medium">{customer.name}</span>
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <Phone className="h-3 w-3" />
+                              {customer.phone}
+                            </div>
+                          </div>
+                        </div>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </div>
+          )}
         </div>
 
         {(timeFilter !== 'all' || customerFilter) && (
           <Button 
             variant="outline" 
-            onClick={() => {
-              setTimeFilter('all');
-              setCustomerFilter('');
-              setDateRange({});
-            }}
+            onClick={handleClearFilters}
           >
             Limpiar filtros
           </Button>

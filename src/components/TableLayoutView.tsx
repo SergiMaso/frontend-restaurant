@@ -26,7 +26,7 @@ const TableLayoutView = () => {
   return (
     <div className={`${isFullscreen ? "fixed inset-0 z-50 bg-background" : "relative"}`}>
       <div className="flex justify-between items-center mb-4 p-4">
-        <h2 className="text-2xl font-bold">Disposició de Taules</h2>
+        <h2 className="text-2xl font-bold">Disposición de las Mesas</h2>
         <Button
           variant="outline"
           size="icon"
@@ -67,7 +67,7 @@ const TableLayoutView = () => {
 
       <div className="mt-4 p-4 bg-muted/30 rounded-lg">
         <p className="text-sm text-muted-foreground">
-          💡 Vista de totes les taules del restaurant organitzades per capacitat.
+          💡 Vista de todas las mesas del restaurante.
         </p>
       </div>
     </div>

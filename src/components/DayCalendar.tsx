@@ -331,7 +331,7 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
         <div className="text-center py-8 text-muted-foreground">Carregant...</div>
       ) : !tables || tables.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
-          No hi ha taules configurades. Afegeix taules primer.
+          No hay mesas configuradas. Añade mesas primero.
         </div>
       ) : (
         <div className="border border-border/50 rounded-lg overflow-hidden bg-card">
@@ -389,7 +389,7 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
                                 height: `calc(${getReservationRowSpan(reservation)} * 20px - 4px)`,
                               }}
                               onClick={() => handleReservationClick(reservation)}
-                              title="Click per veure detalls"
+                              title="Click para ver detalles"
                             >
                               <div className="font-semibold truncate text-[9px] leading-tight">
                                 {reservation.client_name}
@@ -414,7 +414,7 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
       <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Detalls de la Reserva</DialogTitle>
+            <DialogTitle>Detalles de la Reserva</DialogTitle>
           </DialogHeader>
           
           {selectedReservation && (
@@ -451,22 +451,22 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
 
               <div className="space-y-3 text-sm">
                 <div className="flex items-start gap-2">
-                  <span className="font-semibold min-w-[100px]">👤 Nom:</span>
+                  <span className="font-semibold min-w-[100px]">👤 Nombre:</span>
                   <span>{selectedReservation.client_name}</span>
                 </div>
                 
                 <div className="flex items-start gap-2">
-                  <span className="font-semibold min-w-[100px]">📞 Telèfon:</span>
+                  <span className="font-semibold min-w-[100px]">📞 Teléfono:</span>
                   <span>{selectedReservation.phone}</span>
                 </div>
                 
                 <div className="flex items-start gap-2">
-                  <span className="font-semibold min-w-[100px]">👥 Persones:</span>
+                  <span className="font-semibold min-w-[100px]">👥 Personas:</span>
                   <span>{selectedReservation.num_people}</span>
                 </div>
                 
                 <div className="flex items-start gap-2">
-                  <span className="font-semibold min-w-[100px]">📅 Data:</span>
+                  <span className="font-semibold min-w-[100px]">📅 Fecha:</span>
                   <span>{format(parseISO(selectedReservation.date), "d 'de' MMMM 'de' yyyy")}</span>
                 </div>
                 
@@ -476,14 +476,14 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
                 </div>
                 
                 <div className="flex items-start gap-2">
-                  <span className="font-semibold min-w-[100px]">🪑 Taula:</span>
+                  <span className="font-semibold min-w-[100px]">🪑 Mesa:</span>
                   <span>Mesa {selectedReservation.table_number} (capacitat {selectedReservation.table_capacity})</span>
                 </div>
                 
                 {selectedReservation.notes && (
                   <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-200 dark:border-blue-800">
                     <div className="flex items-start gap-2">
-                      <span className="font-semibold">📝 Notes:</span>
+                      <span className="font-semibold">📝 Notas:</span>
                     </div>
                     <p className="mt-1 text-sm whitespace-pre-wrap">{selectedReservation.notes}</p>
                   </div>

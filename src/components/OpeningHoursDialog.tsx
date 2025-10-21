@@ -20,7 +20,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { ca } from "date-fns/locale";
+import { es } from "date-fns/locale";
 import { setOpeningHours, type SetOpeningHoursData } from "@/services/api";
 
 interface OpeningHoursDialogProps {
@@ -123,16 +123,16 @@ const OpeningHoursDialog = ({ open, onOpenChange, date, initialData }: OpeningHo
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Configurar horaris</DialogTitle>
+          <DialogTitle>Configurar horarios</DialogTitle>
           <DialogDescription>
-            {format(date, "EEEE, d 'de' MMMM 'de' yyyy", { locale: ca })}
+            {format(date, "EEEE, d 'de' MMMM 'de' yyyy", { locale: es })}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Estat del restaurant */}
           <div className="space-y-2">
-            <Label htmlFor="status">Estat del restaurant</Label>
+            <Label htmlFor="status">Estado del restaurante</Label>
             <Select value={status} onValueChange={setStatus}>
               <SelectTrigger>
                 <SelectValue />
@@ -149,10 +149,10 @@ const OpeningHoursDialog = ({ open, onOpenChange, date, initialData }: OpeningHo
           {/* Horaris de dinar */}
           {(status === "full_day" || status === "lunch_only") && (
             <div className="space-y-2">
-              <Label className="text-base font-semibold">🍽️ Horari de dinar</Label>
+              <Label className="text-base font-semibold">🍽️ Horario mediodía</Label>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="lunchStart">Obertura</Label>
+                  <Label htmlFor="lunchStart">Apertura</Label>
                   <Input
                     id="lunchStart"
                     type="time"
@@ -161,7 +161,7 @@ const OpeningHoursDialog = ({ open, onOpenChange, date, initialData }: OpeningHo
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="lunchEnd">Tancament</Label>
+                  <Label htmlFor="lunchEnd">Cierre</Label>
                   <Input
                     id="lunchEnd"
                     type="time"
@@ -176,10 +176,10 @@ const OpeningHoursDialog = ({ open, onOpenChange, date, initialData }: OpeningHo
           {/* Horaris de sopar */}
           {(status === "full_day" || status === "dinner_only") && (
             <div className="space-y-2">
-              <Label className="text-base font-semibold">🌙 Horari de sopar</Label>
+              <Label className="text-base font-semibold">🌙 Horario noche</Label>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="dinnerStart">Obertura</Label>
+                  <Label htmlFor="dinnerStart">Apertura</Label>
                   <Input
                     id="dinnerStart"
                     type="time"
@@ -188,7 +188,7 @@ const OpeningHoursDialog = ({ open, onOpenChange, date, initialData }: OpeningHo
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="dinnerEnd">Tancament</Label>
+                  <Label htmlFor="dinnerEnd">Cierre</Label>
                   <Input
                     id="dinnerEnd"
                     type="time"
@@ -202,7 +202,7 @@ const OpeningHoursDialog = ({ open, onOpenChange, date, initialData }: OpeningHo
 
           {/* Notes */}
           <div className="space-y-2">
-            <Label htmlFor="notes">Notes internes (opcional)</Label>
+            <Label htmlFor="notes">Notas internas (opcional)</Label>
             <Textarea
               id="notes"
               value={notes}
@@ -211,7 +211,7 @@ const OpeningHoursDialog = ({ open, onOpenChange, date, initialData }: OpeningHo
               rows={3}
             />
             <p className="text-xs text-muted-foreground">
-              Aquestes notes només són visibles internament
+              Estas notas solo son visibles por el personal del restaurante
             </p>
           </div>
 
