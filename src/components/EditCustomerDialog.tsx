@@ -128,7 +128,7 @@ const EditCustomerDialog = ({ open, onOpenChange, customer }: EditCustomerDialog
 
   // Lista completa de idiomas comunes
   const languages = [
-    { value: 'ca', label: 'Català', flag: '' },
+    { value: 'ca', label: '🌍 Català', flag: '🌍' },
     { value: 'es', label: '🇪🇸 Español', flag: '🇪🇸' },
     { value: 'en', label: '🇬🇧 English', flag: '🇬🇧' },
     { value: 'fr', label: '🇫🇷 Français', flag: '🇫🇷' },

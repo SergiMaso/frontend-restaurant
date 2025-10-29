@@ -64,7 +64,7 @@ const CustomersList = () => {
 
   const getLanguageLabel = (lang: string) => {
     const languages: { [key: string]: string } = {
-      'ca': '🇪🇸 Català',
+      'ca': '🌍 Català',
       'es': '🇪🇸 Español',
       'en': '🇬🇧 English',
       'fr': '🇫🇷 Français',
