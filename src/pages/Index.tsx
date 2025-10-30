@@ -18,6 +18,10 @@ import TableDialog from "@/components/TableDialog";
 import ReservationDialog from "@/components/ReservationDialog";
 import TableLayoutView from "@/components/TableLayoutView";
 import { getAppointments } from "@/services/api";
+import { LogOut, User } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 const Index = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -27,6 +31,15 @@ const Index = () => {
   const [editingReservation, setEditingReservation] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("horario");
 
+  const { user, logout } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
+  };
+
+  const getInitials = (name: string) => {
+    return name.split(' ').map(word => word[0]).join('').toUpperCase().substring(0, 2);
+  };
   // Obtenir reserves per calcular les d'avui
   const { data: allAppointments } = useQuery({
     queryKey: ["appointments"],
@@ -50,18 +63,46 @@ const Index = () => {
       <div className="container mx-auto p-4 md:p-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-elegant">
-              <UtensilsCrossed className="h-6 w-6 text-primary-foreground" />
+          <div className="flex items-center justify-between mb-2"></div>
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-elegant">
+                <UtensilsCrossed className="h-6 w-6 text-primary-foreground" />
+              </div>
+              <div>
+                <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                  AMARU 
+                </h1>
+                <p className="text-muted-foreground">Sistema de gestión de reservas</p>
+              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                    <Avatar>
+                      <AvatarFallback className="bg-primary text-primary-foreground">
+                        {user ? getInitials(user.full_name) : 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">{user?.full_name}</p>
+                      <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
+                      <p className="text-xs leading-none text-muted-foreground capitalize">
+                        Rol: {user?.role === 'owner' ? 'Propietari' : user?.role === 'admin' ? 'Administrador' : 'Personal'}
+                      </p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="text-destructive cursor-pointer">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Tancar Sessió</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
-            <div>
-              <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                AMARU 
-              </h1>
-              <p className="text-muted-foreground">Sistema de gestión de reservas</p>
-            </div>
-          </div>
-        </div>
+          </div>  
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
