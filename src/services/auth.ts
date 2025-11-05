@@ -1,6 +1,9 @@
 // Auth Service per connectar amb el backend d'autenticació
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+
+// DEBUG: Veure quina URL s'està usant
+console.log('🔧 API_URL configurada:', API_URL);
 
 export interface User {
   id: number;

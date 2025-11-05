@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { format, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
-import { Calendar, Users, UtensilsCrossed, Plus, LayoutGrid, Clock, FileImage, BarChart3 } from "lucide-react";
+import { Calendar, Users, UtensilsCrossed, Plus, LayoutGrid, Clock, FileImage, BarChart3, UserCog } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -14,6 +14,7 @@ import ReservationsList from "@/components/ReservationsList";
 import CustomersList from "@/components/CustomersList";
 import MediaManager from "@/components/MediaManager";
 import StatsView from "@/components/StatsView";
+import UserManagement from "@/components/UserManagement";
 import TableDialog from "@/components/TableDialog";
 import ReservationDialog from "@/components/ReservationDialog";
 import TableLayoutView from "@/components/TableLayoutView";
@@ -160,7 +161,7 @@ const Index = () => {
 
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-8 max-w-6xl mx-auto">
+          <TabsList className={`grid w-full ${user?.role === 'owner' ? 'grid-cols-9' : 'grid-cols-8'} max-w-6xl mx-auto`}>
             <TabsTrigger value="calendario">
               <Calendar className="h-4 w-4 mr-2" />
               Calendario
@@ -187,6 +188,12 @@ const Index = () => {
               <BarChart3 className="h-4 w-4 mr-2" />
               Estadísticas
             </TabsTrigger>
+            {user?.role === 'owner' && (
+              <TabsTrigger value="users">
+                <UserCog className="h-4 w-4 mr-2" />
+                Usuarios
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="calendario" className="space-y-6">
@@ -338,6 +345,12 @@ const Index = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {user?.role === 'owner' && (
+            <TabsContent value="users" className="space-y-4">
+              <UserManagement />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
 
