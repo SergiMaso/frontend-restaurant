@@ -45,11 +45,21 @@ export const useRestaurantConfig = () => {
   const maxPeoplePerBooking = getConfigNumber("max_people_per_booking", 8);
   const defaultBookingDuration = getConfigNumber("default_booking_duration_hours", 2);
 
+  // Time slots configuration
+  const timeSlotsMode = getConfigValue("time_slots_mode", "interval");
+  const timeSlotIntervalMinutes = getConfigNumber("time_slot_interval_minutes", 30);
+  const fixedTimeSlotsLunch = getConfigValue("fixed_time_slots_lunch", "13:00,15:00");
+  const fixedTimeSlotsDinner = getConfigValue("fixed_time_slots_dinner", "20:00,21:30");
+
   // DEBUG: Mostrar valors finals
   console.log("🎯 [useRestaurantConfig] Valors finals:", {
     restaurantName,
     maxPeoplePerBooking,
-    defaultBookingDuration
+    defaultBookingDuration,
+    timeSlotsMode,
+    timeSlotIntervalMinutes,
+    fixedTimeSlotsLunch,
+    fixedTimeSlotsDinner
   });
 
   return {
@@ -63,5 +73,9 @@ export const useRestaurantConfig = () => {
     restaurantName,
     maxPeoplePerBooking,
     defaultBookingDuration,
+    timeSlotsMode,
+    timeSlotIntervalMinutes,
+    fixedTimeSlotsLunch,
+    fixedTimeSlotsDinner,
   };
 };

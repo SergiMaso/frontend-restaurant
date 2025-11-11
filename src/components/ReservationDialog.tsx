@@ -41,21 +41,59 @@ interface ReservationDialogProps {
   reservation?: any;
 }
 
+// Funció per generar time slots
+const generateTimeSlots = (mode: string, intervalMinutes: number, fixedLunch: string, fixedDinner: string): string[] => {
+  const slots: string[] = [];
+
+  if (mode === 'fixed') {
+    // Time slots fixos
+    const lunchSlots = fixedLunch.split(',').map(s => s.trim()).filter(s => s);
+    const dinnerSlots = fixedDinner.split(',').map(s => s.trim()).filter(s => s);
+    return [...lunchSlots, ...dinnerSlots].sort();
+  } else {
+    // Time slots per intervals (de 12:00 a 23:45)
+    for (let hour = 12; hour < 24; hour++) {
+      for (let min = 0; min < 60; min += intervalMinutes) {
+        const timeStr = `${hour.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}`;
+        slots.push(timeStr);
+      }
+    }
+    return slots;
+  }
+};
+
 const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialogProps) => {
   const queryClient = useQueryClient();
-  const { maxPeoplePerBooking, defaultBookingDuration } = useRestaurantConfig();
+  const {
+    maxPeoplePerBooking,
+    defaultBookingDuration,
+    timeSlotsMode,
+    timeSlotIntervalMinutes,
+    fixedTimeSlotsLunch,
+    fixedTimeSlotsDinner
+  } = useRestaurantConfig();
+
+  // Generar time slots disponibles
+  const availableTimeSlots = generateTimeSlots(
+    timeSlotsMode,
+    timeSlotIntervalMinutes,
+    fixedTimeSlotsLunch,
+    fixedTimeSlotsDinner
+  );
 
   // DEBUG: Mostrar valors del hook
   console.log("🔍 [ReservationDialog] Valors del hook:", {
     maxPeoplePerBooking,
-    defaultBookingDuration
+    defaultBookingDuration,
+    timeSlotsMode,
+    availableTimeSlots: availableTimeSlots.length
   });
 
   const [clientName, setClientName] = useState("");
   const [phone, setPhone] = useState("");
   const [numPeople, setNumPeople] = useState("");
   const [reservationDate, setReservationDate] = useState(format(new Date(), "yyyy-MM-dd"));
-  const [reservationTime, setReservationTime] = useState("20:00");
+  const [reservationTime, setReservationTime] = useState(availableTimeSlots[0] || "20:00");
   const [endTime, setEndTime] = useState("");
   const [autoEndTime, setAutoEndTime] = useState(true);
   const [language, setLanguage] = useState("ca");
@@ -83,12 +121,27 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
       try {
         const startDate = parse(reservationTime, "HH:mm", new Date());
         const endDate = addHours(startDate, defaultBookingDuration);
-        setEndTime(format(endDate, "HH:mm"));
+        const calculatedEndTime = format(endDate, "HH:mm");
+
+        // Buscar el time slot més proper a l'hora calculada
+        const endMinutes = endDate.getHours() * 60 + endDate.getMinutes();
+        const closestSlot = availableTimeSlots.reduce((closest, slot) => {
+          const [h, m] = slot.split(':').map(Number);
+          const slotMinutes = h * 60 + m;
+          const [ch, cm] = closest.split(':').map(Number);
+          const closestMinutes = ch * 60 + cm;
+
+          return Math.abs(slotMinutes - endMinutes) < Math.abs(closestMinutes - endMinutes)
+            ? slot
+            : closest;
+        }, availableTimeSlots[0] || calculatedEndTime);
+
+        setEndTime(closestSlot);
       } catch (e) {
         console.error("Error calculant hora final:", e);
       }
     }
-  }, [reservationTime, autoEndTime, defaultBookingDuration]);
+  }, [reservationTime, autoEndTime, defaultBookingDuration, availableTimeSlots]);
 
   useEffect(() => {
     console.log("🔍 DEBUG: reservation changed:", reservation);
@@ -314,47 +367,47 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
 
               <div className="space-y-2">
                 <Label htmlFor="reservationTime">
-                  Hora d'Inici <span className="text-destructive">*</span>
+                  Hora de Inicio <span className="text-destructive">*</span>
                 </Label>
-                <Input
-                  id="reservationTime"
-                  type="time"
-                  value={reservationTime}
-                  onChange={(e) => setReservationTime(e.target.value)}
-                  required
-                />
+                <Select value={reservationTime} onValueChange={setReservationTime}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona hora" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableTimeSlots.map((slot) => (
+                      <SelectItem key={slot} value={slot}>
+                        {slot}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="endTime">Hora Final</Label>
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      id="autoEndTime"
-                      checked={autoEndTime}
-                      onCheckedChange={(checked) => setAutoEndTime(checked as boolean)}
-                    />
-                    <label
-                      htmlFor="autoEndTime"
-                      className="text-sm text-muted-foreground cursor-pointer"
-                    >
-                      Automàtic
-                    </label>
-                  </div>
+                  <Label htmlFor="endTime">Hora de Fin</Label>
+                  <Checkbox
+                    id="autoEndTime"
+                    checked={autoEndTime}
+                    onCheckedChange={(checked) => setAutoEndTime(checked as boolean)}
+                  />
                 </div>
-                <Input
-                  id="endTime"
-                  type="time"
+                <Select
                   value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
+                  onValueChange={setEndTime}
                   disabled={autoEndTime}
-                  placeholder="22:00"
-                />
-                {autoEndTime && (
-                  <p className="text-xs text-muted-foreground">
-                    Duració automàtica: {defaultBookingDuration}h
-                  </p>
-                )}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Automático" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableTimeSlots.map((slot) => (
+                      <SelectItem key={slot} value={slot}>
+                        {slot}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
