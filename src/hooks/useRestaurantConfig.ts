@@ -31,7 +31,8 @@ export const useRestaurantConfig = () => {
   // Helper per obtenir un valor numèric
   const getConfigNumber = (key: string, defaultValue: number = 0): number => {
     const value = getConfigValue(key, defaultValue.toString());
-    const parsed = parseInt(value, 10);
+    // Usar parseFloat per suportar decimals (ex: 1.5 hores)
+    const parsed = parseFloat(value);
     return isNaN(parsed) ? defaultValue : parsed;
   };
 
