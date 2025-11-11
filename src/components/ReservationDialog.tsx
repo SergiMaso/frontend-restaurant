@@ -121,27 +121,12 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
       try {
         const startDate = parse(reservationTime, "HH:mm", new Date());
         const endDate = addHours(startDate, defaultBookingDuration);
-        const calculatedEndTime = format(endDate, "HH:mm");
-
-        // Buscar el time slot més proper a l'hora calculada
-        const endMinutes = endDate.getHours() * 60 + endDate.getMinutes();
-        const closestSlot = availableTimeSlots.reduce((closest, slot) => {
-          const [h, m] = slot.split(':').map(Number);
-          const slotMinutes = h * 60 + m;
-          const [ch, cm] = closest.split(':').map(Number);
-          const closestMinutes = ch * 60 + cm;
-
-          return Math.abs(slotMinutes - endMinutes) < Math.abs(closestMinutes - endMinutes)
-            ? slot
-            : closest;
-        }, availableTimeSlots[0] || calculatedEndTime);
-
-        setEndTime(closestSlot);
+        setEndTime(format(endDate, "HH:mm"));
       } catch (e) {
         console.error("Error calculant hora final:", e);
       }
     }
-  }, [reservationTime, autoEndTime, defaultBookingDuration, availableTimeSlots]);
+  }, [reservationTime, autoEndTime, defaultBookingDuration]);
 
   useEffect(() => {
     console.log("🔍 DEBUG: reservation changed:", reservation);
@@ -392,22 +377,14 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
                     onCheckedChange={(checked) => setAutoEndTime(checked as boolean)}
                   />
                 </div>
-                <Select
+                <Input
+                  id="endTime"
+                  type="time"
                   value={endTime}
-                  onValueChange={setEndTime}
+                  onChange={(e) => setEndTime(e.target.value)}
                   disabled={autoEndTime}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Automático" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableTimeSlots.map((slot) => (
-                      <SelectItem key={slot} value={slot}>
-                        {slot}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  placeholder="22:00"
+                />
               </div>
 
               <div className="space-y-2">

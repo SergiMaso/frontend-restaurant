@@ -462,6 +462,13 @@ const Index = () => {
           if (!open) setEditingTable(null);
         }}
         table={editingTable}
+        allTables={[]}
+        onSave={(data) => {
+          console.log("TableDialog onSave called with:", data);
+          // Aquest diàleg no s'hauria d'usar aquí, millor usar des de TablesList
+          setTableDialogOpen(false);
+        }}
+        mode={editingTable ? 'edit' : 'create'}
       />
 
       <ReservationDialog
