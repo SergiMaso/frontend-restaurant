@@ -207,7 +207,7 @@ const ClientConfigManager = () => {
           <div className="flex items-start gap-3">
             <div className="text-primary mt-0.5">ℹ️</div>
             <div className="text-sm text-muted-foreground space-y-1">
-              <p className="font-medium text-foreground">Informació:</p>
+              <p className="font-medium text-foreground">Información:</p>
               <ul className="list-disc list-inside space-y-1">
                 <li>
                   Los cambios se aplican instantaneamente
