@@ -39,7 +39,6 @@ import MediaManager from "@/components/MediaManager";
 import StatsView from "@/components/StatsView";
 import UserManagement from "@/components/UserManagement";
 import ClientConfigManager from "@/components/ClientConfigManager";
-import TableDialog from "@/components/TableDialog";
 import ReservationDialog from "@/components/ReservationDialog";
 import TableLayoutView from "@/components/TableLayoutView";
 import { getAppointments } from "@/services/api";
@@ -57,9 +56,7 @@ import { useRestaurantConfig } from "@/hooks/useRestaurantConfig";
 
 const Index = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [tableDialogOpen, setTableDialogOpen] = useState(false);
   const [reservationDialogOpen, setReservationDialogOpen] = useState(false);
-  const [editingTable, setEditingTable] = useState<any>(null);
   const [editingReservation, setEditingReservation] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("horario");
 
@@ -336,31 +333,15 @@ const Index = () => {
           <TabsContent value="tables" className="space-y-4">
             <Card className="border-border/50 shadow-card">
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Gestión de Mesas</CardTitle>
-                    <CardDescription>
-                      Administra las mesas del restaurante
-                    </CardDescription>
-                  </div>
-                  <Button
-                    onClick={() => {
-                      setEditingTable(null);
-                      setTableDialogOpen(true);
-                    }}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Añadir Mesa
-                  </Button>
+                <div>
+                  <CardTitle>Gestión de Mesas</CardTitle>
+                  <CardDescription>
+                    Administra las mesas del restaurante
+                  </CardDescription>
                 </div>
               </CardHeader>
               <CardContent>
-                <TablesList
-                  onEdit={(table) => {
-                    setEditingTable(table);
-                    setTableDialogOpen(true);
-                  }}
-                />
+                <TablesList />
               </CardContent>
             </Card>
           </TabsContent>
@@ -455,22 +436,6 @@ const Index = () => {
       </div>
 
       {/* DIALOGS */}
-      <TableDialog
-        open={tableDialogOpen}
-        onOpenChange={(open) => {
-          setTableDialogOpen(open);
-          if (!open) setEditingTable(null);
-        }}
-        table={editingTable}
-        allTables={[]}
-        onSave={(data) => {
-          console.log("TableDialog onSave called with:", data);
-          // Aquest diàleg no s'hauria d'usar aquí, millor usar des de TablesList
-          setTableDialogOpen(false);
-        }}
-        mode={editingTable ? 'edit' : 'create'}
-      />
-
       <ReservationDialog
         open={reservationDialogOpen}
         onOpenChange={(open) => {
