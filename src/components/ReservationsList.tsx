@@ -179,13 +179,26 @@ const ReservationsList = ({ selectedDate, onEdit, onDateChange }: ReservationsLi
                 <Phone className="h-3 w-3" />
                 {reservation.phone}
               </div>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline">
-                  Mesa {reservation.table_number}
-                </Badge>
-                <span className="text-xs text-muted-foreground">
-                  Capacidad: {reservation.table_capacity}
-                </span>
+              <div className="flex items-center gap-2 flex-wrap">
+                {reservation.table_ids && reservation.table_ids.length > 1 ? (
+                  <>
+                    <Badge className="bg-yellow-500 text-white hover:bg-yellow-600">
+                      📍 Mesas {reservation.table_numbers || reservation.table_ids.join('+')}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">
+                      {reservation.table_ids.length} mesas · Capacidad total: {reservation.table_capacity}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Badge variant="outline">
+                      Mesa {reservation.table_numbers || reservation.table_number || 'N/A'}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">
+                      Capacidad: {reservation.table_capacity}
+                    </span>
+                  </>
+                )}
               </div>
             </div>
 
