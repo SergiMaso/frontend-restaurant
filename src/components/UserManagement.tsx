@@ -46,10 +46,10 @@ const UserManagement = () => {
     mutationFn: sendInvitation,
     onSuccess: (data) => {
       toast({
-        title: "Invitació enviada",
+        title: "Invitación enviada",
         description: data.email_sent 
-          ? `Invitació enviada a ${email}` 
-          : "Invitació creada. Copia el link i envia'l manualment.",
+          ? `Invitación enviada a ${email}` 
+          : "Invitación creada. Copia el link y envialo manualmente.",
       });
       
       // Si hi ha link manual, mostrar-lo
@@ -67,7 +67,7 @@ const UserManagement = () => {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message || "No s'ha pogut enviar la invitació",
+        description: error.message || "No se ha podido enviar la invitación",
       });
     },
   });
@@ -77,8 +77,8 @@ const UserManagement = () => {
     mutationFn: deactivateUser,
     onSuccess: () => {
       toast({
-        title: "Usuari desactivat",
-        description: "L'usuari ha estat desactivat correctament",
+        title: "Usuario desactivado",
+        description: "El usuario ha sido desactivado correctamente",
       });
       queryClient.invalidateQueries({ queryKey: ['users'] });
     },
@@ -86,7 +86,7 @@ const UserManagement = () => {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message || "No s'ha pogut desactivar l'usuari",
+        description: error.message || "No se ha podido desactivar el usuario",
       });
     },
   });
@@ -96,7 +96,7 @@ const UserManagement = () => {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "L'email és obligatori",
+        description: "El email es obligatorio",
       });
       return;
     }
@@ -115,8 +115,8 @@ const UserManagement = () => {
       setTimeout(() => setCopiedLink(false), 2000);
       
       toast({
-        title: "Link copiat",
-        description: "El link de registre s'ha copiat al portapapers",
+        title: "Link copiado",
+        description: "El link ha sido copiado al portapapeles",
       });
     }
   };
@@ -157,22 +157,22 @@ const UserManagement = () => {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Gestió d'Usuaris</CardTitle>
-              <CardDescription>Administra els usuaris del sistema</CardDescription>
+              <CardTitle>Gestión de Usuarios</CardTitle>
+              <CardDescription>Administra los usuarios del sistema</CardDescription>
             </div>
             
             <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
               <DialogTrigger asChild>
                 <Button>
                   <UserPlus className="h-4 w-4 mr-2" />
-                  Invitar Usuari
+                  Invitar Usuario
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Invitar Nou Usuari</DialogTitle>
+                  <DialogTitle>Invitar Nuevo Usuario</DialogTitle>
                   <DialogDescription>
-                    Envia una invitació per email perquè es pugui registrar al sistema
+                    Envia una invitación por email para que el usuario se registre en la plataforma.
                   </DialogDescription>
                 </DialogHeader>
                 
@@ -180,7 +180,7 @@ const UserManagement = () => {
                   // Mostrar link de registre
                   <div className="space-y-4">
                     <div className="p-4 bg-muted rounded-md">
-                      <p className="text-sm font-medium mb-2">Link de registre:</p>
+                      <p className="text-sm font-medium mb-2">Link de registro:</p>
                       <p className="text-xs break-all">{registerLink}</p>
                     </div>
                     
@@ -192,7 +192,7 @@ const UserManagement = () => {
                       {copiedLink ? (
                         <>
                           <CheckCircle2 className="h-4 w-4 mr-2" />
-                          Copiat!
+                          Copiado!
                         </>
                       ) : (
                         <>
@@ -212,7 +212,7 @@ const UserManagement = () => {
                       variant="outline"
                       className="w-full"
                     >
-                      Tancar
+                      Cerrar
                     </Button>
                   </div>
                 ) : (
@@ -237,8 +237,8 @@ const UserManagement = () => {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="admin">Administrador (pot gestionar reserves i clients)</SelectItem>
-                            <SelectItem value="staff">Personal (només pot veure)</SelectItem>
+                            <SelectItem value="admin">Administrador (puede gestionar reservas y clientes)</SelectItem>
+                            <SelectItem value="staff">Personal (solo visualización)</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -246,7 +246,7 @@ const UserManagement = () => {
                     
                     <DialogFooter>
                       <Button variant="outline" onClick={() => setInviteDialogOpen(false)}>
-                        Cancel·lar
+                        Cancelar
                       </Button>
                       <Button onClick={handleInvite} disabled={inviteMutation.isPending}>
                         {inviteMutation.isPending ? 'Enviant...' : 'Enviar Invitació'}
@@ -263,12 +263,12 @@ const UserManagement = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Nom</TableHead>
+                <TableHead>Nombre</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Rol</TableHead>
-                <TableHead>Estat</TableHead>
-                <TableHead>Últim Login</TableHead>
-                <TableHead className="text-right">Accions</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead>Último Login</TableHead>
+                <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -301,12 +301,12 @@ const UserManagement = () => {
                           <AlertDialogHeader>
                             <AlertDialogTitle>Desactivar usuari</AlertDialogTitle>
                             <AlertDialogDescription>
-                              Estàs segur que vols desactivar a {user.full_name}? 
-                              No podrà accedir al sistema fins que el tornis a activar.
+                              Estás seguro que quieres desactivar a {user.full_name}? 
+                              No podrá acceder al sistema hasta que lo re-activen.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel·lar</AlertDialogCancel>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
                             <AlertDialogAction 
                               onClick={() => handleDeactivate(user.id)}
                               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -325,7 +325,7 @@ const UserManagement = () => {
           
           {users.length === 0 && (
             <div className="text-center py-12 text-muted-foreground">
-              No hi ha usuaris registrats
+              No hay usuarios registrados
             </div>
           )}
         </CardContent>

@@ -389,3 +389,47 @@ export async function updateWeeklyDefault(
   
   return response.json();
 }
+
+// ==========================================
+// CLIENT CONFIGURATION
+// ==========================================
+
+export interface ClientConfig {
+  key: string;
+  value: string;
+  value_type: string;
+  category: string;
+  description: string;
+  updated_at: string;
+}
+
+export async function getClientConfigs(): Promise<ClientConfig[]> {
+  const response = await fetch(`${API_URL}/api/config`, {
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Error obtenint configuració');
+  }
+
+  return response.json();
+}
+
+export async function updateClientConfig(key: string, value: string): Promise<any> {
+  const response = await fetch(`${API_URL}/api/config/${key}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+    body: JSON.stringify({ value }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Error actualitzant configuració');
+  }
+
+  return response.json();
+}

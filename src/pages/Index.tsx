@@ -1,10 +1,33 @@
 import { useState } from "react";
 import { format, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
-import { Calendar, Users, UtensilsCrossed, Plus, LayoutGrid, Clock, FileImage, BarChart3, UserCog } from "lucide-react";
+import {
+  Calendar,
+  Users,
+  UtensilsCrossed,
+  Plus,
+  LayoutGrid,
+  Clock,
+  FileImage,
+  BarChart3,
+  UserCog,
+  Settings,
+  LogOut,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 import { useQuery } from "@tanstack/react-query";
 import DayCalendar from "@/components/DayCalendar";
 import OpeningHoursCalendar from "@/components/OpeningHoursCalendar";
@@ -15,13 +38,20 @@ import CustomersList from "@/components/CustomersList";
 import MediaManager from "@/components/MediaManager";
 import StatsView from "@/components/StatsView";
 import UserManagement from "@/components/UserManagement";
+import ClientConfigManager from "@/components/ClientConfigManager";
 import TableDialog from "@/components/TableDialog";
 import ReservationDialog from "@/components/ReservationDialog";
 import TableLayoutView from "@/components/TableLayoutView";
 import { getAppointments } from "@/services/api";
-import { LogOut, User } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 const Index = () => {
@@ -39,8 +69,14 @@ const Index = () => {
   };
 
   const getInitials = (name: string) => {
-    return name.split(' ').map(word => word[0]).join('').toUpperCase().substring(0, 2);
+    return name
+      .split(" ")
+      .map((word) => word[0])
+      .join("")
+      .toUpperCase()
+      .substring(0, 2);
   };
+
   // Obtenir reserves per calcular les d'avui
   const { data: allAppointments } = useQuery({
     queryKey: ["appointments"],
@@ -48,66 +84,82 @@ const Index = () => {
   });
 
   // Comptar reserves d'avui (confirmed + completed)
-  const todayReservations = allAppointments?.filter((apt) => {
-    if (apt.status !== 'confirmed' && apt.status !== 'completed') return false;
-    try {
-      const aptDate = new Date(apt.date);
-      return isSameDay(aptDate, new Date());
-    } catch {
-      return false;
-    }
-  }).length || 0;
+  const todayReservations =
+    allAppointments?.filter((apt: any) => {
+      if (apt.status !== "confirmed" && apt.status !== "completed") return false;
+      try {
+        const aptDate = new Date(apt.date);
+        return isSameDay(aptDate, new Date());
+      } catch {
+        return false;
+      }
+    }).length || 0;
 
-  // Nom restaurant
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
       <div className="container mx-auto p-4 md:p-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-2"></div>
+          <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-3">
               <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-elegant">
                 <UtensilsCrossed className="h-6 w-6 text-primary-foreground" />
               </div>
               <div>
                 <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                  AMARU 
+                  AMARU
                 </h1>
-                <p className="text-muted-foreground">Sistema de gestión de reservas</p>
+                <p className="text-muted-foreground">
+                  Sistema de gestión de reservas
+                </p>
               </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                    <Avatar>
-                      <AvatarFallback className="bg-primary text-primary-foreground">
-                        {user ? getInitials(user.full_name) : 'U'}
-                      </AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>
-                    <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">{user?.full_name}</p>
-                      <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
-                      <p className="text-xs leading-none text-muted-foreground capitalize">
-                        Rol: {user?.role === 'owner' ? 'Propietari' : user?.role === 'admin' ? 'Administrador' : 'Personal'}
-                      </p>
-                    </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} className="text-destructive cursor-pointer">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Tancar Sessió</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
             </div>
-          </div>  
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                  <Avatar>
+                    <AvatarFallback className="bg-primary text-primary-foreground">
+                      {user ? getInitials(user.full_name) : "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">
+                      {user?.full_name}
+                    </p>
+                    <p className="text-xs leading-none text-muted-foreground">
+                      {user?.email}
+                    </p>
+                    <p className="text-xs leading-none text-muted-foreground capitalize">
+                      Rol:{" "}
+                      {user?.role === "owner"
+                        ? "Propietari"
+                        : user?.role === "admin"
+                        ? "Administrador"
+                        : "Personal"}
+                    </p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  className="text-destructive cursor-pointer"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Tancar Sessió</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          {/* 1. Fecha Seleccionada */}
+          {/* Fecha Seleccionada */}
           <Card className="border-border/50 shadow-card hover:shadow-elegant transition-all duration-300">
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-semibold flex items-center gap-2">
@@ -116,11 +168,13 @@ const Index = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold">{format(selectedDate, "d 'de' MMMM", { locale: es })}</p>
+              <p className="text-2xl font-bold">
+                {format(selectedDate, "d 'de' MMMM", { locale: es })}
+              </p>
             </CardContent>
           </Card>
 
-          {/* 2. Acciones Rápidas - SOLO Nueva Reserva */}
+          {/* Acción Rápida */}
           <Card className="border-border/50 shadow-card hover:shadow-elegant transition-all duration-300">
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-semibold flex items-center gap-2">
@@ -129,8 +183,8 @@ const Index = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="flex items-center justify-center">
-              <Button 
-                onClick={() => setReservationDialogOpen(true)} 
+              <Button
+                onClick={() => setReservationDialogOpen(true)}
                 size="lg"
                 className="w-full max-w-xs"
               >
@@ -140,7 +194,7 @@ const Index = () => {
             </CardContent>
           </Card>
 
-          {/* 3. Reservas de Hoy */}
+          {/* Reservas de Hoy */}
           <Card className="border-border/50 shadow-card hover:shadow-elegant transition-all duration-300">
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-semibold flex items-center gap-2">
@@ -150,9 +204,11 @@ const Index = () => {
             </CardHeader>
             <CardContent>
               <div className="flex items-baseline gap-2">
-                <p className="text-3xl font-bold text-primary">{todayReservations}</p>
+                <p className="text-3xl font-bold text-primary">
+                  {todayReservations}
+                </p>
                 <p className="text-sm text-muted-foreground">
-                  {todayReservations === 1 ? 'reserva' : 'reservas'}
+                  {todayReservations === 1 ? "reserva" : "reservas"}
                 </p>
               </div>
             </CardContent>
@@ -161,7 +217,11 @@ const Index = () => {
 
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className={`grid w-full ${user?.role === 'owner' ? 'grid-cols-9' : 'grid-cols-8'} max-w-6xl mx-auto`}>
+          <TabsList
+            className={`grid w-full ${
+              user?.role === "owner" ? "grid-cols-9" : "grid-cols-7"
+            } max-w-6xl mx-auto`}
+          >
             <TabsTrigger value="calendario">
               <Calendar className="h-4 w-4 mr-2" />
               Calendario
@@ -188,16 +248,23 @@ const Index = () => {
               <BarChart3 className="h-4 w-4 mr-2" />
               Estadísticas
             </TabsTrigger>
-            {user?.role === 'owner' && (
-              <TabsTrigger value="users">
-                <UserCog className="h-4 w-4 mr-2" />
-                Usuarios
-              </TabsTrigger>
+
+            {user?.role === "owner" && (
+              <>
+                <TabsTrigger value="users">
+                  <UserCog className="h-4 w-4 mr-2" />
+                  Usuarios
+                </TabsTrigger>
+                <TabsTrigger value="config">
+                  <Settings className="h-4 w-4 mr-2" />
+                  Config
+                </TabsTrigger>
+              </>
             )}
           </TabsList>
 
+          {/* CALENDARIO */}
           <TabsContent value="calendario" className="space-y-6">
-            {/* Horaris per dia de la setmana */}
             <Card className="border-border/50 shadow-card">
               <CardHeader>
                 <CardTitle>Configuración Semanal</CardTitle>
@@ -210,7 +277,6 @@ const Index = () => {
               </CardContent>
             </Card>
 
-            {/* Calendari amb excepcions */}
             <Card className="border-border/50 shadow-card">
               <CardHeader>
                 <CardTitle>Calendario y Excepciones</CardTitle>
@@ -219,7 +285,7 @@ const Index = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <OpeningHoursCalendar 
+                <OpeningHoursCalendar
                   onViewDay={(date) => {
                     setSelectedDate(date);
                     setActiveTab("horario");
@@ -229,80 +295,18 @@ const Index = () => {
             </Card>
           </TabsContent>
 
+          {/* HORARIO */}
           <TabsContent value="horario" className="space-y-4">
             <Card className="border-border/50 shadow-card">
               <CardHeader>
                 <CardTitle>Horario del Día</CardTitle>
                 <CardDescription>
-                  Gestiona las reservas para {format(selectedDate, "EEEE d 'de' MMMM", { locale: es })}
+                  Gestiona las reservas para{" "}
+                  {format(selectedDate, "EEEE d 'de' MMMM", { locale: es })}
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <DayCalendar 
-                  selectedDate={selectedDate} 
-                  onDateChange={setSelectedDate}
-                  onEdit={(reservation) => {
-                    setEditingReservation(reservation);
-                    setReservationDialogOpen(true);
-                  }}
-                />
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="layout" className="space-y-4">
-            <Card className="border-border/50 shadow-card">
-              <CardContent className="pt-6">
-                <TableLayoutView />
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="tables" className="space-y-4">
-            <Card className="border-border/50 shadow-card">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Gestión de Mesas</CardTitle>
-                    <CardDescription>Administra las mesas del restaurante</CardDescription>
-                  </div>
-                  <Button onClick={() => {
-                    setEditingTable(null);
-                    setTableDialogOpen(true);
-                  }}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Añadir Mesa
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <TablesList onEdit={(table) => {
-                  setEditingTable(table);
-                  setTableDialogOpen(true);
-                }} />
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="reservations" className="space-y-4">
-            <Card className="border-border/50 shadow-card">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Gestión de Reservas</CardTitle>
-                    <CardDescription>Administra las reservas del restaurante</CardDescription>
-                  </div>
-                  <Button onClick={() => {
-                    setEditingReservation(null);
-                    setReservationDialogOpen(true);
-                  }}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Nueva Reserva
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <ReservationsList 
+                <DayCalendar
                   selectedDate={selectedDate}
                   onDateChange={setSelectedDate}
                   onEdit={(reservation) => {
@@ -314,11 +318,91 @@ const Index = () => {
             </Card>
           </TabsContent>
 
+          {/* LAYOUT */}
+          <TabsContent value="layout" className="space-y-4">
+            <Card className="border-border/50 shadow-card">
+              <CardContent className="pt-6">
+                <TableLayoutView />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* MESAS */}
+          <TabsContent value="tables" className="space-y-4">
+            <Card className="border-border/50 shadow-card">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Gestión de Mesas</CardTitle>
+                    <CardDescription>
+                      Administra las mesas del restaurante
+                    </CardDescription>
+                  </div>
+                  <Button
+                    onClick={() => {
+                      setEditingTable(null);
+                      setTableDialogOpen(true);
+                    }}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Añadir Mesa
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <TablesList
+                  onEdit={(table) => {
+                    setEditingTable(table);
+                    setTableDialogOpen(true);
+                  }}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* RESERVAS */}
+          <TabsContent value="reservations" className="space-y-4">
+            <Card className="border-border/50 shadow-card">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Gestión de Reservas</CardTitle>
+                    <CardDescription>
+                      Administra las reservas del restaurante
+                    </CardDescription>
+                  </div>
+                  <Button
+                    onClick={() => {
+                      setEditingReservation(null);
+                      setReservationDialogOpen(true);
+                    }}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Nueva Reserva
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <ReservationsList
+                  selectedDate={selectedDate}
+                  onDateChange={setSelectedDate}
+                  onEdit={(reservation) => {
+                    setEditingReservation(reservation);
+                    setReservationDialogOpen(true);
+                  }}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* CLIENTES */}
           <TabsContent value="customers" className="space-y-4">
             <Card className="border-border/50 shadow-card">
               <CardHeader>
                 <CardTitle>Clientes</CardTitle>
-                <CardDescription>Lista de clientes registrados y conversaciones</CardDescription>
+                <CardDescription>
+                  Lista de clientes registrados y conversaciones
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <CustomersList />
@@ -326,6 +410,7 @@ const Index = () => {
             </Card>
           </TabsContent>
 
+          {/* MEDIA */}
           <TabsContent value="media" className="space-y-4">
             <Card className="border-border/50 shadow-card">
               <CardContent className="pt-6">
@@ -334,11 +419,14 @@ const Index = () => {
             </Card>
           </TabsContent>
 
+          {/* ESTADÍSTICAS */}
           <TabsContent value="stats" className="space-y-4">
             <Card className="border-border/50 shadow-card">
               <CardHeader>
                 <CardTitle>Estadísticas</CardTitle>
-                <CardDescription>Visión general del rendimiento del restaurante</CardDescription>
+                <CardDescription>
+                  Visión general del rendimiento del restaurante
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <StatsView />
@@ -346,24 +434,33 @@ const Index = () => {
             </Card>
           </TabsContent>
 
-          {user?.role === 'owner' && (
-            <TabsContent value="users" className="space-y-4">
-              <UserManagement />
-            </TabsContent>
+          {/* SOLO OWNER */}
+          {user?.role === "owner" && (
+            <>
+              <TabsContent value="users" className="space-y-4">
+                <UserManagement />
+              </TabsContent>
+
+              <TabsContent value="config" className="space-y-4">
+                <ClientConfigManager />
+              </TabsContent>
+            </>
           )}
         </Tabs>
       </div>
 
-      <TableDialog 
-        open={tableDialogOpen} 
+      {/* DIALOGS */}
+      <TableDialog
+        open={tableDialogOpen}
         onOpenChange={(open) => {
           setTableDialogOpen(open);
           if (!open) setEditingTable(null);
         }}
         table={editingTable}
       />
-      <ReservationDialog 
-        open={reservationDialogOpen} 
+
+      <ReservationDialog
+        open={reservationDialogOpen}
         onOpenChange={(open) => {
           setReservationDialogOpen(open);
           if (!open) setEditingReservation(null);
