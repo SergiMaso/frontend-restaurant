@@ -345,13 +345,15 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
                 </div>
                 {tables.map((table) => {
                   const numTables = tables.length;
-                  const dynamicWidth = numTables <= 15 ? `${Math.max(6, Math.floor(100 / numTables))}%` : '60px';
+                  // Si hi ha menys de 15 taules, usar flex-1 per repartir espai
+                  // Si n'hi ha més, usar min-w fixe per permetre scroll
+                  const flexClass = numTables <= 15 ? 'flex-1' : '';
+                  const minWidth = numTables > 15 ? 'min-w-[80px]' : 'min-w-[60px]';
 
                   return (
                     <div
                       key={table.id}
-                      style={{ width: dynamicWidth, minWidth: '60px' }}
-                      className="px-1 py-1.5 text-[10px] font-semibold text-center border-r border-border/50 flex-shrink-0"
+                      className={`${flexClass} ${minWidth} px-1 py-1.5 text-[10px] font-semibold text-center border-r border-border/50 flex-shrink-0`}
                     >
                       <div>T{table.table_number}</div>
                       <div className="text-[9px] text-muted-foreground font-normal">
@@ -382,22 +384,25 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
                       const reservation = tableReservations[0];
                       const isStart = reservation && isReservationStart(reservation, time);
 
-                      // Calcular amplada dinàmica: mínim 60px, màxim disponible dividit per nombre de taules
+                      // Mateix sistema que al header
                       const numTables = tables.length;
-                      const dynamicWidth = numTables <= 15 ? `${Math.max(60, Math.floor(100 / numTables))}%` : '60px';
+                      const flexClass = numTables <= 15 ? 'flex-1' : '';
+                      const minWidth = numTables > 15 ? 'min-w-[80px]' : 'min-w-[60px]';
+
+                      // Detectar si és una reserva amb múltiples taules per color groc
+                      const isMultiTable = reservation && reservation.table_ids && reservation.table_ids.length > 1;
+                      const colorClass = isMultiTable
+                        ? 'bg-yellow-500/90 hover:bg-yellow-600 border-yellow-400/20 text-white'
+                        : getStatusColor(reservation?.status, !!reservation?.notes);
 
                       return (
                         <div
                           key={table.id}
-                          style={{ width: dynamicWidth, minWidth: '60px' }}
-                          className="border-r border-border/50 flex-shrink-0 relative"
+                          className={`${flexClass} ${minWidth} border-r border-border/50 flex-shrink-0 relative`}
                         >
                           {isStart && (
                             <div
-                              className={`absolute inset-0 m-0.5 px-1 py-0.5 rounded text-[9px] cursor-pointer transition-all z-10 flex flex-col justify-center ${getStatusColor(
-                                reservation.status,
-                                !!reservation.notes
-                              )}`}
+                              className={`absolute inset-0 m-0.5 px-1 py-0.5 rounded text-[9px] cursor-pointer transition-all z-10 flex flex-col justify-center ${colorClass}`}
                               style={{
                                 height: `calc(${getReservationRowSpan(reservation)} * 20px - 4px)`,
                               }}
@@ -409,7 +414,7 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
                               </div>
                               <div className="text-[8px] opacity-90">
                                 {reservation.num_people}p
-                                {reservation.table_ids && reservation.table_ids.length > 1 && (
+                                {isMultiTable && (
                                   <span className="ml-1">📍{reservation.table_ids.length}T</span>
                                 )}
                               </div>
