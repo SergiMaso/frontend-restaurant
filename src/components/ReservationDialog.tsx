@@ -105,6 +105,13 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
     queryFn: getTables,
   });
 
+  // DEBUG: Mostrar taules disponibles
+  console.log("🔍 [ReservationDialog] Taules disponibles:", {
+    total: tables?.length || 0,
+    available: tables?.filter(t => t.status === 'available').length || 0,
+    tables: tables
+  });
+
   // Obtenir clients per autocompletat
   const { data: customers } = useQuery({
     queryKey: ["customers"],

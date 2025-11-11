@@ -99,6 +99,8 @@ export async function getAppointment(id: number): Promise<Appointment> {
 }
 
 export async function createAppointment(data: CreateAppointmentData): Promise<any> {
+  console.log("🚀 [API] Creant reserva amb dades:", data);
+
   const response = await fetch(`${API_URL}/api/appointments`, {
     method: 'POST',
     headers: {
@@ -107,13 +109,22 @@ export async function createAppointment(data: CreateAppointmentData): Promise<an
     credentials: 'include', // ← AFEGIT
     body: JSON.stringify(data),
   });
-  
+
+  console.log("📡 [API] Resposta del servidor:", {
+    status: response.status,
+    statusText: response.statusText,
+    ok: response.ok
+  });
+
   if (!response.ok) {
     const error = await response.json();
+    console.error("❌ [API] Error del backend:", error);
     throw new Error(error.error || 'Error creant reserva');
   }
-  
-  return response.json();
+
+  const result = await response.json();
+  console.log("✅ [API] Reserva creada:", result);
+  return result;
 }
 
 export async function updateAppointment(
