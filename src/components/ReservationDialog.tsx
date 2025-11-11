@@ -256,9 +256,38 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
       language: language,
     };
 
-    // Afegir end_time si està disponible
-    if (endTime) {
-      dataToSend.end_time = endTime;
+    // IMPORTANT: Calcular duration_hours per al backend
+    if (endTime && reservationTime) {
+      try {
+        // Parsejar les hores
+        const [startHour, startMin] = reservationTime.split(':').map(Number);
+        const [endHour, endMin] = endTime.split(':').map(Number);
+
+        // Calcular minuts totals
+        const startMinutes = startHour * 60 + startMin;
+        let endMinutes = endHour * 60 + endMin;
+
+        // Si end_time és menor que start_time, assumim que és l'endemà
+        if (endMinutes <= startMinutes) {
+          endMinutes += 24 * 60;
+        }
+
+        // Calcular duració en hores (decimal)
+        const durationHours = (endMinutes - startMinutes) / 60;
+
+        dataToSend.duration_hours = durationHours;
+        dataToSend.end_time = endTime;
+
+        console.log(`⏱️  Duració calculada: ${durationHours} hores (${reservationTime} → ${endTime})`);
+      } catch (e) {
+        console.error("Error calculant duració:", e);
+        // Si hi ha error, usar duració per defecte
+        dataToSend.duration_hours = defaultBookingDuration;
+      }
+    } else {
+      // Si no hi ha end_time, usar duració per defecte
+      dataToSend.duration_hours = defaultBookingDuration;
+      console.log(`⏱️  Usant duració per defecte: ${defaultBookingDuration} hores`);
     }
 
     if (selectedTableId && selectedTableId !== "auto") {
