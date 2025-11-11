@@ -29,9 +29,11 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
-import { format } from "date-fns";
+import { format, addHours, parse } from "date-fns";
 import { getTables, createAppointment, updateAppointment, deleteAppointment } from "@/services/api";
 import CustomerAutocomplete from "@/components/CustomerAutocomplete";
+import { useRestaurantConfig } from "@/hooks/useRestaurantConfig";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface ReservationDialogProps {
   open: boolean;
@@ -41,11 +43,16 @@ interface ReservationDialogProps {
 
 const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialogProps) => {
   const queryClient = useQueryClient();
+  const { maxPeoplePerBooking, defaultBookingDuration } = useRestaurantConfig();
+
   const [clientName, setClientName] = useState("");
   const [phone, setPhone] = useState("");
   const [numPeople, setNumPeople] = useState("");
   const [reservationDate, setReservationDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [reservationTime, setReservationTime] = useState("20:00");
+  const [endTime, setEndTime] = useState("");
+  const [autoEndTime, setAutoEndTime] = useState(true);
+  const [language, setLanguage] = useState("ca");
   const [selectedTableId, setSelectedTableId] = useState<string>("auto");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
@@ -64,9 +71,22 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
     },
   });
 
+  // Efecte per calcular automàticament l'hora final
+  useEffect(() => {
+    if (autoEndTime && reservationTime) {
+      try {
+        const startDate = parse(reservationTime, "HH:mm", new Date());
+        const endDate = addHours(startDate, defaultBookingDuration);
+        setEndTime(format(endDate, "HH:mm"));
+      } catch (e) {
+        console.error("Error calculant hora final:", e);
+      }
+    }
+  }, [reservationTime, autoEndTime, defaultBookingDuration]);
+
   useEffect(() => {
     console.log("🔍 DEBUG: reservation changed:", reservation);
-    
+
     if (reservation) {
       console.log("📝 Carregant dades de la reserva:", {
         id: reservation.id,
@@ -74,17 +94,18 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
         table_id: reservation.table_id,
         table_number: reservation.table_number
       });
-      
+
       setClientName(reservation.client_name || "");
       setPhone(reservation.phone || "");
       setNumPeople(reservation.num_people?.toString() || "");
       setSelectedTableId(reservation.table_id ? reservation.table_id.toString() : "auto");
-      
+      setLanguage(reservation.language || "ca");
+
       if (reservation.date) {
         const date = new Date(reservation.date);
         setReservationDate(format(date, "yyyy-MM-dd"));
       }
-      
+
       if (reservation.start_time) {
         try {
           const withoutTz = reservation.start_time.split('+')[0].split('Z')[0];
@@ -95,11 +116,26 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
           setReservationTime("20:00");
         }
       }
-      
+
+      if (reservation.end_time) {
+        try {
+          const withoutTz = reservation.end_time.split('+')[0].split('Z')[0];
+          const time = new Date(withoutTz);
+          setEndTime(format(time, "HH:mm"));
+          setAutoEndTime(false); // Si hi ha end_time manual, desactivem l'automàtic
+        } catch (e) {
+          console.error("❌ Error parsing end time:", e);
+        }
+      } else {
+        setAutoEndTime(true);
+      }
+
       console.log("✅ Valors carregats:", {
         selectedTableId: reservation.table_id ? reservation.table_id.toString() : "auto",
         date: reservationDate,
-        time: reservationTime
+        time: reservationTime,
+        endTime: reservation.end_time,
+        language: reservation.language
       });
     } else {
       console.log("🆕 Nova reserva - resetejant camps");
@@ -109,6 +145,9 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
       setSelectedTableId("auto");
       setReservationDate(format(new Date(), "yyyy-MM-dd"));
       setReservationTime("20:00");
+      setEndTime("");
+      setAutoEndTime(true);
+      setLanguage("ca");
     }
   }, [reservation, open]);
 
@@ -151,7 +190,7 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!clientName || !phone || !numPeople) {
       toast.error("Por favor, completa todos los campos obligatorios");
       return;
@@ -163,7 +202,13 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
       date: reservationDate,
       time: reservationTime,
       num_people: parseInt(numPeople),
+      language: language,
     };
+
+    // Afegir end_time si està disponible
+    if (endTime) {
+      dataToSend.end_time = endTime;
+    }
 
     if (selectedTableId && selectedTableId !== "auto") {
       dataToSend.table_id = parseInt(selectedTableId);
@@ -187,6 +232,10 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
     console.log("✅ Client seleccionat:", customer);
     setClientName(customer.name);
     setPhone(customer.phone);
+    // Si el client ja té idioma definit, el carreguem
+    if (customer.language) {
+      setLanguage(customer.language);
+    }
   };
 
   return (
@@ -236,7 +285,7 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
                   id="numPeople"
                   type="number"
                   min="1"
-                  max="8"
+                  max={maxPeoplePerBooking}
                   value={numPeople}
                   onChange={(e) => setNumPeople(e.target.value)}
                   placeholder="4"
@@ -259,7 +308,7 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
 
               <div className="space-y-2">
                 <Label htmlFor="reservationTime">
-                  Hora <span className="text-destructive">*</span>
+                  Hora d'Inici <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="reservationTime"
@@ -268,6 +317,56 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
                   onChange={(e) => setReservationTime(e.target.value)}
                   required
                 />
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="endTime">Hora Final</Label>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="autoEndTime"
+                      checked={autoEndTime}
+                      onCheckedChange={(checked) => setAutoEndTime(checked as boolean)}
+                    />
+                    <label
+                      htmlFor="autoEndTime"
+                      className="text-sm text-muted-foreground cursor-pointer"
+                    >
+                      Automàtic
+                    </label>
+                  </div>
+                </div>
+                <Input
+                  id="endTime"
+                  type="time"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                  disabled={autoEndTime}
+                  placeholder="22:00"
+                />
+                {autoEndTime && (
+                  <p className="text-xs text-muted-foreground">
+                    Duració automàtica: {defaultBookingDuration}h
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="language">
+                  Idioma <span className="text-destructive">*</span>
+                </Label>
+                <Select value={language} onValueChange={setLanguage}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona idioma" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ca">Català</SelectItem>
+                    <SelectItem value="es">Español</SelectItem>
+                    <SelectItem value="en">English</SelectItem>
+                    <SelectItem value="fr">Français</SelectItem>
+                    <SelectItem value="de">Deutsch</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
