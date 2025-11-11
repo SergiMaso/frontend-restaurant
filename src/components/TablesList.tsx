@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Users, Ban, Check, Edit, Trash2, Link } from "lucide-react";
+import { Users, Ban, Check, Edit, Trash2, Link, Plus } from "lucide-react";
 import { getTables, updateTable, deleteTable, createTable } from "@/services/api";
 import { toast } from "sonner";
 import TableDialog from "./TableDialog";
@@ -146,6 +146,14 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
 
   return (
     <>
+      {/* Button to create new table */}
+      <div className="mb-4">
+        <Button onClick={handleCreate}>
+          <Plus className="h-4 w-4 mr-2" />
+          Añadir Mesa
+        </Button>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {tables?.map((table) => (
           <div
