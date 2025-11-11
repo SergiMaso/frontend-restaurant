@@ -45,6 +45,12 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
   const queryClient = useQueryClient();
   const { maxPeoplePerBooking, defaultBookingDuration } = useRestaurantConfig();
 
+  // DEBUG: Mostrar valors del hook
+  console.log("🔍 [ReservationDialog] Valors del hook:", {
+    maxPeoplePerBooking,
+    defaultBookingDuration
+  });
+
   const [clientName, setClientName] = useState("");
   const [phone, setPhone] = useState("");
   const [numPeople, setNumPeople] = useState("");

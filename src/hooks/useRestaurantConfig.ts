@@ -12,10 +12,20 @@ export const useRestaurantConfig = () => {
     refetchOnWindowFocus: false,
   });
 
+  // DEBUG: Mostrar configuració carregada
+  console.log("🔍 [useRestaurantConfig] Configuració carregada:", {
+    configs,
+    isLoading,
+    error,
+    totalConfigs: configs?.length || 0
+  });
+
   // Helper per obtenir un valor de configuració
   const getConfigValue = (key: string, defaultValue: string = ""): string => {
     const config = configs?.find((c) => c.key === key);
-    return config?.value || defaultValue;
+    const value = config?.value || defaultValue;
+    console.log(`🔍 [getConfigValue] key="${key}", value="${value}", default="${defaultValue}"`);
+    return value;
   };
 
   // Helper per obtenir un valor numèric
@@ -31,6 +41,17 @@ export const useRestaurantConfig = () => {
     return value === "true" || value === "1";
   };
 
+  const restaurantName = getConfigValue("restaurant_name", "Restaurant");
+  const maxPeoplePerBooking = getConfigNumber("max_people_per_booking", 8);
+  const defaultBookingDuration = getConfigNumber("default_booking_duration_hours", 2);
+
+  // DEBUG: Mostrar valors finals
+  console.log("🎯 [useRestaurantConfig] Valors finals:", {
+    restaurantName,
+    maxPeoplePerBooking,
+    defaultBookingDuration
+  });
+
   return {
     configs,
     isLoading,
@@ -39,8 +60,8 @@ export const useRestaurantConfig = () => {
     getConfigNumber,
     getConfigBoolean,
     // Configuracions específiques
-    restaurantName: getConfigValue("restaurant_name", "Restaurant"),
-    maxPeoplePerBooking: getConfigNumber("max_people_per_booking", 8),
-    defaultBookingDuration: getConfigNumber("default_booking_duration_hours", 2),
+    restaurantName,
+    maxPeoplePerBooking,
+    defaultBookingDuration,
   };
 };

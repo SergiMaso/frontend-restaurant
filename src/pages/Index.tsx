@@ -66,6 +66,9 @@ const Index = () => {
   const { user, logout } = useAuth();
   const { restaurantName } = useRestaurantConfig();
 
+  // DEBUG: Mostrar nom del restaurant
+  console.log("🔍 [Index] Nom del restaurant:", restaurantName);
+
   const handleLogout = async () => {
     await logout();
   };
