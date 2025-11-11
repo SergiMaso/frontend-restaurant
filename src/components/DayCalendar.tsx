@@ -226,35 +226,37 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
     return Math.round(minutes / 15) * 15;
   };
 
-  const getReservationsForTableAndTime = (tableNumber: number, time: string) => {
+  const getReservationsForTableAndTime = (tableId: number, time: string) => {
     const result = reservations?.filter((r) => {
-      if (r.table_number !== tableNumber) return false;
-      
+      // Comprovar si aquesta taula està dins de table_ids
+      if (!r.table_ids || !Array.isArray(r.table_ids)) return false;
+      if (!r.table_ids.includes(tableId)) return false;
+
       try {
         const startTime = parseAsLocalTime(r.start_time);
         const endTime = parseAsLocalTime(r.end_time);
-        
+
         const [slotHour, slotMin] = time.split(':').map(Number);
-        
+
         const slotMinutes = slotHour * 60 + slotMin;
         let startMinutes = startTime.getHours() * 60 + startTime.getMinutes();
         let endMinutes = endTime.getHours() * 60 + endTime.getMinutes();
-        
+
         if (endMinutes < startMinutes) {
           endMinutes += 24 * 60;
         }
-        
+
         const roundedStartMinutes = roundToNearestSlot(startMinutes);
-        
+
         const matches = slotMinutes >= roundedStartMinutes && slotMinutes < endMinutes;
-        
+
         return matches;
       } catch (e) {
         console.error("Error parsing time:", r.start_time, r.end_time, e);
         return false;
       }
     }) || [];
-    
+
     return result;
   };
 
@@ -341,17 +343,23 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
                 <div className="w-12 px-1 py-1.5 text-[10px] font-semibold border-r border-border/50 flex-shrink-0">
                   Hora
                 </div>
-                {tables.map((table) => (
-                  <div
-                    key={table.id}
-                    className="min-w-[60px] px-1 py-1.5 text-[10px] font-semibold text-center border-r border-border/50 flex-shrink-0"
-                  >
-                    <div>T{table.table_number}</div>
-                    <div className="text-[9px] text-muted-foreground font-normal">
-                      {table.capacity}p
+                {tables.map((table) => {
+                  const numTables = tables.length;
+                  const dynamicWidth = numTables <= 15 ? `${Math.max(6, Math.floor(100 / numTables))}%` : '60px';
+
+                  return (
+                    <div
+                      key={table.id}
+                      style={{ width: dynamicWidth, minWidth: '60px' }}
+                      className="px-1 py-1.5 text-[10px] font-semibold text-center border-r border-border/50 flex-shrink-0"
+                    >
+                      <div>T{table.table_number}</div>
+                      <div className="text-[9px] text-muted-foreground font-normal">
+                        {table.capacity}p
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               <div className="divide-y divide-border/50 relative">
@@ -370,14 +378,19 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
                       {time}
                     </div>
                     {tables.map((table) => {
-                      const tableReservations = getReservationsForTableAndTime(table.table_number, time);
+                      const tableReservations = getReservationsForTableAndTime(table.id, time);
                       const reservation = tableReservations[0];
                       const isStart = reservation && isReservationStart(reservation, time);
-                      
+
+                      // Calcular amplada dinàmica: mínim 60px, màxim disponible dividit per nombre de taules
+                      const numTables = tables.length;
+                      const dynamicWidth = numTables <= 15 ? `${Math.max(60, Math.floor(100 / numTables))}%` : '60px';
+
                       return (
                         <div
                           key={table.id}
-                          className="min-w-[60px] border-r border-border/50 flex-shrink-0 relative"
+                          style={{ width: dynamicWidth, minWidth: '60px' }}
+                          className="border-r border-border/50 flex-shrink-0 relative"
                         >
                           {isStart && (
                             <div
@@ -396,6 +409,9 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
                               </div>
                               <div className="text-[8px] opacity-90">
                                 {reservation.num_people}p
+                                {reservation.table_ids && reservation.table_ids.length > 1 && (
+                                  <span className="ml-1">📍{reservation.table_ids.length}T</span>
+                                )}
                               </div>
                             </div>
                           )}
@@ -476,8 +492,11 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
                 </div>
                 
                 <div className="flex items-start gap-2">
-                  <span className="font-semibold min-w-[100px]">🪑 Mesa:</span>
-                  <span>Mesa {selectedReservation.table_number} (capacitat {selectedReservation.table_capacity})</span>
+                  <span className="font-semibold min-w-[100px]">🪑 Mesa{selectedReservation.table_ids && selectedReservation.table_ids.length > 1 ? 's' : ''}:</span>
+                  <span>
+                    {selectedReservation.table_numbers ? `Mesa ${selectedReservation.table_numbers}` : 'N/A'}
+                    {selectedReservation.table_capacity > 0 && ` (capacitat ${selectedReservation.table_capacity})`}
+                  </span>
                 </div>
                 
                 {selectedReservation.notes && (
