@@ -53,6 +53,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useRestaurantConfig } from "@/hooks/useRestaurantConfig";
 
 const Index = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -63,6 +64,7 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState("horario");
 
   const { user, logout } = useAuth();
+  const { restaurantName } = useRestaurantConfig();
 
   const handleLogout = async () => {
     await logout();
@@ -107,7 +109,7 @@ const Index = () => {
               </div>
               <div>
                 <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                  AMARU
+                  {restaurantName}
                 </h1>
                 <p className="text-muted-foreground">
                   Sistema de gestión de reservas
