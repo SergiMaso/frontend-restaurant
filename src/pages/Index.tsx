@@ -219,9 +219,9 @@ const Index = () => {
 
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList
-            className="inline-flex w-auto mx-auto overflow-x-auto flex-nowrap"
-          >
+          <div className="w-full max-w-6xl mx-auto overflow-x-auto">
+            <TabsList className="inline-flex w-full flex-nowrap">
+
             <TabsTrigger value="calendario">
               <Calendar className="h-4 w-4 mr-2" />
               Calendario
@@ -262,6 +262,7 @@ const Index = () => {
               </>
             )}
           </TabsList>
+          </div>
 
           {/* CALENDARIO */}
           <TabsContent value="calendario" className="space-y-6">

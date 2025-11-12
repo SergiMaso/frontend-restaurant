@@ -182,7 +182,7 @@ const ReservationsList = ({ selectedDate, onEdit, onDateChange }: ReservationsLi
               <div className="flex items-center gap-2 flex-wrap">
                 {reservation.table_ids && reservation.table_ids.length > 1 ? (
                   <>
-                    <Badge className="bg-yellow-500 text-white hover:bg-yellow-600">
+                    <Badge className={reservation.notes ? "bg-green-500 text-white hover:bg-green-600" : "bg-yellow-500 text-white hover:bg-yellow-600"}>
                       📍 Mesas {reservation.table_numbers || reservation.table_ids.join('+')}
                     </Badge>
                     <span className="text-xs text-muted-foreground">

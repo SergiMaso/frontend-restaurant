@@ -389,11 +389,20 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
                       const flexClass = numTables <= 15 ? 'flex-1' : '';
                       const minWidth = numTables > 15 ? 'min-w-[80px]' : 'min-w-[60px]';
 
-                      // Detectar si és una reserva amb múltiples taules per color groc
+                      // Detectar si és una reserva amb múltiples taules i si té observacions
                       const isMultiTable = reservation && reservation.table_ids && reservation.table_ids.length > 1;
-                      const colorClass = isMultiTable
-                        ? 'bg-yellow-500/90 hover:bg-yellow-600 border-yellow-400/20 text-white'
-                        : getStatusColor(reservation?.status, !!reservation?.notes);
+                      const hasNotes = !!reservation?.notes;
+
+                      let colorClass;
+                      if (isMultiTable) {
+                        // Múltiples taules
+                        colorClass = hasNotes
+                          ? 'bg-green-500/90 hover:bg-green-600 border-green-400/20 text-white'  // Verd: múltiples taules amb notes
+                          : 'bg-yellow-500/90 hover:bg-yellow-600 border-yellow-400/20 text-white';  // Groc: múltiples taules sense notes
+                      } else {
+                        // Una sola taula: taronja (sense notes) o blau (amb notes)
+                        colorClass = getStatusColor(reservation?.status, hasNotes);
+                      }
 
                       return (
                         <div
