@@ -220,9 +220,7 @@ const Index = () => {
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList
-            className={`grid w-full ${
-              user?.role === "owner" ? "grid-cols-9" : "grid-cols-7"
-            } max-w-6xl mx-auto`}
+            className="inline-flex w-auto mx-auto overflow-x-auto flex-nowrap"
           >
             <TabsTrigger value="calendario">
               <Calendar className="h-4 w-4 mr-2" />
