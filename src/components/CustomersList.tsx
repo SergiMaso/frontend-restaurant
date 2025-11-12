@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,12 +11,15 @@ import BroadcastManager from "@/components/BroadcastManager";
 import EditCustomerDialog from "@/components/EditCustomerDialog";
 
 const CustomersList = () => {
+  const queryClient = useQueryClient();
   const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null);
   const [conversationsDialogOpen, setConversationsDialogOpen] = useState(false);
   const [broadcastDialogOpen, setBroadcastDialogOpen] = useState(false);
   const [editCustomerDialogOpen, setEditCustomerDialogOpen] = useState(false);
   const [customerToEdit, setCustomerToEdit] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [messageText, setMessageText] = useState("");
+  const [sendingMessage, setSendingMessage] = useState(false);
 
   const { data: customers, isLoading } = useQuery({
     queryKey: ["customers"],
@@ -55,6 +58,46 @@ const CustomersList = () => {
   const handleCloseDialog = () => {
     setConversationsDialogOpen(false);
     setSelectedCustomer(null);
+    setMessageText("");
+  };
+
+  const handleSendMessage = async () => {
+    if (!messageText.trim() || !selectedCustomer) return;
+
+    setSendingMessage(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/send-message`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          phone: selectedCustomer,
+          message: messageText,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Error enviando mensaje');
+      }
+
+      // Netejar l'input
+      setMessageText("");
+
+      // Refrescar converses
+      queryClient.invalidateQueries({ queryKey: ["conversations", selectedCustomer] });
+
+      // Toast success
+      const toast = (await import("sonner")).toast;
+      toast.success("Mensaje enviado correctamente");
+    } catch (error) {
+      const toast = (await import("sonner")).toast;
+      toast.error("Error al enviar el mensaje");
+      console.error("Error sending message:", error);
+    } finally {
+      setSendingMessage(false);
+    }
   };
 
   const handleEditCustomer = (customer: any) => {
@@ -265,6 +308,32 @@ const CustomersList = () => {
                   No hay conversaciones para mostrar
                 </div>
               )}
+            </div>
+
+            {/* Input per enviar missatge */}
+            <div className="p-4 border-t border-border bg-muted/30">
+              <div className="flex gap-2">
+                <Input
+                  value={messageText}
+                  onChange={(e) => setMessageText(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendMessage();
+                    }
+                  }}
+                  placeholder="Escribe un mensaje..."
+                  disabled={sendingMessage}
+                  className="flex-1"
+                />
+                <Button
+                  onClick={handleSendMessage}
+                  disabled={sendingMessage || !messageText.trim()}
+                  size="icon"
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
         </div>
