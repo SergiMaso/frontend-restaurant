@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Users, Phone, Calendar, MessageCircle, X, Search, Send, Edit, UtensilsCrossed } from "lucide-react";
 import { getCustomers, getConversations, type Conversation } from "@/services/api";
 import { format } from "date-fns";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import BroadcastManager from "@/components/BroadcastManager";
 import EditCustomerDialog from "@/components/EditCustomerDialog";
 
@@ -20,6 +20,7 @@ const CustomersList = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [messageText, setMessageText] = useState("");
   const [sendingMessage, setSendingMessage] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { data: customers, isLoading } = useQuery({
     queryKey: ["customers"],
@@ -31,6 +32,13 @@ const CustomersList = () => {
     queryFn: () => getConversations(selectedCustomer!),
     enabled: !!selectedCustomer && conversationsDialogOpen,
   });
+
+  // Scroll automàtic cap a baix quan es carreguen les converses
+  useEffect(() => {
+    if (conversations && conversations.length > 0 && conversationsDialogOpen) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [conversations, conversationsDialogOpen]);
 
   // Filtrar clients per telèfon o nom
   const filteredCustomers = useMemo(() => {
@@ -87,6 +95,11 @@ const CustomersList = () => {
 
       // Refrescar converses
       queryClient.invalidateQueries({ queryKey: ["conversations", selectedCustomer] });
+
+      // Fer scroll cap a baix després d'enviar
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
 
       // Toast success
       const toast = (await import("sonner")).toast;
@@ -308,6 +321,8 @@ const CustomersList = () => {
                   No hay conversaciones para mostrar
                 </div>
               )}
+              {/* Referència per fer scroll automàtic */}
+              <div ref={messagesEndRef} />
             </div>
 
             {/* Input per enviar missatge */}
