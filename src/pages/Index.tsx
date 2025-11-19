@@ -53,8 +53,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useRestaurantConfig } from "@/hooks/useRestaurantConfig";
+import { useTranslation } from "react-i18next";
+import LanguageSelector from "@/components/LanguageSelector";
 
 const Index = () => {
+  const { t } = useTranslation();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [reservationDialogOpen, setReservationDialogOpen] = useState(false);
   const [editingReservation, setEditingReservation] = useState<any>(null);
@@ -112,12 +115,15 @@ const Index = () => {
                   {restaurantName}
                 </h1>
                 <p className="text-muted-foreground">
-                  Sistema de gestión de reservas
+                  {t('app.title')}
                 </p>
               </div>
             </div>
 
-            <DropdownMenu>
+            <div className="flex items-center gap-3">
+              <LanguageSelector />
+
+              <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                   <Avatar>
@@ -152,10 +158,11 @@ const Index = () => {
                   className="text-destructive cursor-pointer"
                 >
                   <LogOut className="mr-2 h-4 w-4" />
-                  <span>Tancar Sessió</span>
+                  <span>{t('nav.logout')}</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            </div>
           </div>
         </div>
 
@@ -166,7 +173,7 @@ const Index = () => {
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-semibold flex items-center gap-2">
                 <Calendar className="h-5 w-5 text-primary" />
-                Fecha Seleccionada
+                {t('dashboard.selectedDate')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -181,7 +188,7 @@ const Index = () => {
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-semibold flex items-center gap-2">
                 <Plus className="h-5 w-5 text-accent" />
-                Acción Rápida
+                {t('dashboard.quickAction')}
               </CardTitle>
             </CardHeader>
             <CardContent className="flex items-center justify-center">
@@ -191,7 +198,7 @@ const Index = () => {
                 className="w-full max-w-xs"
               >
                 <Plus className="h-5 w-5 mr-2" />
-                Nueva Reserva
+                {t('dashboard.newReservation')}
               </Button>
             </CardContent>
           </Card>
@@ -201,7 +208,7 @@ const Index = () => {
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-semibold flex items-center gap-2">
                 <UtensilsCrossed className="h-5 w-5 text-success" />
-                Reservas de Hoy
+                {t('dashboard.todayReservations')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -210,7 +217,7 @@ const Index = () => {
                   {todayReservations}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  {todayReservations === 1 ? "reserva" : "reservas"}
+                  {todayReservations === 1 ? t('dashboard.reservation') : t('dashboard.reservations')}
                 </p>
               </div>
             </CardContent>
@@ -224,40 +231,40 @@ const Index = () => {
 
             <TabsTrigger value="calendario">
               <Calendar className="h-4 w-4 mr-2" />
-              Calendario
+              {t('nav.calendar')}
             </TabsTrigger>
             <TabsTrigger value="horario">
               <Clock className="h-4 w-4 mr-2" />
-              Horario
+              {t('nav.schedule')}
             </TabsTrigger>
             <TabsTrigger value="layout">
               <LayoutGrid className="h-4 w-4 mr-2" />
-              Layout
+              {t('nav.layout')}
             </TabsTrigger>
-            <TabsTrigger value="tables">Mesas</TabsTrigger>
-            <TabsTrigger value="reservations">Reservas</TabsTrigger>
+            <TabsTrigger value="tables">{t('nav.tables')}</TabsTrigger>
+            <TabsTrigger value="reservations">{t('nav.reservations')}</TabsTrigger>
             <TabsTrigger value="customers">
               <Users className="h-4 w-4 mr-2" />
-              Clientes
+              {t('nav.customers')}
             </TabsTrigger>
             <TabsTrigger value="media">
               <FileImage className="h-4 w-4 mr-2" />
-              Media
+              {t('nav.media')}
             </TabsTrigger>
             <TabsTrigger value="stats">
               <BarChart3 className="h-4 w-4 mr-2" />
-              Estadísticas
+              {t('nav.stats')}
             </TabsTrigger>
 
             {user?.role === "owner" && (
               <>
                 <TabsTrigger value="users">
                   <UserCog className="h-4 w-4 mr-2" />
-                  Usuarios
+                  {t('nav.users')}
                 </TabsTrigger>
                 <TabsTrigger value="config">
                   <Settings className="h-4 w-4 mr-2" />
-                  Config
+                  {t('nav.config')}
                 </TabsTrigger>
               </>
             )}
