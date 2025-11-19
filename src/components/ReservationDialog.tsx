@@ -459,11 +459,27 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="auto">{t('reservations.autoLabel')}</SelectItem>
-                    {(tables || []).filter(t => t.status === 'available').map((table) => (
-                      <SelectItem key={table.id} value={table.id.toString()}>
-                        {t('reservations.table')} {table.table_number} ({table.capacity} {t('reservations.people')})
-                      </SelectItem>
-                    ))}
+                    {(() => {
+                      console.log('🔍 [SelectContent] tables value:', tables);
+                      console.log('🔍 [SelectContent] tables type:', typeof tables);
+                      console.log('🔍 [SelectContent] is array?:', Array.isArray(tables));
+                      const tablesList = tables || [];
+                      console.log('🔍 [SelectContent] tablesList:', tablesList);
+                      console.log('🔍 [SelectContent] tablesList is array?:', Array.isArray(tablesList));
+                      const filtered = tablesList.filter(t => {
+                        console.log('🔍 [filter] t:', t);
+                        return t.status === 'available';
+                      });
+                      console.log('🔍 [SelectContent] filtered:', filtered);
+                      return filtered.map((table) => {
+                        console.log('🔍 [map] table:', table);
+                        return (
+                          <SelectItem key={table.id} value={table.id.toString()}>
+                            {t('reservations.table')} {table.table_number} ({table.capacity} {t('reservations.people')})
+                          </SelectItem>
+                        );
+                      });
+                    })()}
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
