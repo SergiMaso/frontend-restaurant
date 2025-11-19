@@ -482,5 +482,34 @@
     "topCustomersDesc": "Clients amb més visites al període seleccionat",
     "visits": "visites",
     "noCustomerData": "No hi ha dades de clients per aquest període"
+  },
+  "layout": {
+    "loading": "Carregant...",
+    "title": "Disposició de les Taules",
+    "resetPositions": "Restaurar posicions",
+    "noTables": "No hi ha taules configurades.",
+    "dragInfo": "💡 Arrossega les taules per canviar la seva posició. Les posicions es guarden automàticament."
+  },
+  "calendar": {
+    "today": "Avui",
+    "fullDay": "Tot el dia",
+    "lunchOnly": "Només dinar",
+    "dinnerOnly": "Només sopar",
+    "closed": "Tancat",
+    "reservation": "reserva",
+    "reservations": "reserves",
+    "edit": "Editar",
+    "viewDay": "Veure dia",
+    "info": "ℹ️ Informació:",
+    "infoHover": "Passa el cursor per sobre de qualsevol dia per veure les opcions",
+    "infoEdit": "Configura els horaris d'obertura del restaurant",
+    "infoViewDay": "Veure l'horari detallat de reserves d'aquest dia",
+    "infoDefault": "Els dies sense configuració utilitzaran l'horari per defecte (12:00-15:00 i 19:00-22:30)"
+  },
+  "auth": {
+    "loading": "Carregant...",
+    "accessDenied": "Accés Denegat",
+    "ownerOnly": "Aquesta secció només està disponible per al propietari del sistema.",
+    "adminOnly": "Aquesta secció només està disponible per a administradors."
   }
 }

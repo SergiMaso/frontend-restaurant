@@ -482,5 +482,34 @@
     "topCustomersDesc": "Customers with most visits in selected period",
     "visits": "visits",
     "noCustomerData": "No customer data for this period"
+  },
+  "layout": {
+    "loading": "Loading...",
+    "title": "Table Layout",
+    "resetPositions": "Reset positions",
+    "noTables": "No tables configured.",
+    "dragInfo": "💡 Drag tables to change their position. Positions are saved automatically."
+  },
+  "calendar": {
+    "today": "Today",
+    "fullDay": "Full day",
+    "lunchOnly": "Lunch only",
+    "dinnerOnly": "Dinner only",
+    "closed": "Closed",
+    "reservation": "reservation",
+    "reservations": "reservations",
+    "edit": "Edit",
+    "viewDay": "View day",
+    "info": "ℹ️ Information:",
+    "infoHover": "Hover over any day to see the options",
+    "infoEdit": "Configure restaurant opening hours",
+    "infoViewDay": "View detailed reservation schedule for that day",
+    "infoDefault": "Days without configuration will use the default schedule (12:00-15:00 and 19:00-22:30)"
+  },
+  "auth": {
+    "loading": "Loading...",
+    "accessDenied": "Access Denied",
+    "ownerOnly": "This section is only available to the system owner.",
+    "adminOnly": "This section is only available to administrators."
   }
 }

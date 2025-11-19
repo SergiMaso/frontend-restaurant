@@ -482,5 +482,34 @@
     "topCustomersDesc": "Clientes con más visitas en el período seleccionado",
     "visits": "visitas",
     "noCustomerData": "No hay datos de clientes para este período"
+  },
+  "layout": {
+    "loading": "Cargando...",
+    "title": "Disposición de las Mesas",
+    "resetPositions": "Restaurar posiciones",
+    "noTables": "No hay mesas configuradas.",
+    "dragInfo": "💡 Arrastra las mesas para cambiar su posición. Las posiciones se guardan automáticamente."
+  },
+  "calendar": {
+    "today": "Hoy",
+    "fullDay": "Todo el día",
+    "lunchOnly": "Solo comida",
+    "dinnerOnly": "Solo cena",
+    "closed": "Cerrado",
+    "reservation": "reserva",
+    "reservations": "reservas",
+    "edit": "Editar",
+    "viewDay": "Ver día",
+    "info": "ℹ️ Información:",
+    "infoHover": "Pasa el cursor por encima de cualquier día para ver las opciones",
+    "infoEdit": "Configura los horarios de apertura del restaurante",
+    "infoViewDay": "Ver el horario detallado de reservas de ese día",
+    "infoDefault": "Los días sin configuración utilizarán el horario por defecto (12:00-15:00 y 19:00-22:30)"
+  },
+  "auth": {
+    "loading": "Cargando...",
+    "accessDenied": "Acceso Denegado",
+    "ownerOnly": "Esta sección solo está disponible para el propietario del sistema.",
+    "adminOnly": "Esta sección solo está disponible para administradores."
   }
 }
