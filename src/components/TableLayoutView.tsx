@@ -153,7 +153,7 @@ const TableLayoutView = () => {
       >
         <div className="absolute inset-0 bg-[linear-gradient(rgba(var(--border)_/_0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(var(--border)_/_0.1)_1px,transparent_1px)] bg-[size:50px_50px]" />
 
-        {tables?.map((table) => {
+        {(tables || []).map((table) => {
           const position = tablePositions.find(p => p.id === table.id);
           if (!position) return null;
 

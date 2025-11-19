@@ -157,7 +157,7 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {tables?.map((table) => (
+        {(tables || []).map((table) => (
           <div
             key={table.id}
             className="p-4 rounded-lg border border-border bg-card hover:shadow-elegant transition-all duration-300"
@@ -175,21 +175,29 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
               </Badge>
             </div>
 
-            {table.pairing && table.pairing.length > 0 && (
-              <div className="mb-3">
-                <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
-                  <Link className="h-3 w-3" />
-                  <span>{t('tables.pairing')}:</span>
+            {(() => {
+              console.log('🔍 [TablesList] table.pairing:', table.pairing);
+              console.log('🔍 [TablesList] table.pairing type:', typeof table.pairing);
+              console.log('🔍 [TablesList] is array?:', Array.isArray(table.pairing));
+              const pairingArray = Array.isArray(table.pairing) ? table.pairing : [];
+              console.log('🔍 [TablesList] pairingArray:', pairingArray);
+
+              return pairingArray.length > 0 && (
+                <div className="mb-3">
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                    <Link className="h-3 w-3" />
+                    <span>{t('tables.pairing')}:</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {pairingArray.map((pairNum: number) => (
+                      <Badge key={pairNum} variant="secondary" className="text-xs">
+                        {t('tables.tableNumber')} {pairNum}
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-1">
-                  {table.pairing.map((pairNum: number) => (
-                    <Badge key={pairNum} variant="secondary" className="text-xs">
-                      {t('tables.tableNumber')} {pairNum}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
+              );
+            })()}
 
             <div className="flex gap-2 mt-3">
               <Button
