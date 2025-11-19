@@ -144,7 +144,15 @@
     "weeklyConfig": "Configuración Semanal",
     "weeklyDescription": "Define los horarios por defecto para cada día de la semana",
     "calendarExceptions": "Calendario y Excepciones",
-    "calendarDescription": "Gestiona los horarios de apertura y visualiza las reservas"
+    "calendarDescription": "Gestiona los horarios de apertura y visualiza las reservas",
+    "customerSeated": "Cliente sentado!",
+    "customerSeatedDelay": "Llegada con {{delay}} min de retraso",
+    "customerSeatedEarly": "Llegada con {{early}} min de adelanto",
+    "customerLeft": "Cliente marchó! Duración: {{duration}} min",
+    "noShowRegistered": "No-show registrado",
+    "errorSeating": "Error marcando como sentado",
+    "errorLeaving": "Error marcando salida",
+    "errorNoShow": "Error registrando no-show"
   },
   "stats": {
     "title": "Estadísticas",

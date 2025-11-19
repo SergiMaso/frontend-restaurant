@@ -144,7 +144,15 @@
     "weeklyConfig": "Weekly Configuration",
     "weeklyDescription": "Define default schedules for each day of the week",
     "calendarExceptions": "Calendar and Exceptions",
-    "calendarDescription": "Manage opening hours and view reservations"
+    "calendarDescription": "Manage opening hours and view reservations",
+    "customerSeated": "Customer seated!",
+    "customerSeatedDelay": "Arrived {{delay}} min late",
+    "customerSeatedEarly": "Arrived {{early}} min early",
+    "customerLeft": "Customer left! Duration: {{duration}} min",
+    "noShowRegistered": "No-show registered",
+    "errorSeating": "Error marking as seated",
+    "errorLeaving": "Error marking departure",
+    "errorNoShow": "Error registering no-show"
   },
   "stats": {
     "title": "Statistics",

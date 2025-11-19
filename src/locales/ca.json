@@ -144,7 +144,15 @@
     "weeklyConfig": "Configuració Setmanal",
     "weeklyDescription": "Defineix els horaris per defecte per cada dia de la setmana",
     "calendarExceptions": "Calendari i Excepcions",
-    "calendarDescription": "Gestiona els horaris d'obertura i visualitza les reserves"
+    "calendarDescription": "Gestiona els horaris d'obertura i visualitza les reserves",
+    "customerSeated": "Client assegut!",
+    "customerSeatedDelay": "Arribada amb {{delay}} min de retard",
+    "customerSeatedEarly": "Arribada amb {{early}} min d'avançament",
+    "customerLeft": "Client marxat! Durada: {{duration}} min",
+    "noShowRegistered": "No-show registrat",
+    "errorSeating": "Error marcant com assegut",
+    "errorLeaving": "Error marcant sortida",
+    "errorNoShow": "Error registrant no-show"
   },
   "stats": {
     "title": "Estadístiques",
