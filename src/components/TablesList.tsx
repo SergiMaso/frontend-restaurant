@@ -6,6 +6,7 @@ import { Users, Ban, Check, Edit, Trash2, Link, Plus } from "lucide-react";
 import { getTables, updateTable, deleteTable, createTable } from "@/services/api";
 import { toast } from "sonner";
 import TableDialog from "./TableDialog";
+import { useTranslation } from "react-i18next";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,6 +23,7 @@ interface TablesListProps {
 }
 
 const TablesList = ({ onEdit }: TablesListProps = {}) => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedTable, setSelectedTable] = useState<any | null>(null);
@@ -39,11 +41,11 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
       updateTable(tableId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tables"] });
-      toast.success("Taula actualitzada correctament");
+      toast.success(t('tables.updateSuccess', 'Mesa actualizada correctamente'));
       setDialogOpen(false);
     },
     onError: (error: Error) => {
-      toast.error("Error actualitzant taula: " + error.message);
+      toast.error(t('tables.updateError', 'Error actualizando mesa: {{error}}', { error: error.message }));
     },
   });
 
@@ -51,11 +53,11 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
     mutationFn: createTable,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tables"] });
-      toast.success("Taula creada correctament");
+      toast.success(t('tables.createSuccess', 'Mesa creada correctamente'));
       setDialogOpen(false);
     },
     onError: (error: Error) => {
-      toast.error("Error creant taula: " + error.message);
+      toast.error(t('tables.createError', 'Error creando mesa: {{error}}', { error: error.message }));
     },
   });
 
@@ -63,11 +65,11 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
     mutationFn: deleteTable,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tables"] });
-      toast.success("Taula eliminada correctament");
+      toast.success(t('tables.deleteSuccess', 'Mesa eliminada correctamente'));
       setDeleteDialogOpen(false);
     },
     onError: (error: Error) => {
-      toast.error("Error eliminant taula: " + error.message);
+      toast.error(t('tables.deleteError', 'Error eliminando mesa: {{error}}', { error: error.message }));
     },
   });
 
@@ -128,20 +130,20 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
   const getStatusLabel = (status: string) => {
     switch (status) {
       case "available":
-        return "Disponible";
+        return t('tables.status.available');
       case "unavailable":
-        return "No disponible";
+        return t('tables.status.unavailable');
       case "occupied":
-        return "Ocupada";
+        return t('tables.status.occupied');
       case "reserved":
-        return "Reservada";
+        return t('tables.status.reserved');
       default:
         return status;
     }
   };
 
   if (isLoading) {
-    return <div className="text-center py-8 text-muted-foreground">Carregant taules...</div>;
+    return <div className="text-center py-8 text-muted-foreground">{t('tables.loading')}</div>;
   }
 
   return (
@@ -150,7 +152,7 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
       <div className="mb-4">
         <Button onClick={handleCreate}>
           <Plus className="h-4 w-4 mr-2" />
-          Añadir Mesa
+          {t('tables.addTable')}
         </Button>
       </div>
 
@@ -162,7 +164,7 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
           >
             <div className="flex items-start justify-between mb-3">
               <div>
-                <h3 className="font-bold text-lg">Mesa {table.table_number}</h3>
+                <h3 className="font-bold text-lg">{t('tables.tableNumber')} {table.table_number}</h3>
                 <Badge className={getStatusColor(table.status)}>
                   {getStatusLabel(table.status)}
                 </Badge>
@@ -177,12 +179,12 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
               <div className="mb-3">
                 <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
                   <Link className="h-3 w-3" />
-                  <span>Pairing:</span>
+                  <span>{t('tables.pairing')}:</span>
                 </div>
                 <div className="flex flex-wrap gap-1">
                   {table.pairing.map((pairNum: number) => (
                     <Badge key={pairNum} variant="secondary" className="text-xs">
-                      Mesa {pairNum}
+                      {t('tables.tableNumber')} {pairNum}
                     </Badge>
                   ))}
                 </div>
@@ -197,7 +199,7 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
                 className="flex-1"
               >
                 <Edit className="h-4 w-4 mr-1" />
-                Editar
+                {t('tables.actions.edit')}
               </Button>
 
               <Button
@@ -209,12 +211,12 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
                 {table.status === 'available' ? (
                   <>
                     <Ban className="h-4 w-4 mr-1" />
-                    Deshabilitar
+                    {t('tables.actions.disable')}
                   </>
                 ) : (
                   <>
                     <Check className="h-4 w-4 mr-1" />
-                    Habilitar
+                    {t('tables.actions.enable')}
                   </>
                 )}
               </Button>
@@ -233,7 +235,7 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
 
       {tables?.length === 0 && (
         <div className="text-center py-12 text-muted-foreground">
-          <p>No hi ha taules registrades</p>
+          <p>{t('tables.noTables')}</p>
         </div>
       )}
 
@@ -249,19 +251,18 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Estàs segur?</AlertDialogTitle>
+            <AlertDialogTitle>{t('reservations.deleteConfirm')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Aquesta acció eliminarà la taula {tableToDelete?.table_number} permanentment.
-              Només es pot eliminar si no té reserves futures.
+              {t('tables.deleteConfirmMessage', 'Esta acción eliminará la mesa {{number}} permanentemente. Solo se puede eliminar si no tiene reservas futuras.', { number: tableToDelete?.table_number })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel·lar</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Eliminar
+              {t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

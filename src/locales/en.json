@@ -53,6 +53,8 @@
     "description": "Manage restaurant reservations",
     "newReservation": "New Reservation",
     "editReservation": "Edit Reservation",
+    "addReservation": "Add a new reservation",
+    "modifyReservation": "Modify reservation details",
     "deleteReservation": "Delete Reservation",
     "clientName": "Customer Name",
     "phone": "Phone",
@@ -63,8 +65,21 @@
     "autoEndTime": "Automatic",
     "language": "Language",
     "table": "Table",
+    "currentTable": "current: Table",
+    "autoLabel": "Automatic",
     "autoAssign": "Automatic assignment",
+    "autoAssignHelp": "Select \"Automatic\" to assign the table automatically.",
     "notes": "Notes",
+    "people": "people",
+    "selectTime": "Select time",
+    "selectLanguage": "Select language",
+    "fieldsRequired": "Please complete all required fields",
+    "placeholders": {
+      "name": "John Smith",
+      "phone": "+1 555 000 0000",
+      "numPeople": "4",
+      "time": "10:00 PM"
+    },
     "status": {
       "pending": "Pending",
       "confirmed": "Confirmed",
@@ -78,15 +93,24 @@
     "delete": "Delete",
     "deleteConfirm": "Are you sure?",
     "deleteMessage": "This action will permanently delete the reservation",
+    "deleteReservationMessage": "This action cannot be undone. The reservation for {{name}} on {{date}} at {{time}} will be permanently deleted.",
     "yes": "Yes, delete",
     "noReservations": "No reservations",
     "loading": "Loading reservations...",
     "saving": "Saving...",
     "deleting": "Deleting...",
+    "createSuccess": "Reservation created successfully",
+    "updateSuccess": "Reservation updated successfully",
+    "deleteSuccess": "Reservation deleted successfully",
+    "error": "Error",
     "multiTable": "Multiple tables",
     "tables_one": "table",
     "tables_other": "tables",
-    "totalCapacity": "Total capacity"
+    "totalCapacity": "Total capacity",
+    "noReservationsForDate": "No reservations for this date",
+    "addNewReservation": "Add a new reservation to get started",
+    "tables": "Tables",
+    "peopleShort": "people"
   },
   "customers": {
     "title": "Customers",
@@ -122,6 +146,16 @@
     "calendarExceptions": "Calendar and Exceptions",
     "calendarDescription": "Manage opening hours and view reservations"
   },
+  "stats": {
+    "title": "Statistics",
+    "description": "Overview of restaurant performance"
+  },
+  "roles": {
+    "owner": "Owner",
+    "admin": "Administrator",
+    "staff": "Staff",
+    "role": "Role"
+  },
   "common": {
     "yes": "Yes",
     "no": "No",
@@ -138,7 +172,12 @@
     "filter": "Filter",
     "all": "All",
     "none": "None",
-    "required": "Required field"
+    "required": "Required field",
+    "previous": "Previous",
+    "next": "Next",
+    "today": "Today",
+    "capacity": "Capacity",
+    "totalCapacity": "Total capacity"
   },
   "languages": {
     "ca": "Català",

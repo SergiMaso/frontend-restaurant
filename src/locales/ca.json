@@ -53,6 +53,8 @@
     "description": "Administra les reserves del restaurant",
     "newReservation": "Nova Reserva",
     "editReservation": "Editar Reserva",
+    "addReservation": "Afegeix una nova reserva",
+    "modifyReservation": "Modifica les dades de la reserva",
     "deleteReservation": "Eliminar Reserva",
     "clientName": "Nom del Client",
     "phone": "Telèfon",
@@ -63,8 +65,21 @@
     "autoEndTime": "Automàtic",
     "language": "Idioma",
     "table": "Taula",
+    "currentTable": "actual: Taula",
+    "autoLabel": "Automàtic",
     "autoAssign": "Assignació automàtica",
+    "autoAssignHelp": "Selecciona \"Automàtic\" per assignar la taula automàticament.",
     "notes": "Observacions",
+    "people": "persones",
+    "selectTime": "Selecciona hora",
+    "selectLanguage": "Selecciona idioma",
+    "fieldsRequired": "Si us plau, completa tots els camps obligatoris",
+    "placeholders": {
+      "name": "Joan García",
+      "phone": "+34 600 000 000",
+      "numPeople": "4",
+      "time": "22:00"
+    },
     "status": {
       "pending": "Pendent",
       "confirmed": "Confirmada",
@@ -78,15 +93,24 @@
     "delete": "Eliminar",
     "deleteConfirm": "Estàs segur?",
     "deleteMessage": "Aquesta acció eliminarà permanentment la reserva",
+    "deleteReservationMessage": "Aquesta acció no es pot desfer. S'eliminarà permanentment la reserva de {{name}} per al {{date}} a les {{time}}.",
     "yes": "Sí, eliminar",
     "noReservations": "No hi ha reserves",
     "loading": "Carregant reserves...",
     "saving": "Guardant...",
     "deleting": "Eliminant...",
+    "createSuccess": "Reserva creada correctament",
+    "updateSuccess": "Reserva actualitzada correctament",
+    "deleteSuccess": "Reserva eliminada correctament",
+    "error": "Error",
     "multiTable": "Múltiples taules",
     "tables_one": "taula",
     "tables_other": "taules",
-    "totalCapacity": "Capacitat total"
+    "totalCapacity": "Capacitat total",
+    "noReservationsForDate": "No hi ha reserves per aquesta data",
+    "addNewReservation": "Afegeix una nova reserva per començar",
+    "tables": "Taules",
+    "peopleShort": "persones"
   },
   "customers": {
     "title": "Clients",
@@ -122,6 +146,16 @@
     "calendarExceptions": "Calendari i Excepcions",
     "calendarDescription": "Gestiona els horaris d'obertura i visualitza les reserves"
   },
+  "stats": {
+    "title": "Estadístiques",
+    "description": "Visió general del rendiment del restaurant"
+  },
+  "roles": {
+    "owner": "Propietari",
+    "admin": "Administrador",
+    "staff": "Personal",
+    "role": "Rol"
+  },
   "common": {
     "yes": "Sí",
     "no": "No",
@@ -138,7 +172,12 @@
     "filter": "Filtrar",
     "all": "Tots",
     "none": "Cap",
-    "required": "Camp obligatori"
+    "required": "Camp obligatori",
+    "previous": "Anterior",
+    "next": "Següent",
+    "today": "Avui",
+    "capacity": "Capacitat",
+    "totalCapacity": "Capacitat total"
   },
   "languages": {
     "ca": "Català",

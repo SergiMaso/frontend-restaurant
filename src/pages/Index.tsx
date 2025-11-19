@@ -143,12 +143,12 @@ const Index = () => {
                       {user?.email}
                     </p>
                     <p className="text-xs leading-none text-muted-foreground capitalize">
-                      Rol:{" "}
+                      {t('roles.role')}:{" "}
                       {user?.role === "owner"
-                        ? "Propietari"
+                        ? t('roles.owner')
                         : user?.role === "admin"
-                        ? "Administrador"
-                        : "Personal"}
+                        ? t('roles.admin')
+                        : t('roles.staff')}
                     </p>
                   </div>
                 </DropdownMenuLabel>
@@ -275,9 +275,9 @@ const Index = () => {
           <TabsContent value="calendario" className="space-y-6">
             <Card className="border-border/50 shadow-card">
               <CardHeader>
-                <CardTitle>Configuración Semanal</CardTitle>
+                <CardTitle>{t('schedule.weeklyConfig')}</CardTitle>
                 <CardDescription>
-                  Define los horarios por defecto para cada día de la semana
+                  {t('schedule.weeklyDescription')}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -287,9 +287,9 @@ const Index = () => {
 
             <Card className="border-border/50 shadow-card">
               <CardHeader>
-                <CardTitle>Calendario y Excepciones</CardTitle>
+                <CardTitle>{t('schedule.calendarExceptions')}</CardTitle>
                 <CardDescription>
-                  Gestiona los horarios de apertura y visualiza las reservas
+                  {t('schedule.calendarDescription')}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -307,9 +307,9 @@ const Index = () => {
           <TabsContent value="horario" className="space-y-4">
             <Card className="border-border/50 shadow-card">
               <CardHeader>
-                <CardTitle>Horario del Día</CardTitle>
+                <CardTitle>{t('schedule.title')}</CardTitle>
                 <CardDescription>
-                  Gestiona las reservas para{" "}
+                  {t('schedule.description')}{" "}
                   {format(selectedDate, "EEEE d 'de' MMMM", { locale: es })}
                 </CardDescription>
               </CardHeader>
@@ -340,9 +340,9 @@ const Index = () => {
             <Card className="border-border/50 shadow-card">
               <CardHeader>
                 <div>
-                  <CardTitle>Gestión de Mesas</CardTitle>
+                  <CardTitle>{t('tables.title')}</CardTitle>
                   <CardDescription>
-                    Administra las mesas del restaurante
+                    {t('tables.description')}
                   </CardDescription>
                 </div>
               </CardHeader>
@@ -358,9 +358,9 @@ const Index = () => {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle>Gestión de Reservas</CardTitle>
+                    <CardTitle>{t('reservations.title')}</CardTitle>
                     <CardDescription>
-                      Administra las reservas del restaurante
+                      {t('reservations.description')}
                     </CardDescription>
                   </div>
                   <Button
@@ -370,7 +370,7 @@ const Index = () => {
                     }}
                   >
                     <Plus className="h-4 w-4 mr-2" />
-                    Nueva Reserva
+                    {t('reservations.newReservation')}
                   </Button>
                 </div>
               </CardHeader>
@@ -391,9 +391,9 @@ const Index = () => {
           <TabsContent value="customers" className="space-y-4">
             <Card className="border-border/50 shadow-card">
               <CardHeader>
-                <CardTitle>Clientes</CardTitle>
+                <CardTitle>{t('customers.title')}</CardTitle>
                 <CardDescription>
-                  Lista de clientes registrados y conversaciones
+                  {t('customers.description')}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -415,9 +415,9 @@ const Index = () => {
           <TabsContent value="stats" className="space-y-4">
             <Card className="border-border/50 shadow-card">
               <CardHeader>
-                <CardTitle>Estadísticas</CardTitle>
+                <CardTitle>{t('stats.title')}</CardTitle>
                 <CardDescription>
-                  Visión general del rendimiento del restaurante
+                  {t('stats.description')}
                 </CardDescription>
               </CardHeader>
               <CardContent>
