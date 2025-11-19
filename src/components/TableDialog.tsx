@@ -50,7 +50,11 @@ const TableDialog = ({
       setTableNumber(table.table_number.toString());
       setCapacity(table.capacity.toString());
       setStatus(table.status);
-      setPairing(table.pairing || []);
+      // Assegurar que pairing és sempre un array
+      const pairingValue = Array.isArray(table.pairing) ? table.pairing : [];
+      console.log('🔍 [TableDialog] table.pairing:', table.pairing);
+      console.log('🔍 [TableDialog] pairingValue:', pairingValue);
+      setPairing(pairingValue);
     } else {
       setTableNumber("");
       setCapacity("");
@@ -83,9 +87,12 @@ const TableDialog = ({
   };
 
   // Obtenir taules disponibles per pairing (excloent la taula actual)
-  const availableTablesForPairing = allTables.filter(
+  console.log('🔍 [TableDialog] allTables:', allTables);
+  console.log('🔍 [TableDialog] allTables is array?:', Array.isArray(allTables));
+  const availableTablesForPairing = (allTables || []).filter(
     t => t.id !== table?.id
   );
+  console.log('🔍 [TableDialog] availableTablesForPairing:', availableTablesForPairing);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -162,7 +169,7 @@ const TableDialog = ({
             {pairing.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-2">
                 {pairing.map((tableNum) => {
-                  const pairTable = allTables.find(t => t.table_number === tableNum);
+                  const pairTable = (allTables || []).find(t => t.table_number === tableNum);
                   return (
                     <Badge key={tableNum} variant="secondary" className="flex items-center gap-1">
                       {t('tableDialog.table')} {tableNum} {pairTable && `(${pairTable.capacity} ${t('tableDialog.people')})`}
