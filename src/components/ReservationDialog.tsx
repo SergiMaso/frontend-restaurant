@@ -34,6 +34,7 @@ import { getTables, createAppointment, updateAppointment, deleteAppointment } fr
 import CustomerAutocomplete from "@/components/CustomerAutocomplete";
 import { useRestaurantConfig } from "@/hooks/useRestaurantConfig";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useTranslation } from "react-i18next";
 
 interface ReservationDialogProps {
   open: boolean;
@@ -63,6 +64,7 @@ const generateTimeSlots = (mode: string, intervalMinutes: number, fixedLunch: st
 };
 
 const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialogProps) => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const {
     maxPeoplePerBooking,
@@ -205,7 +207,7 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
   const updateMutation = useMutation({
     mutationFn: async (data: any) => {
       console.log("🚀 Enviant petició:", data);
-      
+
       if (reservation) {
         console.log(`📤 PUT /api/appointments/${reservation.id}`, data);
         return updateAppointment(reservation.id, data);
@@ -217,12 +219,12 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
     onSuccess: (response) => {
       console.log("✅ Resposta del servidor:", response);
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
-      toast.success(reservation ? "Reserva actualizada correctamente" : "Reserva creada correctamente");
+      toast.success(reservation ? t('reservations.updateSuccess') : t('reservations.createSuccess'));
       onOpenChange(false);
     },
     onError: (error: Error) => {
       console.error("❌ Error:", error);
-      toast.error("Error: " + error.message);
+      toast.error(t('reservations.error') + ": " + error.message);
     },
   });
 
@@ -230,12 +232,12 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
     mutationFn: deleteAppointment,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
-      toast.success("Reserva eliminada correctamente");
+      toast.success(t('reservations.deleteSuccess'));
       setDeleteDialogOpen(false);
       onOpenChange(false);
     },
     onError: (error: Error) => {
-      toast.error("Error eliminando la reserva: " + error.message);
+      toast.error(t('reservations.error') + ": " + error.message);
     },
   });
 
@@ -243,7 +245,7 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
     e.preventDefault();
 
     if (!clientName || !phone || !numPeople) {
-      toast.error("Por favor, completa todos los campos obligatorios");
+      toast.error(t('reservations.fieldsRequired'));
       return;
     }
 
@@ -323,9 +325,9 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{reservation ? "Editar Reserva" : "Nueva Reserva"}</DialogTitle>
+            <DialogTitle>{reservation ? t('reservations.editReservation') : t('reservations.newReservation')}</DialogTitle>
             <DialogDescription>
-              {reservation ? "Modifica los datos de la reserva" : "Añade una nueva reserva"}
+              {reservation ? t('reservations.modifyReservation') : t('reservations.addReservation')}
             </DialogDescription>
           </DialogHeader>
 
@@ -337,8 +339,8 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
                 value={clientName}
                 onChange={setClientName}
                 onSelectCustomer={handleSelectCustomer}
-                label="Nombre del Cliente"
-                placeholder="Joan García"
+                label={t('reservations.clientName')}
+                placeholder={t('reservations.placeholders.name')}
                 type="name"
                 disabled={!!reservation}
                 required
@@ -350,8 +352,8 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
                 value={phone}
                 onChange={setPhone}
                 onSelectCustomer={handleSelectCustomer}
-                label="Teléfono"
-                placeholder="+34 600 000 000"
+                label={t('reservations.phone')}
+                placeholder={t('reservations.placeholders.phone')}
                 type="phone"
                 disabled={!!reservation}
                 required
@@ -359,7 +361,7 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
 
               <div className="space-y-2">
                 <Label htmlFor="numPeople">
-                  Número de Personas <span className="text-destructive">*</span>
+                  {t('reservations.numPeople')} <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="numPeople"
@@ -368,14 +370,14 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
                   max={maxPeoplePerBooking}
                   value={numPeople}
                   onChange={(e) => setNumPeople(e.target.value)}
-                  placeholder="4"
+                  placeholder={t('reservations.placeholders.numPeople')}
                   required
                 />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="reservationDate">
-                  Fecha <span className="text-destructive">*</span>
+                  {t('reservations.date')} <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="reservationDate"
@@ -388,11 +390,11 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
 
               <div className="space-y-2">
                 <Label htmlFor="reservationTime">
-                  Hora de Inicio <span className="text-destructive">*</span>
+                  {t('reservations.startTime')} <span className="text-destructive">*</span>
                 </Label>
                 <Select value={reservationTime} onValueChange={setReservationTime}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecciona hora" />
+                    <SelectValue placeholder={t('reservations.selectTime')} />
                   </SelectTrigger>
                   <SelectContent>
                     {availableTimeSlots.map((slot) => (
@@ -406,7 +408,7 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="endTime">Hora de Fin</Label>
+                  <Label htmlFor="endTime">{t('reservations.endTime')}</Label>
                   <Checkbox
                     id="autoEndTime"
                     checked={autoEndTime}
@@ -419,53 +421,53 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
                   value={endTime}
                   onChange={(e) => setEndTime(e.target.value)}
                   disabled={autoEndTime}
-                  placeholder="22:00"
+                  placeholder={t('reservations.placeholders.time')}
                 />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="language">
-                  Idioma <span className="text-destructive">*</span>
+                  {t('reservations.language')} <span className="text-destructive">*</span>
                 </Label>
                 <Select value={language} onValueChange={setLanguage}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecciona idioma" />
+                    <SelectValue placeholder={t('reservations.selectLanguage')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ca">Català</SelectItem>
-                    <SelectItem value="es">Español</SelectItem>
-                    <SelectItem value="en">English</SelectItem>
-                    <SelectItem value="fr">Français</SelectItem>
-                    <SelectItem value="de">Deutsch</SelectItem>
+                    <SelectItem value="ca">{t('languages.ca')}</SelectItem>
+                    <SelectItem value="es">{t('languages.es')}</SelectItem>
+                    <SelectItem value="en">{t('languages.en')}</SelectItem>
+                    <SelectItem value="fr">{t('languages.fr')}</SelectItem>
+                    <SelectItem value="de">{t('languages.de')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="tableId">
-                  Mesa {reservation && reservation.table_number && `(actual: Mesa ${reservation.table_number})`}
+                  {t('reservations.table')} {reservation && reservation.table_number && `(${t('reservations.currentTable')} ${reservation.table_number})`}
                 </Label>
-                <Select 
-                  value={selectedTableId} 
+                <Select
+                  value={selectedTableId}
                   onValueChange={(value) => {
                     console.log("🎯 Taula seleccionada:", value);
                     setSelectedTableId(value);
                   }}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Asignación automática" />
+                    <SelectValue placeholder={t('reservations.autoAssign')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="auto">Automático</SelectItem>
+                    <SelectItem value="auto">{t('reservations.autoLabel')}</SelectItem>
                     {tables?.filter(t => t.status === 'available').map((table) => (
                       <SelectItem key={table.id} value={table.id.toString()}>
-                        Mesa {table.table_number} ({table.capacity} personas)
+                        {t('reservations.table')} {table.table_number} ({table.capacity} {t('reservations.people')})
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  Selecciona "Automático" para asignar la mesa automáticamente.
+                  {t('reservations.autoAssignHelp')}
                 </p>
               </div>
             </div>
@@ -473,24 +475,24 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
             <div className="flex gap-2 justify-between pt-4">
               {/* Botó eliminar a l'esquerra (només si s'està editant) */}
               {reservation && (
-                <Button 
-                  type="button" 
-                  variant="destructive" 
+                <Button
+                  type="button"
+                  variant="destructive"
                   onClick={() => setDeleteDialogOpen(true)}
                   disabled={deleteMutation.isPending}
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
-                  Eliminar
+                  {t('reservations.delete')}
                 </Button>
               )}
-              
+
               {/* Botons cancel·lar i guardar a la dreta */}
               <div className="flex gap-2 ml-auto">
                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                  Cancelar
+                  {t('reservations.cancel')}
                 </Button>
                 <Button type="submit" disabled={updateMutation.isPending}>
-                  {updateMutation.isPending ? "Guardando..." : reservation ? "Guardar Cambios" : "Crear Reserva"}
+                  {updateMutation.isPending ? t('reservations.saving') : reservation ? t('reservations.saveChanges') : t('reservations.create')}
                 </Button>
               </div>
             </div>
@@ -502,21 +504,22 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+            <AlertDialogTitle>{t('reservations.deleteConfirm')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. Se eliminará permanentemente la reserva de{" "}
-              <span className="font-semibold">{clientName}</span> para el{" "}
-              <span className="font-semibold">{reservationDate}</span> a las{" "}
-              <span className="font-semibold">{reservationTime}</span>.
+              {t('reservations.deleteReservationMessage', {
+                name: clientName,
+                date: reservationDate,
+                time: reservationTime
+              })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel>{t('reservations.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deleteMutation.isPending ? "Eliminando..." : "Sí, eliminar"}
+              {deleteMutation.isPending ? t('reservations.deleting') : t('reservations.yes')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

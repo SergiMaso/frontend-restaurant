@@ -7,6 +7,7 @@ import { useState } from "react";
 import { format } from "date-fns";
 import ReservationDialog from "./ReservationDialog";
 import { getAppointments, deleteAppointment, type Appointment } from "@/services/api";
+import { useTranslation } from "react-i18next";
 
 interface ReservationsListProps {
   selectedDate: Date;
@@ -15,6 +16,7 @@ interface ReservationsListProps {
 }
 
 const ReservationsList = ({ selectedDate, onEdit, onDateChange }: ReservationsListProps) => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [editingReservation, setEditingReservation] = useState<any>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -37,10 +39,10 @@ const ReservationsList = ({ selectedDate, onEdit, onDateChange }: ReservationsLi
     mutationFn: deleteAppointment,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
-      toast.success("Reserva eliminada correctament");
+      toast.success(t('reservations.deleteSuccess'));
     },
     onError: (error: Error) => {
-      toast.error("Error eliminant la reserva: " + error.message);
+      toast.error(t('reservations.error') + ": " + error.message);
     },
   });
 
@@ -54,7 +56,7 @@ const ReservationsList = ({ selectedDate, onEdit, onDateChange }: ReservationsLi
   };
 
   const handleDelete = (id: number) => {
-    if (confirm("Estàs segur que vols eliminar aquesta reserva?")) {
+    if (confirm(t('reservations.deleteConfirm'))) {
       deleteMutation.mutate(id);
     }
   };
@@ -80,11 +82,11 @@ const ReservationsList = ({ selectedDate, onEdit, onDateChange }: ReservationsLi
   const getStatusLabel = (status: string) => {
     switch (status) {
       case "confirmed":
-        return "Confirmada";
+        return t('reservations.status.confirmed');
       case "cancelled":
-        return "Cancel·lada";
+        return t('reservations.status.cancelled');
       case "completed":
-        return "Completada";
+        return t('reservations.status.completed');
       default:
         return status;
     }
@@ -121,7 +123,7 @@ const ReservationsList = ({ selectedDate, onEdit, onDateChange }: ReservationsLi
   };
 
   if (isLoading) {
-    return <div className="text-center py-8 text-muted-foreground">Carregant reserves...</div>;
+    return <div className="text-center py-8 text-muted-foreground">{t('reservations.loading')}</div>;
   }
 
   return (
@@ -132,13 +134,13 @@ const ReservationsList = ({ selectedDate, onEdit, onDateChange }: ReservationsLi
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={goToPreviousDay} size="sm">
               <ChevronLeft className="h-4 w-4 mr-1" />
-              Anterior
+              {t('common.previous')}
             </Button>
             <Button variant="outline" onClick={goToToday} size="sm">
-              Hoy
+              {t('common.today')}
             </Button>
             <Button variant="outline" onClick={goToNextDay} size="sm">
-              Siguiente
+              {t('common.next')}
               <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
           </div>
@@ -165,7 +167,7 @@ const ReservationsList = ({ selectedDate, onEdit, onDateChange }: ReservationsLi
                   </span>
                   <span className="flex items-center gap-1">
                     <Users className="h-3 w-3" />
-                    {reservation.num_people} persones
+                    {reservation.num_people} {t('reservations.peopleShort')}
                   </span>
                 </div>
               </div>
@@ -183,19 +185,19 @@ const ReservationsList = ({ selectedDate, onEdit, onDateChange }: ReservationsLi
                 {reservation.table_ids && reservation.table_ids.length > 1 ? (
                   <>
                     <Badge className={reservation.notes ? "bg-green-500 text-white hover:bg-green-600" : "bg-yellow-500 text-white hover:bg-yellow-600"}>
-                      📍 Mesas {reservation.table_numbers || reservation.table_ids.join('+')}
+                      📍 {t('reservations.tables')} {reservation.table_numbers || reservation.table_ids.join('+')}
                     </Badge>
                     <span className="text-xs text-muted-foreground">
-                      {reservation.table_ids.length} mesas · Capacidad total: {reservation.table_capacity}
+                      {reservation.table_ids.length} {reservation.table_ids.length === 1 ? t('reservations.tables_one') : t('reservations.tables_other')} · {t('common.totalCapacity')}: {reservation.table_capacity}
                     </span>
                   </>
                 ) : (
                   <>
                     <Badge variant="outline">
-                      Mesa {reservation.table_numbers || reservation.table_number || 'N/A'}
+                      {t('reservations.table')} {reservation.table_numbers || reservation.table_number || 'N/A'}
                     </Badge>
                     <span className="text-xs text-muted-foreground">
-                      Capacidad: {reservation.table_capacity}
+                      {t('common.capacity')}: {reservation.table_capacity}
                     </span>
                   </>
                 )}
@@ -210,7 +212,7 @@ const ReservationsList = ({ selectedDate, onEdit, onDateChange }: ReservationsLi
                 className="flex-1"
               >
                 <Pencil className="h-4 w-4 mr-1" />
-                Editar
+                {t('common.edit')}
               </Button>
               <Button
                 variant="destructive"
@@ -219,7 +221,7 @@ const ReservationsList = ({ selectedDate, onEdit, onDateChange }: ReservationsLi
                 className="flex-1"
               >
                 <Trash2 className="h-4 w-4 mr-1" />
-                Eliminar
+                {t('common.delete')}
               </Button>
             </div>
           </div>
@@ -228,8 +230,8 @@ const ReservationsList = ({ selectedDate, onEdit, onDateChange }: ReservationsLi
 
       {filteredReservations?.length === 0 && (
         <div className="text-center py-12 text-muted-foreground">
-          <p>No hay reservas para esta fecha</p>
-          <p className="text-sm">Añade una nueva reserva para empezar</p>
+          <p>{t('reservations.noReservationsForDate')}</p>
+          <p className="text-sm">{t('reservations.addNewReservation')}</p>
         </div>
       )}
 

@@ -53,6 +53,8 @@
     "description": "Administra las reservas del restaurante",
     "newReservation": "Nueva Reserva",
     "editReservation": "Editar Reserva",
+    "addReservation": "Añade una nueva reserva",
+    "modifyReservation": "Modifica los datos de la reserva",
     "deleteReservation": "Eliminar Reserva",
     "clientName": "Nombre del Cliente",
     "phone": "Teléfono",
@@ -63,8 +65,21 @@
     "autoEndTime": "Automático",
     "language": "Idioma",
     "table": "Mesa",
+    "currentTable": "actual: Mesa",
+    "autoLabel": "Automático",
     "autoAssign": "Asignación automática",
+    "autoAssignHelp": "Selecciona \"Automático\" para asignar la mesa automáticamente.",
     "notes": "Observaciones",
+    "people": "personas",
+    "selectTime": "Selecciona hora",
+    "selectLanguage": "Selecciona idioma",
+    "fieldsRequired": "Por favor, completa todos los campos obligatorios",
+    "placeholders": {
+      "name": "Joan García",
+      "phone": "+34 600 000 000",
+      "numPeople": "4",
+      "time": "22:00"
+    },
     "status": {
       "pending": "Pendiente",
       "confirmed": "Confirmada",
@@ -78,15 +93,24 @@
     "delete": "Eliminar",
     "deleteConfirm": "¿Estás seguro?",
     "deleteMessage": "Esta acción eliminará permanentemente la reserva",
+    "deleteReservationMessage": "Esta acción no se puede deshacer. Se eliminará permanentemente la reserva de {{name}} para el {{date}} a las {{time}}.",
     "yes": "Sí, eliminar",
     "noReservations": "No hay reservas",
     "loading": "Cargando reservas...",
     "saving": "Guardando...",
     "deleting": "Eliminando...",
+    "createSuccess": "Reserva creada correctamente",
+    "updateSuccess": "Reserva actualizada correctamente",
+    "deleteSuccess": "Reserva eliminada correctamente",
+    "error": "Error",
     "multiTable": "Múltiples mesas",
     "tables_one": "mesa",
     "tables_other": "mesas",
-    "totalCapacity": "Capacidad total"
+    "totalCapacity": "Capacidad total",
+    "noReservationsForDate": "No hay reservas para esta fecha",
+    "addNewReservation": "Añade una nueva reserva para empezar",
+    "tables": "Mesas",
+    "peopleShort": "persones"
   },
   "customers": {
     "title": "Clientes",
@@ -122,6 +146,16 @@
     "calendarExceptions": "Calendario y Excepciones",
     "calendarDescription": "Gestiona los horarios de apertura y visualiza las reservas"
   },
+  "stats": {
+    "title": "Estadísticas",
+    "description": "Visión general del rendimiento del restaurante"
+  },
+  "roles": {
+    "owner": "Propietario",
+    "admin": "Administrador",
+    "staff": "Personal",
+    "role": "Rol"
+  },
   "common": {
     "yes": "Sí",
     "no": "No",
@@ -138,7 +172,12 @@
     "filter": "Filtrar",
     "all": "Todos",
     "none": "Ninguno",
-    "required": "Campo obligatorio"
+    "required": "Campo obligatorio",
+    "previous": "Anterior",
+    "next": "Siguiente",
+    "today": "Hoy",
+    "capacity": "Capacidad",
+    "totalCapacity": "Capacidad total"
   },
   "languages": {
     "ca": "Català",
