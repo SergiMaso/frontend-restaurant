@@ -7,12 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getOpeningHoursRange, getAppointments } from "@/services/api";
 import OpeningHoursDialog from "./OpeningHoursDialog";
+import { useTranslation } from "react-i18next";
 
 interface OpeningHoursCalendarProps {
   onViewDay?: (date: Date) => void;
 }
 
 const OpeningHoursCalendar = ({ onViewDay }: OpeningHoursCalendarProps) => {
+  const { t } = useTranslation();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -147,7 +149,7 @@ const OpeningHoursCalendar = ({ onViewDay }: OpeningHoursCalendarProps) => {
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <Button variant="outline" size="sm" onClick={goToToday}>
-            Hoy
+            {t('calendar.today')}
           </Button>
           <Button variant="outline" size="sm" onClick={goToNextMonth}>
             <ChevronRight className="h-4 w-4" />
@@ -159,19 +161,19 @@ const OpeningHoursCalendar = ({ onViewDay }: OpeningHoursCalendarProps) => {
       <div className="flex flex-wrap gap-3 text-sm">
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded bg-green-500" />
-          <span>Todo el día</span>
+          <span>{t('calendar.fullDay')}</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded bg-yellow-500" />
-          <span>Solo comida</span>
+          <span>{t('calendar.lunchOnly')}</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded bg-orange-500" />
-          <span>Solo cena</span>
+          <span>{t('calendar.dinnerOnly')}</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded bg-red-500" />
-          <span>Cerrado</span>
+          <span>{t('calendar.closed')}</span>
         </div>
       </div>
 
@@ -225,7 +227,7 @@ const OpeningHoursCalendar = ({ onViewDay }: OpeningHoursCalendarProps) => {
                   {reservationsCount > 0 && (
                     <div className="mb-2">
                       <Badge variant="secondary" className="text-xs px-1.5 py-0">
-                        {reservationsCount} {reservationsCount === 1 ? "reserva" : "reserves"}
+                        {reservationsCount} {reservationsCount === 1 ? t('calendar.reservation') : t('calendar.reservations')}
                       </Badge>
                     </div>
                   )}
@@ -267,7 +269,7 @@ const OpeningHoursCalendar = ({ onViewDay }: OpeningHoursCalendarProps) => {
                       className="text-xs w-full"
                     >
                       <Edit className="h-3 w-3 mr-1" />
-                      Editar
+                      {t('calendar.edit')}
                     </Button>
                     <Button
                       size="sm"
@@ -276,7 +278,7 @@ const OpeningHoursCalendar = ({ onViewDay }: OpeningHoursCalendarProps) => {
                       className="text-xs w-full"
                     >
                       <Eye className="h-3 w-3 mr-1" />
-                      Ver día
+                      {t('calendar.viewDay')}
                     </Button>
                   </div>
                 </div>
@@ -288,12 +290,12 @@ const OpeningHoursCalendar = ({ onViewDay }: OpeningHoursCalendarProps) => {
 
       {/* Informació addicional */}
       <div className="text-sm text-muted-foreground bg-muted/30 p-4 rounded-lg">
-        <p className="font-semibold mb-2">ℹ️ Información:</p>
+        <p className="font-semibold mb-2">{t('calendar.info')}</p>
         <ul className="space-y-1 list-disc list-inside">
-          <li>Pasa el cursor por encima de cualquier día para ver las opciones</li>
-          <li><strong>Editar</strong>: Configura los horarios de apertura del restaurante</li>
-          <li><strong>Ver día</strong>: Ver el horario detallado de reservas de ese día</li>
-          <li>Los días sin configuración utilizarán el horario por defecto (12:00-15:00 y 19:00-22:30)</li>
+          <li>{t('calendar.infoHover')}</li>
+          <li><strong>{t('calendar.edit')}</strong>: {t('calendar.infoEdit')}</li>
+          <li><strong>{t('calendar.viewDay')}</strong>: {t('calendar.infoViewDay')}</li>
+          <li>{t('calendar.infoDefault')}</li>
         </ul>
       </div>
 

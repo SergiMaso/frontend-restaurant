@@ -31,6 +31,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { useTranslation } from "react-i18next";
 
 // API functions
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
@@ -53,9 +54,9 @@ const uploadMedia = async (formData: FormData) => {
   
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.error || "Error pujant arxiu");
+    throw new Error(error.error || "Upload error");
   }
-  
+
   return response.json();
 };
 
@@ -64,17 +65,17 @@ const deleteMedia = async (mediaId: number) => {
     method: "DELETE",
   });
   
-  if (!response.ok) throw new Error("Error eliminant media");
+  if (!response.ok) throw new Error("Delete error");
   return response.json();
 };
 
 const MediaManager = () => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [filterType, setFilterType] = useState<string>("all");
   const [previewMedia, setPreviewMedia] = useState<any>(null);
 
-  // Form state
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [mediaType, setMediaType] = useState<string>("carta");
   const [title, setTitle] = useState("");
@@ -92,12 +93,12 @@ const MediaManager = () => {
     mutationFn: uploadMedia,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["media"] });
-      toast.success("✅ Arxiu pujat correctament!");
+      toast.success(t('media.uploadSuccess'));
       setUploadDialogOpen(false);
       resetForm();
     },
     onError: (error: Error) => {
-      toast.error(`❌ Error: ${error.message}`);
+      toast.error(t('media.uploadError', { message: error.message }));
     },
   });
 
@@ -106,10 +107,10 @@ const MediaManager = () => {
     mutationFn: deleteMedia,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["media"] });
-      toast.success("✅ Arxiu eliminat correctament!");
+      toast.success(t('media.deleteSuccess'));
     },
     onError: (error: Error) => {
-      toast.error(`❌ Error: ${error.message}`);
+      toast.error(t('media.deleteError', { message: error.message }));
     },
   });
 
@@ -125,16 +126,14 @@ const MediaManager = () => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       
-      // Validar mida (10MB max)
       if (file.size > 10 * 1024 * 1024) {
-        toast.error("❌ L'arxiu és massa gran (màxim 10MB)");
+        toast.error(t('media.fileTooLarge'));
         return;
       }
-      
-      // Validar tipus
+
       const validTypes = ["application/pdf", "image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
       if (!validTypes.includes(file.type)) {
-        toast.error("❌ Tipus d'arxiu no vàlid. Usa PDF o imatges (JPG, PNG, GIF, WEBP)");
+        toast.error(t('media.invalidFileType'));
         return;
       }
       
@@ -150,12 +149,12 @@ const MediaManager = () => {
 
   const handleUpload = () => {
     if (!selectedFile) {
-      toast.error("❌ Selecciona un arxiu primer");
+      toast.error(t('media.selectFileFirst'));
       return;
     }
-    
+
     if (!title.trim()) {
-      toast.error("❌ El títol és obligatori");
+      toast.error(t('media.titleRequired'));
       return;
     }
 
@@ -170,7 +169,7 @@ const MediaManager = () => {
   };
 
   const handleDelete = (mediaId: number, mediaTitle: string) => {
-    if (window.confirm(`Segur que vols eliminar "${mediaTitle}"?`)) {
+    if (window.confirm(t('media.deleteConfirm', { title: mediaTitle }))) {
       deleteMutation.mutate(mediaId);
     }
   };

@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { getTables, getAppointments } from "@/services/api";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 interface DayCalendarProps {
   selectedDate: Date;
@@ -40,6 +41,7 @@ const parseAsLocalTime = (timestamp: string): Date => {
 };
 
 const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) => {
+  const { t } = useTranslation();
   const [selectedReservation, setSelectedReservation] = useState<any>(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const queryClient = useQueryClient();
@@ -66,11 +68,16 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
     onSuccess: async (data) => {
       // Refrescar les dades del servidor
       await queryClient.invalidateQueries({ queryKey: ["appointments"] });
-      
-      const delayMsg = data.delay_minutes 
-        ? ` (Retraso: ${data.delay_minutes > 0 ? '+' : ''}${data.delay_minutes} min)`
-        : '';
-      toast.success(`✅ Cliente sentado!${delayMsg}`);
+
+      let message = `✅ ${t('schedule.customerSeated')}`;
+      if (data.delay_minutes) {
+        if (data.delay_minutes > 0) {
+          message += ` (${t('schedule.customerSeatedDelay', { delay: data.delay_minutes })})`;
+        } else {
+          message += ` (${t('schedule.customerSeatedEarly', { early: Math.abs(data.delay_minutes) })})`;
+        }
+      }
+      toast.success(message);
       
       // Esperar una mica i reobrir amb dades fresques
       setTimeout(async () => {
@@ -82,7 +89,7 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
       }, 500);
     },
     onError: () => {
-      toast.error("❌ Error marcando como sentado");
+      toast.error(`❌ ${t('schedule.errorSeating')}`);
     },
   });
 
@@ -97,8 +104,8 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
     onSuccess: async (data) => {
       // Refrescar les dades del servidor
       await queryClient.invalidateQueries({ queryKey: ["appointments"] });
-      
-      toast.success(`👋 Cliente marchó! Duración: ${data.duration_minutes} min`);
+
+      toast.success(`👋 ${t('schedule.customerLeft', { duration: data.duration_minutes })}`);
       
       // Esperar una mica i reobrir amb dades fresques
       setTimeout(async () => {
@@ -110,7 +117,7 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
       }, 500);
     },
     onError: () => {
-      toast.error("❌ Error marcando salida");
+      toast.error(`❌ ${t('schedule.errorLeaving')}`);
     },
   });
 
@@ -126,11 +133,11 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
-      toast.success("❌ No-show registrado");
+      toast.success(`❌ ${t('schedule.noShowRegistered')}`);
       setDetailsDialogOpen(false);
     },
     onError: () => {
-      toast.error("❌ Error registrando no-show");
+      toast.error(`❌ ${t('schedule.errorNoShow')}`);
     },
   });
 

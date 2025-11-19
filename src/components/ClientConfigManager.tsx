@@ -21,8 +21,10 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Settings, Save, Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useTranslation } from "react-i18next";
 
 const ClientConfigManager = () => {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [editingKey, setEditingKey] = useState<string | null>(null);
@@ -38,8 +40,8 @@ const ClientConfigManager = () => {
       updateClientConfig(key, value),
     onSuccess: () => {
       toast({
-        title: "✅ Configuración actualitzada",
-        description: "Los cambios se han guardado correctamente",
+        title: t('clientConfig.updateSuccess'),
+        description: t('clientConfig.updateSuccessDesc'),
       });
       queryClient.invalidateQueries({ queryKey: ["client-configs"] });
       setEditingKey(null);
@@ -47,7 +49,7 @@ const ClientConfigManager = () => {
     onError: (error: any) => {
       toast({
         variant: "destructive",
-        title: "❌ Error",
+        title: t('common.error'),
         description: error.message,
       });
     },
@@ -76,13 +78,6 @@ const ClientConfigManager = () => {
     return acc;
   }, {} as Record<string, typeof configs>);
 
-  const categoryNames: Record<string, string> = {
-    restaurant: "🏢 Restaurante",
-    booking: "📅 Reservas",
-    maintenance: "🔧 Mantenimiento",
-    conversations: "💬 Conversaciones",
-  };
-
   if (isLoading) {
     return (
       <Card>
@@ -104,9 +99,9 @@ const ClientConfigManager = () => {
               <Settings className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <CardTitle>Configuración del Cliente</CardTitle>
+              <CardTitle>{t('clientConfig.title')}</CardTitle>
               <CardDescription>
-                Gestiona las variables configurables del sistema en tiempo real
+                {t('clientConfig.description')}
               </CardDescription>
             </div>
           </div>
@@ -118,7 +113,7 @@ const ClientConfigManager = () => {
                 <div key={category} className="space-y-3">
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="text-sm font-medium">
-                      {categoryNames[category] || category}
+                      {t(`clientConfig.categories.${category}`)}
                     </Badge>
                     <div className="flex-1 h-px bg-border"></div>
                   </div>
@@ -126,11 +121,11 @@ const ClientConfigManager = () => {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-[30%]">Clave</TableHead>
-                        <TableHead className="w-[20%]">Valor</TableHead>
-                        <TableHead className="w-[35%]">Descripción</TableHead>
+                        <TableHead className="w-[30%]">{t('clientConfig.key')}</TableHead>
+                        <TableHead className="w-[20%]">{t('clientConfig.value')}</TableHead>
+                        <TableHead className="w-[35%]">{t('clientConfig.description')}</TableHead>
                         <TableHead className="text-right w-[15%]">
-                          Acciones
+                          {t('clientConfig.actions')}
                         </TableHead>
                       </TableRow>
                     </TableHeader>
@@ -167,7 +162,7 @@ const ClientConfigManager = () => {
                                   disabled={updateMutation.isPending}
                                 >
                                   <Save className="h-4 w-4 mr-1" />
-                                  Guardar
+                                  {t('clientConfig.save')}
                                 </Button>
                                 <Button
                                   size="sm"
@@ -175,7 +170,7 @@ const ClientConfigManager = () => {
                                   onClick={handleCancel}
                                   disabled={updateMutation.isPending}
                                 >
-                                  Cancelar
+                                  {t('common.cancel')}
                                 </Button>
                               </div>
                             ) : (
@@ -187,7 +182,7 @@ const ClientConfigManager = () => {
                                 }
                               >
                                 <Pencil className="h-4 w-4 mr-1" />
-                                Editar
+                                {t('common.edit')}
                               </Button>
                             )}
                           </TableCell>
@@ -207,15 +202,15 @@ const ClientConfigManager = () => {
           <div className="flex items-start gap-3">
             <div className="text-primary mt-0.5">ℹ️</div>
             <div className="text-sm text-muted-foreground space-y-1">
-              <p className="font-medium text-foreground">Información:</p>
+              <p className="font-medium text-foreground">{t('clientConfig.infoTitle')}:</p>
               <ul className="list-disc list-inside space-y-1">
                 <li>
-                  Los cambios se aplican instantaneamente
+                  {t('clientConfig.info1')}
                 </li>
                 <li>
-                    Los horarios y mesas se configuran en sus respectivas pestanyas
+                  {t('clientConfig.info2')}
                 </li>
-                <li>Los valores numéricos deben ser enteros positivos</li>
+                <li>{t('clientConfig.info3')}</li>
               </ul>
             </div>
           </div>

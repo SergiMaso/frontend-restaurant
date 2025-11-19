@@ -24,8 +24,10 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Send, Eye, Users, Globe, Clock } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 const BroadcastManager = () => {
+  const { t } = useTranslation();
   const [message, setMessage] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [filterValue, setFilterValue] = useState("");
@@ -42,7 +44,7 @@ const BroadcastManager = () => {
       });
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Error obteniendo previsualización');
+        throw new Error(error.error || t('broadcast.previewError'));
       }
       return response.json();
     },
@@ -51,7 +53,7 @@ const BroadcastManager = () => {
       console.log("✅ Preview data:", data);
     },
     onError: (error: Error) => {
-      toast.error("Error: " + error.message);
+      toast.error(t('common.error') + ": " + error.message);
     },
   });
 
@@ -65,24 +67,24 @@ const BroadcastManager = () => {
       });
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Error enviando mensaje');
+        throw new Error(error.error || t('broadcast.sendError'));
       }
       return response.json();
     },
     onSuccess: (data) => {
-      toast.success(`Mensaje enviado a ${data.sent} clientes (${data.failed} errores)`);
+      toast.success(t('broadcast.messageSent', { sent: data.sent, failed: data.failed }));
       setMessage("");
       setPreviewData(null);
       setConfirmDialogOpen(false);
     },
     onError: (error: Error) => {
-      toast.error("Error: " + error.message);
+      toast.error(t('common.error') + ": " + error.message);
     },
   });
 
   const handlePreview = () => {
     if (!message.trim()) {
-      toast.error("Escribe un mensaje primero");
+      toast.error(t('broadcast.writeMessageFirst'));
       return;
     }
 
@@ -99,12 +101,12 @@ const BroadcastManager = () => {
 
   const handleSendConfirm = () => {
     if (!message.trim()) {
-      toast.error("Escribe un mensaje primero");
+      toast.error(t('broadcast.writeMessageFirst'));
       return;
     }
 
     if (!previewData) {
-      toast.error("Haz una previsualización primero");
+      toast.error(t('broadcast.previewFirst'));
       return;
     }
 
@@ -130,41 +132,40 @@ const BroadcastManager = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Send className="h-5 w-5" />
-            Mensaje Difundido
+            {t('broadcast.title')}
           </CardTitle>
           <CardDescription>
-            Envía un mensaje a todos los clientes o un grupo específico
+            {t('broadcast.description')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Filtres */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="filterType">Destinatarios</Label>
+              <Label htmlFor="filterType">{t('broadcast.recipients')}</Label>
               <Select value={filterType} onValueChange={(value) => {
                 setFilterType(value);
                 setPreviewData(null);
               }}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecciona destinatarios" />
+                  <SelectValue placeholder={t('broadcast.selectRecipients')} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">
                     <div className="flex items-center gap-2">
                       <Users className="h-4 w-4" />
-                      Todos los clientes
+                      {t('broadcast.allCustomers')}
                     </div>
                   </SelectItem>
                   <SelectItem value="language">
                     <div className="flex items-center gap-2">
                       <Globe className="h-4 w-4" />
-                      Por idioma
+                      {t('broadcast.byLanguage')}
                     </div>
                   </SelectItem>
                   <SelectItem value="recent_customers">
                     <div className="flex items-center gap-2">
                       <Clock className="h-4 w-4" />
-                      Clientes recientes (últimos 30 días)
+                      {t('broadcast.recentCustomers')}
                     </div>
                   </SelectItem>
                 </SelectContent>
@@ -173,13 +174,13 @@ const BroadcastManager = () => {
 
             {filterType === 'language' && (
               <div className="space-y-2">
-                <Label htmlFor="language">Idioma</Label>
+                <Label htmlFor="language">{t('broadcast.language')}</Label>
                 <Select value={filterValue} onValueChange={(value) => {
                   setFilterValue(value);
                   setPreviewData(null);
                 }}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecciona idioma" />
+                    <SelectValue placeholder={t('broadcast.selectLanguage')} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="ca">🇪🇸 Català</SelectItem>
@@ -191,23 +192,21 @@ const BroadcastManager = () => {
             )}
           </div>
 
-          {/* Missatge */}
           <div className="space-y-2">
-            <Label htmlFor="message">Mensaje</Label>
+            <Label htmlFor="message">{t('broadcast.message')}</Label>
             <Textarea
               id="message"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder="Escribe tu mensaje aquí..."
+              placeholder={t('broadcast.messagePlaceholder')}
               rows={6}
               className="resize-none"
             />
             <p className="text-sm text-muted-foreground">
-              {message.length} caracteres
+              {message.length} {t('broadcast.characters')}
             </p>
           </div>
 
-          {/* Botons */}
           <div className="flex gap-2">
             <Button
               onClick={handlePreview}
@@ -216,7 +215,7 @@ const BroadcastManager = () => {
               className="flex-1"
             >
               <Eye className="h-4 w-4 mr-2" />
-              {previewMutation.isPending ? "Cargando..." : "Previsualizar"}
+              {previewMutation.isPending ? t('broadcast.loading') : t('broadcast.preview')}
             </Button>
             <Button
               onClick={handleSendConfirm}
@@ -224,26 +223,25 @@ const BroadcastManager = () => {
               className="flex-1"
             >
               <Send className="h-4 w-4 mr-2" />
-              Enviar
+              {t('broadcast.send')}
             </Button>
           </div>
 
-          {/* Preview data */}
           {previewData && (
             <div className="mt-4 p-4 border border-border rounded-lg bg-muted/50">
-              <h4 className="font-semibold mb-3">📊 Resumen:</h4>
+              <h4 className="font-semibold mb-3">{t('broadcast.summary')}</h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div className="text-center p-3 bg-background rounded-lg">
                   <div className="text-2xl font-bold text-primary">{previewData.total}</div>
-                  <div className="text-xs text-muted-foreground">Total clientes</div>
+                  <div className="text-xs text-muted-foreground">{t('broadcast.totalCustomers')}</div>
                 </div>
                 <div className="text-center p-3 bg-background rounded-lg">
                   <div className="text-2xl font-bold text-green-600">{previewData.by_channel?.whatsapp || 0}</div>
-                  <div className="text-xs text-muted-foreground">WhatsApp</div>
+                  <div className="text-xs text-muted-foreground">{t('broadcast.whatsapp')}</div>
                 </div>
                 <div className="text-center p-3 bg-background rounded-lg">
                   <div className="text-2xl font-bold text-blue-600">{previewData.by_channel?.telegram || 0}</div>
-                  <div className="text-xs text-muted-foreground">Telegram</div>
+                  <div className="text-xs text-muted-foreground">{t('broadcast.telegram')}</div>
                 </div>
                 <div className="text-center p-3 bg-background rounded-lg">
                   <div className="text-sm font-bold flex flex-col gap-1">
@@ -256,9 +254,8 @@ const BroadcastManager = () => {
                 </div>
               </div>
 
-              {/* Llista de destinataris (scroll) */}
               <div className="mt-4 max-h-48 overflow-y-auto">
-                <h5 className="text-sm font-semibold mb-2">Destinatarios:</h5>
+                <h5 className="text-sm font-semibold mb-2">{t('broadcast.recipientsList')}</h5>
                 <div className="space-y-1">
                   {previewData.recipients?.slice(0, 20).map((recipient: any, idx: number) => (
                     <div key={idx} className="text-xs p-2 bg-background rounded flex items-center justify-between">
@@ -271,7 +268,7 @@ const BroadcastManager = () => {
                   ))}
                   {previewData.recipients?.length > 20 && (
                     <p className="text-xs text-muted-foreground text-center pt-2">
-                      ... y {previewData.recipients.length - 20} más
+                      {t('broadcast.andMore', { count: previewData.recipients.length - 20 })}
                     </p>
                   )}
                 </div>
@@ -281,30 +278,29 @@ const BroadcastManager = () => {
         </CardContent>
       </Card>
 
-      {/* Diàleg de confirmació */}
       <AlertDialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar envío</AlertDialogTitle>
+            <AlertDialogTitle>{t('broadcast.confirmTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Estás a punto de enviar este mensaje a <strong>{previewData?.total || 0} clientes</strong>.
+              {t('broadcast.confirmDescription')} <strong>{previewData?.total || 0} {t('broadcast.customers')}</strong>.
               <div className="mt-4 p-3 bg-muted rounded-lg">
-                <p className="text-sm font-medium mb-2">Mensaje:</p>
+                <p className="text-sm font-medium mb-2">{t('broadcast.messageLabel')}</p>
                 <p className="text-sm whitespace-pre-wrap">{message}</p>
               </div>
               <p className="mt-4 text-destructive font-semibold">
-                ⚠️ Esta acción no se puede deshacer
+                {t('broadcast.confirmWarning')}
               </p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel>{t('broadcast.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleSend}
               disabled={sendMutation.isPending}
               className="bg-primary"
             >
-              {sendMutation.isPending ? "Enviando..." : "Sí, enviar"}
+              {sendMutation.isPending ? t('broadcast.sending') : t('broadcast.yesSend')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -9,8 +9,10 @@ import { format } from "date-fns";
 import { useState, useMemo, useEffect, useRef } from "react";
 import BroadcastManager from "@/components/BroadcastManager";
 import EditCustomerDialog from "@/components/EditCustomerDialog";
+import { useTranslation } from "react-i18next";
 
 const CustomersList = () => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null);
   const [conversationsDialogOpen, setConversationsDialogOpen] = useState(false);
@@ -103,10 +105,10 @@ const CustomersList = () => {
 
       // Toast success
       const toast = (await import("sonner")).toast;
-      toast.success("Mensaje enviado correctamente");
+      toast.success(t('customers.messageSent'));
     } catch (error) {
       const toast = (await import("sonner")).toast;
-      toast.error("Error al enviar el mensaje");
+      toast.error(t('customers.messageError'));
       console.error("Error sending message:", error);
     } finally {
       setSendingMessage(false);
@@ -138,7 +140,7 @@ const CustomersList = () => {
   };
 
   if (isLoading) {
-    return <div className="text-center py-8 text-muted-foreground">Cargando clientes...</div>;
+    return <div className="text-center py-8 text-muted-foreground">{t('customers.loading')}</div>;
   }
 
   return (
@@ -150,7 +152,7 @@ const CustomersList = () => {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             type="text"
-            placeholder="Buscar por teléfono o nombre..."
+            placeholder={t('customers.search')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
@@ -163,7 +165,7 @@ const CustomersList = () => {
           className="flex items-center gap-2"
         >
           <Send className="h-4 w-4" />
-          Mensaje Difundido
+          {t('customers.broadcast')}
         </Button>
       </div>
 
@@ -172,7 +174,7 @@ const CustomersList = () => {
         <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-3 flex items-center gap-2">
           <UtensilsCrossed className="h-5 w-5 text-green-600 dark:text-green-400" />
           <p className="text-sm font-medium text-green-700 dark:text-green-300">
-            {customersWithReservationToday} {customersWithReservationToday === 1 ? 'cliente tiene' : 'clientes tienen'} reserva hoy
+            {customersWithReservationToday} {customersWithReservationToday === 1 ? t('customers.hasReservationCount_one') : t('customers.hasReservationCount_other')}
           </p>
         </div>
       )}
@@ -194,7 +196,7 @@ const CustomersList = () => {
                 {customer.has_reservation_today && (
                   <Badge className="bg-green-500 hover:bg-green-600 text-white">
                     <UtensilsCrossed className="h-3 w-3 mr-1" />
-                    Reserva Hoy
+                    {t('customers.hasReservation')}
                   </Badge>
                 )}
               </div>
@@ -208,11 +210,11 @@ const CustomersList = () => {
             <div className="flex items-center gap-2 flex-wrap">
               <Badge variant="outline" className="flex items-center gap-1">
                 <Users className="h-3 w-3" />
-                {customer.visit_count} {customer.visit_count === 1 ? 'visita' : 'visitas'}
+                {customer.visit_count} {customer.visit_count === 1 ? t('customers.visits') : t('customers.visits_plural')}
               </Badge>
               {customer.no_show_count > 0 && (
                 <Badge variant="destructive" className="flex items-center gap-1">
-                  ❌ {customer.no_show_count} no-show{customer.no_show_count > 1 ? 's' : ''}
+                  ❌ {customer.no_show_count} {customer.no_show_count > 1 ? t('customers.noShows') : t('customers.noShow')}
                 </Badge>
               )}
             </div>
@@ -225,7 +227,7 @@ const CustomersList = () => {
               </Badge>
               <span className="flex items-center gap-1">
                 <Calendar className="h-3 w-3" />
-                Última visita: {format(new Date(customer.last_visit), "d MMM yyyy")}
+                {t('customers.lastVisit')}: {format(new Date(customer.last_visit), "d MMM yyyy")}
               </span>
             </div>
           </div>
@@ -238,7 +240,7 @@ const CustomersList = () => {
               onClick={() => handleViewConversations(customer.phone)}
             >
               <MessageCircle className="h-4 w-4 mr-2" />
-              Ver conversaciones
+              {t('customers.viewConversations')}
             </Button>
             <Button
               variant="outline"
@@ -246,7 +248,7 @@ const CustomersList = () => {
               onClick={() => handleEditCustomer(customer)}
             >
               <Edit className="h-4 w-4 mr-2" />
-              Editar cliente
+              {t('customers.editCustomer')}
             </Button>
           </div>
         </div>
@@ -254,13 +256,13 @@ const CustomersList = () => {
 
       {filteredCustomers?.length === 0 && searchQuery && (
         <div className="text-center py-12 text-muted-foreground">
-          <p>No se encontraron clientes con "{searchQuery}"</p>
+          <p>{t('customers.noResults')} "{searchQuery}"</p>
         </div>
       )}
 
       {filteredCustomers?.length === 0 && !searchQuery && (
         <div className="text-center py-12 text-muted-foreground">
-          <p>No hay clientes registrados</p>
+          <p>{t('customers.noCustomers')}</p>
         </div>
       )}
 
@@ -295,7 +297,7 @@ const CustomersList = () => {
             {/* Missatges */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {conversationsLoading ? (
-                <div className="text-center py-8 text-muted-foreground">Cargando conversaciones...</div>
+                <div className="text-center py-8 text-muted-foreground">{t('customers.loadingConversations')}</div>
               ) : conversations && conversations.length > 0 ? (
                 conversations.map((conv) => (
                   <div
@@ -318,7 +320,7 @@ const CustomersList = () => {
                 ))
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
-                  No hay conversaciones para mostrar
+                  {t('customers.noConversations')}
                 </div>
               )}
               {/* Referència per fer scroll automàtic */}
@@ -337,7 +339,7 @@ const CustomersList = () => {
                       handleSendMessage();
                     }
                   }}
-                  placeholder="Escribe un mensaje..."
+                  placeholder={t('customers.writeMessage')}
                   disabled={sendingMessage}
                   className="flex-1"
                 />
@@ -360,7 +362,7 @@ const CustomersList = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Send className="h-5 w-5" />
-              Enviar Mensaje Difundido
+              {t('customers.broadcast')}
             </DialogTitle>
           </DialogHeader>
           <BroadcastManager />

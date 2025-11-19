@@ -21,8 +21,10 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { getWeeklyDefaults, updateWeeklyDefault, type WeeklyDefault } from "@/services/api";
+import { useTranslation } from "react-i18next";
 
 const WeeklyScheduleManager = () => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [selectedDay, setSelectedDay] = useState<WeeklyDefault | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -39,11 +41,11 @@ const WeeklyScheduleManager = () => {
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ["weekly-defaults"] });
       queryClient.invalidateQueries({ queryKey: ["opening-hours"] });
-      toast.success(response.message || `✅ Configuración actualizada! ${response.days_updated || 0} días afectados.`);
+      toast.success(t('weeklySchedule.saveSuccess', { count: response.days_updated || 0 }));
       setDialogOpen(false);
     },
     onError: (error: Error) => {
-      toast.error("Error: " + error.message);
+      toast.error(t('weeklySchedule.saveError', { message: error.message }));
     },
   });
 
@@ -116,7 +118,7 @@ const WeeklyScheduleManager = () => {
       </div>
 
       <p className="text-xs text-muted-foreground text-center">
-        Clica un día para configurar su horario por defecto
+        {t('weeklySchedule.clickDay')}
       </p>
 
       {/* Modal d'edició */}
@@ -142,6 +144,7 @@ interface DayEditorDialogProps {
 }
 
 const DayEditorDialog = ({ day, open, onOpenChange, onSave, isLoading }: DayEditorDialogProps) => {
+  const { t } = useTranslation();
   const [status, setStatus] = useState(day.status);
   const [lunchStart, setLunchStart] = useState(day.lunch_start || "12:00");
   const [lunchEnd, setLunchEnd] = useState(day.lunch_end || "15:00");
@@ -163,10 +166,10 @@ const DayEditorDialog = ({ day, open, onOpenChange, onSave, isLoading }: DayEdit
 
   const getStatusLabel = (value: string) => {
     switch (value) {
-      case "closed": return "🔴 Cerrado";
-      case "lunch_only": return "🟡 Solo comida";
-      case "dinner_only": return "🟡 Solo cena";
-      case "full_day": return "🟢 Todo el día";
+      case "closed": return t('weeklySchedule.closed');
+      case "lunch_only": return t('weeklySchedule.lunchOnly');
+      case "dinner_only": return t('weeklySchedule.dinnerOnly');
+      case "full_day": return t('weeklySchedule.fullDay');
       default: return value;
     }
   };
@@ -177,17 +180,16 @@ const DayEditorDialog = ({ day, open, onOpenChange, onSave, isLoading }: DayEdit
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5" />
-            Configurar todos los {day.day_name.toLowerCase()}
+            {t('weeklySchedule.dialogTitle')} {day.day_name.toLowerCase()}
           </DialogTitle>
           <DialogDescription>
-            Define el horario por defecto para este día de la semana
+            {t('weeklySchedule.dialogDescription')}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          {/* Status */}
           <div className="space-y-2">
-            <Label htmlFor="status">Estado del restaurante</Label>
+            <Label htmlFor="status">{t('weeklySchedule.restaurantStatus')}</Label>
             <Select value={status} onValueChange={(value: any) => setStatus(value)}>
               <SelectTrigger id="status">
                 <SelectValue />
@@ -201,13 +203,12 @@ const DayEditorDialog = ({ day, open, onOpenChange, onSave, isLoading }: DayEdit
             </Select>
           </div>
 
-          {/* Horaris de dinar */}
           {(status === "full_day" || status === "lunch_only") && (
             <div className="space-y-2">
-              <Label className="text-base font-semibold">🍽️ Horario mediodía</Label>
+              <Label className="text-base font-semibold">{t('weeklySchedule.lunchSchedule')}</Label>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="lunch-start">Apertura</Label>
+                  <Label htmlFor="lunch-start">{t('weeklySchedule.opening')}</Label>
                   <Input
                     id="lunch-start"
                     type="time"
@@ -216,7 +217,7 @@ const DayEditorDialog = ({ day, open, onOpenChange, onSave, isLoading }: DayEdit
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="lunch-end">Cierre</Label>
+                  <Label htmlFor="lunch-end">{t('weeklySchedule.closing')}</Label>
                   <Input
                     id="lunch-end"
                     type="time"
@@ -228,13 +229,12 @@ const DayEditorDialog = ({ day, open, onOpenChange, onSave, isLoading }: DayEdit
             </div>
           )}
 
-          {/* Horaris de sopar */}
           {(status === "full_day" || status === "dinner_only") && (
             <div className="space-y-2">
-              <Label className="text-base font-semibold">🌙 Horario noche</Label>
+              <Label className="text-base font-semibold">{t('weeklySchedule.dinnerSchedule')}</Label>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="dinner-start">Apertura</Label>
+                  <Label htmlFor="dinner-start">{t('weeklySchedule.opening')}</Label>
                   <Input
                     id="dinner-start"
                     type="time"
@@ -243,7 +243,7 @@ const DayEditorDialog = ({ day, open, onOpenChange, onSave, isLoading }: DayEdit
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="dinner-end">Cierre</Label>
+                  <Label htmlFor="dinner-end">{t('weeklySchedule.closing')}</Label>
                   <Input
                     id="dinner-end"
                     type="time"
@@ -264,11 +264,11 @@ const DayEditorDialog = ({ day, open, onOpenChange, onSave, isLoading }: DayEdit
             disabled={isLoading}
           >
             <X className="h-4 w-4 mr-2" />
-            Cancelar
+            {t('weeklySchedule.cancel')}
           </Button>
           <Button onClick={handleSave} disabled={isLoading}>
             <Save className="h-4 w-4 mr-2" />
-            {isLoading ? "Guardando..." : "Guardar cambios"}
+            {isLoading ? t('weeklySchedule.saving') : t('weeklySchedule.saveChanges')}
           </Button>
         </div>
       </DialogContent>
