@@ -172,17 +172,26 @@ export async function getTables(): Promise<Table[]> {
     throw new Error('Error obtenint taules');
   }
   const data = await response.json();
+
+  console.log('🔍 [getTables] Resposta del backend:', data);
+  console.log('🔍 [getTables] És array?', Array.isArray(data));
+  console.log('🔍 [getTables] Tipus:', typeof data);
+
   // Assegurar que sempre retornem un array
   // Si el backend retorna un objecte amb una clau 'tables', extreure'l
   if (data && typeof data === 'object' && !Array.isArray(data)) {
     if (Array.isArray(data.tables)) {
+      console.log('✅ [getTables] Extracte array de data.tables, longitud:', data.tables.length);
       return data.tables;
     }
     // Si no és ni un array ni té una clau 'tables', retornar array buit
-    console.warn('getTables: resposta inesperada del backend', data);
+    console.warn('⚠️ [getTables] Resposta inesperada del backend, retornant array buit', data);
     return [];
   }
-  return Array.isArray(data) ? data : [];
+
+  const result = Array.isArray(data) ? data : [];
+  console.log('✅ [getTables] Retornant array, longitud:', result.length);
+  return result;
 }
 
 export async function createTable(data: CreateTableData): Promise<any> {
