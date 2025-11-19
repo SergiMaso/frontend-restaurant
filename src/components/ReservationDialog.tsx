@@ -459,7 +459,7 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="auto">{t('reservations.autoLabel')}</SelectItem>
-                    {tables?.filter(t => t.status === 'available').map((table) => (
+                    {(tables || []).filter(t => t.status === 'available').map((table) => (
                       <SelectItem key={table.id} value={table.id.toString()}>
                         {t('reservations.table')} {table.table_number} ({table.capacity} {t('reservations.people')})
                       </SelectItem>
