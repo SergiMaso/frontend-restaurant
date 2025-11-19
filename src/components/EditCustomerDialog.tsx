@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface EditCustomerDialogProps {
   open: boolean;
@@ -37,6 +38,7 @@ interface EditCustomerDialogProps {
 }
 
 const EditCustomerDialog = ({ open, onOpenChange, customer }: EditCustomerDialogProps) => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -63,18 +65,18 @@ const EditCustomerDialog = ({ open, onOpenChange, customer }: EditCustomerDialog
       
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Error actualizando cliente');
+        throw new Error(error.error || t('editCustomer.updateError'));
       }
-      
+
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["customers"] });
-      toast.success("Cliente actualizado correctamente");
+      toast.success(t('editCustomer.updateSuccess'));
       onOpenChange(false);
     },
     onError: (error: Error) => {
-      toast.error("Error: " + error.message);
+      toast.error(t('common.error') + ": " + error.message);
     },
   });
 
@@ -86,32 +88,32 @@ const EditCustomerDialog = ({ open, onOpenChange, customer }: EditCustomerDialog
       
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Error eliminando cliente');
+        throw new Error(error.error || t('editCustomer.deleteError'));
       }
-      
+
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["customers"] });
-      toast.success("Cliente eliminado correctamente");
+      toast.success(t('editCustomer.deleteSuccess'));
       setDeleteDialogOpen(false);
       onOpenChange(false);
     },
     onError: (error: Error) => {
-      toast.error("Error: " + error.message);
+      toast.error(t('common.error') + ": " + error.message);
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!name.trim()) {
-      toast.error("El nombre es obligatorio");
+      toast.error(t('editCustomer.nameRequired'));
       return;
     }
 
     if (!phone.trim()) {
-      toast.error("El teléfono es obligatorio");
+      toast.error(t('editCustomer.phoneRequired'));
       return;
     }
 
@@ -147,48 +149,48 @@ const EditCustomerDialog = ({ open, onOpenChange, customer }: EditCustomerDialog
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Editar Cliente</DialogTitle>
+            <DialogTitle>{t('editCustomer.title')}</DialogTitle>
             <DialogDescription>
-              Modifica la información del cliente
+              {t('editCustomer.description')}
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="phone">
-                Teléfono <span className="text-destructive">*</span>
+                {t('editCustomer.phone')} <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="phone"
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="+34 600 000 000"
+                placeholder={t('editCustomer.phonePlaceholder')}
                 required
               />
               <p className="text-xs text-muted-foreground">
-                ⚠️ Cambiar el teléfono creará un nuevo cliente
+                {t('editCustomer.phoneWarning')}
               </p>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="name">
-                Nombre <span className="text-destructive">*</span>
+                {t('editCustomer.name')} <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Nombre del cliente"
+                placeholder={t('editCustomer.namePlaceholder')}
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="language">Idioma Preferido</Label>
+              <Label htmlFor="language">{t('editCustomer.preferredLanguage')}</Label>
               <Select value={language} onValueChange={setLanguage}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecciona idioma" />
+                  <SelectValue placeholder={t('editCustomer.selectLanguage')} />
                 </SelectTrigger>
                 <SelectContent>
                   {languages.map((lang) => (
@@ -201,24 +203,22 @@ const EditCustomerDialog = ({ open, onOpenChange, customer }: EditCustomerDialog
             </div>
 
             <div className="flex gap-2 justify-between pt-4">
-              {/* Botó eliminar a l'esquerra */}
-              <Button 
-                type="button" 
-                variant="destructive" 
+              <Button
+                type="button"
+                variant="destructive"
                 onClick={() => setDeleteDialogOpen(true)}
                 disabled={deleteMutation.isPending}
               >
                 <Trash2 className="h-4 w-4 mr-2" />
-                Eliminar
+                {t('editCustomer.delete')}
               </Button>
-              
-              {/* Botons cancel·lar i guardar a la dreta */}
+
               <div className="flex gap-2 ml-auto">
                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                  Cancelar
+                  {t('editCustomer.cancel')}
                 </Button>
                 <Button type="submit" disabled={updateMutation.isPending}>
-                  {updateMutation.isPending ? "Guardando..." : "Guardar Cambios"}
+                  {updateMutation.isPending ? t('editCustomer.saving') : t('editCustomer.saveChanges')}
                 </Button>
               </div>
             </div>
@@ -226,26 +226,25 @@ const EditCustomerDialog = ({ open, onOpenChange, customer }: EditCustomerDialog
         </DialogContent>
       </Dialog>
 
-      {/* Diàleg de confirmació per eliminar */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+            <AlertDialogTitle>{t('editCustomer.deleteConfirm')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. Se eliminará permanentemente el cliente{" "}
+              {t('editCustomer.deleteMessage')}{" "}
               <span className="font-semibold">{name}</span> ({phone}).
               <p className="mt-3 text-destructive font-semibold">
-                ⚠️ También se eliminarán todas sus conversaciones y estadísticas.
+                {t('editCustomer.deleteWarning')}
               </p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel>{t('editCustomer.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deleteMutation.isPending ? "Eliminando..." : "Sí, eliminar"}
+              {deleteMutation.isPending ? t('editCustomer.deleting') : t('editCustomer.yesDelete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -20,6 +20,7 @@ import {
 import { Table } from "@/services/api";
 import { Badge } from "@/components/ui/badge";
 import { X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface TableDialogProps {
   open: boolean;
@@ -30,14 +31,15 @@ interface TableDialogProps {
   mode: 'create' | 'edit';
 }
 
-const TableDialog = ({ 
-  open, 
-  onOpenChange, 
-  table, 
+const TableDialog = ({
+  open,
+  onOpenChange,
+  table,
   allTables = [],
-  onSave, 
-  mode 
+  onSave,
+  mode
 }: TableDialogProps) => {
+  const { t } = useTranslation();
   const [tableNumber, setTableNumber] = useState("");
   const [capacity, setCapacity] = useState("");
   const [status, setStatus] = useState("available");
@@ -90,18 +92,18 @@ const TableDialog = ({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {mode === 'create' ? 'Crear Nueva Mesa' : `Editar Mesa ${table?.table_number}`}
+            {mode === 'create' ? t('tableDialog.createTitle') : `${t('tableDialog.editTitle')} ${table?.table_number}`}
           </DialogTitle>
           <DialogDescription>
-            {mode === 'create' 
-              ? 'Añadir una nueva mesa' 
-              : 'Modificar los parametros de la mesa'}
+            {mode === 'create'
+              ? t('tableDialog.createDescription')
+              : t('tableDialog.editDescription')}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="table_number">Número de mesa</Label>
+            <Label htmlFor="table_number">{t('tableDialog.tableNumber')}</Label>
             <Input
               id="table_number"
               type="number"
@@ -113,7 +115,7 @@ const TableDialog = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="capacity">Capacidad (personas)</Label>
+            <Label htmlFor="capacity">{t('tableDialog.capacity')}</Label>
             <Input
               id="capacity"
               type="number"
@@ -126,46 +128,46 @@ const TableDialog = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="status">Status</Label>
+            <Label htmlFor="status">{t('tableDialog.status')}</Label>
             <Select value={status} onValueChange={setStatus}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="available">Disponible</SelectItem>
-                <SelectItem value="unavailable">No disponible</SelectItem>
+                <SelectItem value="available">{t('tableDialog.available')}</SelectItem>
+                <SelectItem value="unavailable">{t('tableDialog.unavailable')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-2">
-            <Label>Pairing (combinación con otras mesas)</Label>
+            <Label>{t('tableDialog.pairing')}</Label>
             <Select onValueChange={(value) => addPairing(parseInt(value))}>
               <SelectTrigger>
-                <SelectValue placeholder="Selecciona mesas para combinar" />
+                <SelectValue placeholder={t('tableDialog.selectTables')} />
               </SelectTrigger>
               <SelectContent>
                 {availableTablesForPairing.map((t) => (
-                  <SelectItem 
-                    key={t.id} 
+                  <SelectItem
+                    key={t.id}
                     value={t.table_number.toString()}
                     disabled={pairing.includes(t.table_number)}
                   >
-                    Mesa {t.table_number} ({t.capacity} pers.)
+                    {t('tableDialog.table')} {t.table_number} ({t.capacity} {t('tableDialog.people')})
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            
+
             {pairing.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-2">
                 {pairing.map((tableNum) => {
                   const pairTable = allTables.find(t => t.table_number === tableNum);
                   return (
                     <Badge key={tableNum} variant="secondary" className="flex items-center gap-1">
-                      Mesa {tableNum} {pairTable && `(${pairTable.capacity} pers.)`}
-                      <X 
-                        className="h-3 w-3 cursor-pointer hover:text-destructive" 
+                      {t('tableDialog.table')} {tableNum} {pairTable && `(${pairTable.capacity} ${t('tableDialog.people')})`}
+                      <X
+                        className="h-3 w-3 cursor-pointer hover:text-destructive"
                         onClick={() => removePairing(tableNum)}
                       />
                     </Badge>
@@ -174,16 +176,16 @@ const TableDialog = ({
               </div>
             )}
             <p className="text-xs text-muted-foreground">
-              Selecciona las mesas que deseas combinar con esta mesa.
+              {t('tableDialog.pairingHelp')}
             </p>
           </div>
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancelar
+              {t('tableDialog.cancel')}
             </Button>
             <Button type="submit">
-              {mode === 'create' ? 'Crear Mesa' : 'Guardar Cambios'}
+              {mode === 'create' ? t('tableDialog.createTable') : t('tableDialog.saveChanges')}
             </Button>
           </DialogFooter>
         </form>
