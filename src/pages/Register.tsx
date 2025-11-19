@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { register } from "@/services/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +11,7 @@ import { UtensilsCrossed, Loader2, AlertCircle, CheckCircle2 } from "lucide-reac
 import { useToast } from "@/hooks/use-toast";
 
 const Register = () => {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const [token, setToken] = useState("");
   const [fullName, setFullName] = useState("");
@@ -34,17 +36,17 @@ const Register = () => {
 
     // Validacions
     if (!token) {
-      setError("Token d'invitació no vàlid");
+      setError(t('register.invalidToken'));
       return;
     }
 
     if (password.length < 6) {
-      setError("La contrasenya ha de tenir mínim 6 caràcters");
+      setError(t('register.passwordTooShort'));
       return;
     }
 
     if (password !== confirmPassword) {
-      setError("Les contrasenyes no coincideixen");
+      setError(t('register.passwordMismatch'));
       return;
     }
 
@@ -58,14 +60,14 @@ const Register = () => {
       });
 
       toast({
-        title: "Registre completat!",
-        description: "Ara ja pots iniciar sessió amb el teu email i password.",
+        title: t('register.successTitle'),
+        description: t('register.successDescription'),
       });
 
       // Redirigir a login
       navigate("/login");
     } catch (error: any) {
-      setError(error.message || "Error en el registre");
+      setError(error.message || t('register.registerError'));
     } finally {
       setLoading(false);
     }
@@ -80,9 +82,9 @@ const Register = () => {
               <UtensilsCrossed className="h-8 w-8 text-primary-foreground" />
             </div>
           </div>
-          <CardTitle className="text-2xl text-center">Completar Registre</CardTitle>
+          <CardTitle className="text-2xl text-center">{t('register.title')}</CardTitle>
           <CardDescription className="text-center">
-            Introdueix les teves dades per crear el teu compte
+            {t('register.description')}
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
@@ -98,17 +100,17 @@ const Register = () => {
               <Alert>
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  Necessites un token d'invitació vàlid per registrar-te.
+                  {t('register.needToken')}
                 </AlertDescription>
               </Alert>
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="fullName">Nom Complet</Label>
+              <Label htmlFor="fullName">{t('register.fullName')}</Label>
               <Input
                 id="fullName"
                 type="text"
-                placeholder="El teu nom"
+                placeholder={t('register.namePlaceholder')}
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 required
@@ -117,11 +119,11 @@ const Register = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">{t('register.password')}</Label>
               <Input
                 id="password"
                 type="password"
-                placeholder="Mínim 6 caràcters"
+                placeholder={t('register.passwordPlaceholder')}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -130,11 +132,11 @@ const Register = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirmar Password</Label>
+              <Label htmlFor="confirmPassword">{t('register.confirmPassword')}</Label>
               <Input
                 id="confirmPassword"
                 type="password"
-                placeholder="Repeteix la contrasenya"
+                placeholder={t('register.confirmPlaceholder')}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
@@ -146,30 +148,30 @@ const Register = () => {
               <Alert className="bg-success/10 text-success border-success/20">
                 <CheckCircle2 className="h-4 w-4" />
                 <AlertDescription>
-                  Token d'invitació vàlid. Pots completar el registre.
+                  {t('register.validToken')}
                 </AlertDescription>
               </Alert>
             )}
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
-            <Button 
-              type="submit" 
-              className="w-full" 
+            <Button
+              type="submit"
+              className="w-full"
               disabled={loading || !token}
             >
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Registrant...
+                  {t('register.registering')}
                 </>
               ) : (
-                "Completar Registre"
+                t('register.completeRegister')
               )}
             </Button>
             <div className="text-sm text-center text-muted-foreground">
-              Ja tens compte?{" "}
+              {t('register.alreadyHaveAccount')}{" "}
               <Link to="/login" className="text-primary hover:underline">
-                Inicia sessió
+                {t('register.loginHere')}
               </Link>
             </div>
           </CardFooter>

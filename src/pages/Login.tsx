@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { UtensilsCrossed, Loader2 } from "lucide-react";
 
 const Login = () => {
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -41,19 +43,19 @@ const Login = () => {
               <UtensilsCrossed className="h-8 w-8 text-primary-foreground" />
             </div>
           </div>
-          <CardTitle className="text-2xl text-center">Iniciar Sessió</CardTitle>
+          <CardTitle className="text-2xl text-center">{t('login.title')}</CardTitle>
           <CardDescription className="text-center">
-            Sistema de Gestió de Reserves - AMARU
+            {t('login.subtitle')}
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t('login.email')}</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="admin@amaru.com"
+                placeholder={t('login.emailPlaceholder')}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -62,18 +64,18 @@ const Login = () => {
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
-                <Link 
-                  to="/forgot-password" 
+                <Label htmlFor="password">{t('login.password')}</Label>
+                <Link
+                  to="/forgot-password"
                   className="text-sm text-muted-foreground hover:text-primary transition-colors"
                 >
-                  Has oblidat la contrasenya?
+                  {t('login.forgotPassword')}
                 </Link>
               </div>
               <Input
                 id="password"
                 type="password"
-                placeholder="••••••••"
+                placeholder={t('login.passwordPlaceholder')}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -82,24 +84,24 @@ const Login = () => {
             </div>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
-            <Button 
-              type="submit" 
-              className="w-full" 
+            <Button
+              type="submit"
+              className="w-full"
               disabled={loading}
             >
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Iniciant sessió...
+                  {t('login.loggingIn')}
                 </>
               ) : (
-                "Iniciar Sessió"
+                t('login.loginButton')
               )}
             </Button>
             <div className="text-sm text-center text-muted-foreground">
-              Tens un token d'invitació?{" "}
+              {t('login.hasInvitation')}{" "}
               <Link to="/register" className="text-primary hover:underline">
-                Registra't aquí
+                {t('login.registerHere')}
               </Link>
             </div>
           </CardFooter>
