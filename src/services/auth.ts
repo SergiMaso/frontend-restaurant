@@ -1,6 +1,10 @@
 // Auth Service per connectar amb el backend d'autenticació
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+// In production, use relative path (Vercel proxy handles routing to backend)
+// In development, use VITE_API_URL or localhost
+const API_URL = import.meta.env.DEV 
+  ? (import.meta.env.VITE_API_URL || 'http://localhost:5001')
+  : '';
 
 // DEBUG: Veure quina URL s'està usant
 console.log('🔧 API_URL configurada:', API_URL);

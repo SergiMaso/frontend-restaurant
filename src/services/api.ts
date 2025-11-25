@@ -1,7 +1,11 @@
 // API Service per connectar amb el backend
 // CORRECCIÓ: Afegit credentials: 'include' a totes les crides per enviar cookies de sessió
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+// In production, use relative path (Vercel proxy handles routing to backend)
+// In development, use VITE_API_URL or localhost
+const API_URL = import.meta.env.DEV 
+  ? (import.meta.env.VITE_API_URL || 'http://localhost:5000')
+  : '';
 
 export interface Appointment {
   id: number;
