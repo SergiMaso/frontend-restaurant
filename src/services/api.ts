@@ -448,3 +448,263 @@ export async function updateClientConfig(key: string, value: string): Promise<an
 
   return response.json();
 }
+
+// ==========================================
+// STATS
+// ==========================================
+
+export interface GlobalStats {
+  total_reservations: number;
+  total_customers: number;
+  reservations_today: number;
+  reservations_this_week: number;
+  avg_party_size: number;
+  no_show_rate: number;
+}
+
+export async function getGlobalStats(): Promise<GlobalStats> {
+  const response = await fetch(`${API_URL}/api/stats/global`, {
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Error obtenint estadístiques');
+  }
+
+  return response.json();
+}
+
+// ==========================================
+// CUSTOMER MANAGEMENT
+// ==========================================
+
+export interface UpdateCustomerData {
+  name?: string;
+  language?: string;
+}
+
+export async function updateCustomer(phone: string, data: UpdateCustomerData): Promise<any> {
+  const response = await fetch(`${API_URL}/api/customers/${encodeURIComponent(phone)}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Error actualitzant client');
+  }
+
+  return response.json();
+}
+
+export async function deleteCustomer(phone: string): Promise<void> {
+  const response = await fetch(`${API_URL}/api/customers/${encodeURIComponent(phone)}`, {
+    method: 'DELETE',
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Error eliminant client');
+  }
+}
+
+// ==========================================
+// APPOINTMENT ACTIONS (seated, left, no-show)
+// ==========================================
+
+export async function markAppointmentSeated(appointmentId: number): Promise<any> {
+  const response = await fetch(`${API_URL}/api/appointments/${appointmentId}/seated`, {
+    method: 'POST',
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Error marcant reserva com assegut');
+  }
+
+  return response.json();
+}
+
+export async function markAppointmentLeft(appointmentId: number): Promise<any> {
+  const response = await fetch(`${API_URL}/api/appointments/${appointmentId}/left`, {
+    method: 'POST',
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Error marcant reserva com sortit');
+  }
+
+  return response.json();
+}
+
+export async function markAppointmentNoShow(appointmentId: number): Promise<any> {
+  const response = await fetch(`${API_URL}/api/appointments/${appointmentId}/no-show`, {
+    method: 'POST',
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Error marcant reserva com no-show');
+  }
+
+  return response.json();
+}
+
+// ==========================================
+// MESSAGING
+// ==========================================
+
+export interface SendMessageData {
+  phone: string;
+  message: string;
+}
+
+export async function sendMessage(data: SendMessageData): Promise<any> {
+  const response = await fetch(`${API_URL}/api/send-message`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Error enviant missatge');
+  }
+
+  return response.json();
+}
+
+// ==========================================
+// BROADCAST
+// ==========================================
+
+export interface BroadcastData {
+  message: string;
+  filter?: {
+    language?: string;
+    min_visits?: number;
+    has_reservation_today?: boolean;
+  };
+}
+
+export async function previewBroadcast(data: BroadcastData): Promise<{ recipients: Customer[]; count: number }> {
+  const response = await fetch(`${API_URL}/api/broadcast/preview`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Error obtenint preview de broadcast');
+  }
+
+  return response.json();
+}
+
+export async function sendBroadcast(data: BroadcastData): Promise<{ sent: number; failed: number }> {
+  const response = await fetch(`${API_URL}/api/broadcast`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Error enviant broadcast');
+  }
+
+  return response.json();
+}
+
+// ==========================================
+// MEDIA
+// ==========================================
+
+export interface Media {
+  id: number;
+  type: 'menu' | 'image' | 'document';
+  filename: string;
+  cloudinary_url: string;
+  cloudinary_public_id: string;
+  description?: string;
+  active: boolean;
+  created_at: string;
+}
+
+export async function getMedia(): Promise<Media[]> {
+  const response = await fetch(`${API_URL}/api/media`, {
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Error obtenint media');
+  }
+
+  return response.json();
+}
+
+export async function uploadMedia(formData: FormData): Promise<Media> {
+  const response = await fetch(`${API_URL}/api/media`, {
+    method: 'POST',
+    credentials: 'include',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Error pujant media');
+  }
+
+  return response.json();
+}
+
+export async function deleteMedia(mediaId: number): Promise<void> {
+  const response = await fetch(`${API_URL}/api/media/${mediaId}`, {
+    method: 'DELETE',
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Error eliminant media');
+  }
+}
+
+export async function toggleMediaActive(mediaId: number, active: boolean): Promise<any> {
+  const response = await fetch(`${API_URL}/api/media/${mediaId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+    body: JSON.stringify({ active }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Error actualitzant media');
+  }
+
+  return response.json();
+}

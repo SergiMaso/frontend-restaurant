@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Users, Phone, Calendar, MessageCircle, X, Search, Send, Edit, UtensilsCrossed } from "lucide-react";
-import { getCustomers, getConversations, type Conversation } from "@/services/api";
+import { getCustomers, getConversations, sendMessage, type Conversation } from "@/services/api";
 import { format } from "date-fns";
 import { useState, useMemo, useEffect, useRef } from "react";
 import BroadcastManager from "@/components/BroadcastManager";
@@ -74,21 +74,10 @@ const CustomersList = () => {
 
     setSendingMessage(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/send-message`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          phone: selectedCustomer,
-          message: messageText,
-        }),
+      await sendMessage({
+        phone: selectedCustomer,
+        message: messageText,
       });
-
-      if (!response.ok) {
-        throw new Error('Error enviando mensaje');
-      }
 
       // Netejar l'input
       setMessageText("");

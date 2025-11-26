@@ -31,42 +31,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-
-// API functions
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
-
-const getMedia = async (type?: string, date?: string) => {
-  const params = new URLSearchParams();
-  if (type) params.append("type", type);
-  if (date) params.append("date", date);
-  
-  const response = await fetch(`${API_BASE_URL}/api/media?${params}`);
-  if (!response.ok) throw new Error("Error obtenint media");
-  return response.json();
-};
-
-const uploadMedia = async (formData: FormData) => {
-  const response = await fetch(`${API_BASE_URL}/api/media/upload`, {
-    method: "POST",
-    body: formData,
-  });
-  
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || "Error pujant arxiu");
-  }
-  
-  return response.json();
-};
-
-const deleteMedia = async (mediaId: number) => {
-  const response = await fetch(`${API_BASE_URL}/api/media/${mediaId}`, {
-    method: "DELETE",
-  });
-  
-  if (!response.ok) throw new Error("Error eliminant media");
-  return response.json();
-};
+import { getMedia, uploadMedia, deleteMedia } from "@/services/api";
 
 const MediaManager = () => {
   const queryClient = useQueryClient();

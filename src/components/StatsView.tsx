@@ -11,6 +11,7 @@ import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, 
 import { es } from "date-fns/locale";
 import { Input } from "@/components/ui/input";
 import { Command, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
+import { getGlobalStats, getAppointments, getCustomers } from "@/services/api";
 
 type TimeFilter = 'all' | 'today' | 'week' | 'month' | 'year' | 'custom';
 
@@ -25,30 +26,18 @@ const StatsView = () => {
 
   const { data: globalStats, isLoading: globalLoading } = useQuery({
     queryKey: ["globalStats"],
-    queryFn: async () => {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/stats/global`);
-      if (!response.ok) throw new Error('Error obteniendo estadísticas');
-      return response.json();
-    },
+    queryFn: getGlobalStats,
   });
 
   // Obtener todas las reservas para filtros
   const { data: allAppointments, isLoading: appointmentsLoading } = useQuery({
     queryKey: ["appointments"],
-    queryFn: async () => {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/appointments`);
-      if (!response.ok) throw new Error('Error obteniendo reservas');
-      return response.json();
-    },
+    queryFn: getAppointments,
   });
 
   const { data: customers } = useQuery({
     queryKey: ["customers"],
-    queryFn: async () => {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/customers`);
-      if (!response.ok) throw new Error('Error obteniendo clientes');
-      return response.json();
-    },
+    queryFn: getCustomers,
   });
 
   // Filtrar clients pel dropdown quan canvia el text

@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
+import { updateCustomer, deleteCustomer } from "@/services/api";
 
 interface EditCustomerDialogProps {
   open: boolean;
@@ -52,22 +53,7 @@ const EditCustomerDialog = ({ open, onOpenChange, customer }: EditCustomerDialog
   }, [customer, open]);
 
   const updateMutation = useMutation({
-    mutationFn: async (data: any) => {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/customers/${customer.phone}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Error actualizando cliente');
-      }
-      
-      return response.json();
-    },
+    mutationFn: (data: any) => updateCustomer(customer.phone, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["customers"] });
       toast.success("Cliente actualizado correctamente");
@@ -79,18 +65,7 @@ const EditCustomerDialog = ({ open, onOpenChange, customer }: EditCustomerDialog
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async () => {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/customers/${customer.phone}`, {
-        method: 'DELETE',
-      });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Error eliminando cliente');
-      }
-      
-      return response.json();
-    },
+    mutationFn: () => deleteCustomer(customer.phone),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["customers"] });
       toast.success("Cliente eliminado correctamente");

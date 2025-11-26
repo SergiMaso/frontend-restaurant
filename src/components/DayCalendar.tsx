@@ -11,7 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { getTables, getAppointments } from "@/services/api";
+import { getTables, getAppointments, markAppointmentSeated, markAppointmentLeft, markAppointmentNoShow } from "@/services/api";
 import { toast } from "sonner";
 
 interface DayCalendarProps {
@@ -56,13 +56,7 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
 
   // Mutations per tracking
   const seatedMutation = useMutation({
-    mutationFn: async (appointmentId: number) => {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/appointments/${appointmentId}/seated`, {
-        method: 'POST',
-      });
-      if (!response.ok) throw new Error('Error marcant seated');
-      return response.json();
-    },
+    mutationFn: markAppointmentSeated,
     onSuccess: async (data) => {
       // Refrescar les dades del servidor
       await queryClient.invalidateQueries({ queryKey: ["appointments"] });
@@ -87,13 +81,7 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
   });
 
   const leftMutation = useMutation({
-    mutationFn: async (appointmentId: number) => {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/appointments/${appointmentId}/left`, {
-        method: 'POST',
-      });
-      if (!response.ok) throw new Error('Error marcant left');
-      return response.json();
-    },
+    mutationFn: markAppointmentLeft,
     onSuccess: async (data) => {
       // Refrescar les dades del servidor
       await queryClient.invalidateQueries({ queryKey: ["appointments"] });
@@ -115,15 +103,7 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
   });
 
   const noShowMutation = useMutation({
-    mutationFn: async ({ appointmentId, phone }: { appointmentId: number, phone: string }) => {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/appointments/${appointmentId}/no-show`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone }),
-      });
-      if (!response.ok) throw new Error('Error marcant no-show');
-      return response.json();
-    },
+    mutationFn: markAppointmentNoShow,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
       toast.success("❌ No-show registrado");
@@ -148,10 +128,7 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
 
   const handleNoShow = () => {
     if (selectedReservation && window.confirm("¿Estás seguro de que quieres marcar esta reserva como no-show?")) {
-      noShowMutation.mutate({ 
-        appointmentId: selectedReservation.id, 
-        phone: selectedReservation.phone 
-      });
+      noShowMutation.mutate(selectedReservation.id);
     }
   };
 

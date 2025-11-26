@@ -24,6 +24,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Send, Eye, Users, Globe, Clock } from "lucide-react";
 import { toast } from "sonner";
+import { previewBroadcast, sendBroadcast } from "@/services/api";
 
 const BroadcastManager = () => {
   const [message, setMessage] = useState("");
@@ -34,18 +35,7 @@ const BroadcastManager = () => {
 
   // Preview mutation
   const previewMutation = useMutation({
-    mutationFn: async (data: any) => {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/broadcast/preview`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Error obteniendo previsualización');
-      }
-      return response.json();
-    },
+    mutationFn: previewBroadcast,
     onSuccess: (data) => {
       setPreviewData(data);
       console.log("✅ Preview data:", data);
@@ -57,18 +47,7 @@ const BroadcastManager = () => {
 
   // Send mutation
   const sendMutation = useMutation({
-    mutationFn: async (data: any) => {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/broadcast`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Error enviando mensaje');
-      }
-      return response.json();
-    },
+    mutationFn: sendBroadcast,
     onSuccess: (data) => {
       toast.success(`Mensaje enviado a ${data.sent} clientes (${data.failed} errores)`);
       setMessage("");
