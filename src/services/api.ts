@@ -521,6 +521,9 @@ export async function deleteCustomer(phone: string): Promise<void> {
 export async function markAppointmentSeated(appointmentId: number): Promise<any> {
   const response = await fetch(`${API_URL}/api/appointments/${appointmentId}/seated`, {
     method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
     credentials: 'include',
   });
 
@@ -535,6 +538,9 @@ export async function markAppointmentSeated(appointmentId: number): Promise<any>
 export async function markAppointmentLeft(appointmentId: number): Promise<any> {
   const response = await fetch(`${API_URL}/api/appointments/${appointmentId}/left`, {
     method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
     credentials: 'include',
   });
 
@@ -549,6 +555,9 @@ export async function markAppointmentLeft(appointmentId: number): Promise<any> {
 export async function markAppointmentNoShow(appointmentId: number): Promise<any> {
   const response = await fetch(`${API_URL}/api/appointments/${appointmentId}/no-show`, {
     method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
     credentials: 'include',
   });
 

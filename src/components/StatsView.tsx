@@ -114,7 +114,8 @@ const StatsView = () => {
   const filteredAppointments = useMemo(() => {
     if (!allAppointments) return [];
 
-    let filtered = allAppointments.filter((apt: any) => apt.status !== 'cancelled' && apt.status !== 'no_show');
+    // Keep no_show appointments for stats, only filter cancelled
+    let filtered = allAppointments.filter((apt: any) => apt.status !== 'cancelled');
 
     // Filtro temporal
     const range = getDateRange();

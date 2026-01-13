@@ -106,6 +106,8 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
     mutationFn: markAppointmentNoShow,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      queryClient.invalidateQueries({ queryKey: ["customers"] });
+      queryClient.invalidateQueries({ queryKey: ["globalStats"] });
       toast.success("❌ No-show registrado");
       setDetailsDialogOpen(false);
     },
@@ -501,9 +503,9 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
               </div>
               
               {/* Botons de tracking */}
-              {!selectedReservation.no_show && selectedReservation.status !== 'completed' && (
+              {!selectedReservation.no_show && (
                 <div className="flex gap-2 flex-wrap pt-2 border-t">
-                  {!selectedReservation.seated_at && (
+                  {selectedReservation.status !== 'completed' && !selectedReservation.seated_at && (
                     <Button 
                       onClick={handleSeated} 
                       size="sm"
@@ -515,7 +517,7 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
                     </Button>
                   )}
                   
-                  {selectedReservation.seated_at && !selectedReservation.left_at && (
+                  {selectedReservation.status !== 'completed' && selectedReservation.seated_at && !selectedReservation.left_at && (
                     <Button 
                       onClick={handleLeft} 
                       size="sm"
@@ -527,7 +529,8 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
                     </Button>
                   )}
                   
-                  {!selectedReservation.seated_at && (
+                  {/* No-show button: show for confirmed (not seated) OR completed (to correct mistakes) */}
+                  {(!selectedReservation.seated_at || selectedReservation.status === 'completed') && (
                     <Button 
                       onClick={handleNoShow} 
                       size="sm" 
@@ -535,7 +538,7 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
                       className="flex-1"
                     >
                       <XCircle className="h-4 w-4 mr-2" />
-                      No show
+                      {selectedReservation.status === 'completed' ? 'Convertir a No-show' : 'No show'}
                     </Button>
                   )}
                 </div>

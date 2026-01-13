@@ -15,7 +15,7 @@ const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Redirigir a la pàgina original després del login
+  // Redirigir a la página original después del login
   const from = (location.state as any)?.from?.pathname || "/";
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -26,7 +26,7 @@ const Login = () => {
       await login(email, password);
       navigate(from, { replace: true });
     } catch (error) {
-      // Error gestionat pel AuthContext (toast)
+      // Error gestionado por AuthContext (toast)
     } finally {
       setLoading(false);
     }
@@ -41,9 +41,9 @@ const Login = () => {
               <UtensilsCrossed className="h-8 w-8 text-primary-foreground" />
             </div>
           </div>
-          <CardTitle className="text-2xl text-center">Iniciar Sessió</CardTitle>
+          <CardTitle className="text-2xl text-center">Iniciar Sesión</CardTitle>
           <CardDescription className="text-center">
-            Sistema de Gestió de Reserves - AMARU
+            Sistema de Gestión de Reservas
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
@@ -53,7 +53,7 @@ const Login = () => {
               <Input
                 id="email"
                 type="email"
-                placeholder="admin@amaru.com"
+                placeholder="admin@dominio.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -62,12 +62,12 @@ const Login = () => {
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">Contraseña</Label>
                 <Link 
                   to="/forgot-password" 
                   className="text-sm text-muted-foreground hover:text-primary transition-colors"
                 >
-                  Has oblidat la contrasenya?
+                  ¿Olvidaste tu contraseña?
                 </Link>
               </div>
               <Input
@@ -90,16 +90,16 @@ const Login = () => {
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Iniciant sessió...
+                  Iniciando sesión...
                 </>
               ) : (
-                "Iniciar Sessió"
+                "Iniciar Sesión"
               )}
             </Button>
             <div className="text-sm text-center text-muted-foreground">
-              Tens un token d'invitació?{" "}
+              ¿Tienes un token de invitación?{" "}
               <Link to="/register" className="text-primary hover:underline">
-                Registra't aquí
+                Regístrate aquí
               </Link>
             </div>
           </CardFooter>
