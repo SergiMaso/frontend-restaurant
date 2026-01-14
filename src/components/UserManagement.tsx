@@ -14,12 +14,13 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { UserPlus, UserX, Copy, CheckCircle2 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface User {
   id: number;
   email: string;
   full_name: string;
-  role: 'owner' | 'admin' | 'staff';
+  role: 'superadmin' | 'owner' | 'admin' | 'staff';
   is_active: boolean;
   created_at: string;
   last_login: string | null;
@@ -28,11 +29,12 @@ interface User {
 const UserManagement = () => {
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState<'admin' | 'staff'>('admin');
+  const [role, setRole] = useState<'owner' | 'admin' | 'staff'>('admin');
   const [registerLink, setRegisterLink] = useState<string | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
   
   const { toast } = useToast();
+  const { isSuperadmin } = useAuth();
   const queryClient = useQueryClient();
 
   // Query per obtenir usuaris
@@ -232,11 +234,14 @@ const UserManagement = () => {
                       
                       <div className="space-y-2">
                         <Label htmlFor="role">Rol</Label>
-                        <Select value={role} onValueChange={(value: 'admin' | 'staff') => setRole(value)}>
+                        <Select value={role} onValueChange={(value: 'owner' | 'admin' | 'staff') => setRole(value)}>
                           <SelectTrigger>
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
+                            {isSuperadmin && (
+                              <SelectItem value="owner">Propietario (control total del restaurante)</SelectItem>
+                            )}
                             <SelectItem value="admin">Administrador (puede gestionar reservas y clientes)</SelectItem>
                             <SelectItem value="staff">Personal (solo visualización)</SelectItem>
                           </SelectContent>
@@ -289,7 +294,7 @@ const UserManagement = () => {
                     }
                   </TableCell>
                   <TableCell className="text-right">
-                    {user.role !== 'owner' && user.is_active && (
+                    {user.role !== 'owner' && user.role !== 'superadmin' && user.is_active && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button variant="ghost" size="sm">

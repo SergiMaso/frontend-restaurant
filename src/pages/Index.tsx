@@ -138,7 +138,9 @@ const Index = () => {
                     </p>
                     <p className="text-xs leading-none text-muted-foreground capitalize">
                       Rol:{" "}
-                      {user?.role === "owner"
+                      {user?.role === "superadmin"
+                        ? "Superadmin"
+                        : user?.role === "owner"
                         ? "Propietari"
                         : user?.role === "admin"
                         ? "Administrador"
@@ -249,7 +251,7 @@ const Index = () => {
               Estadísticas
             </TabsTrigger>
 
-            {user?.role === "owner" && (
+            {(user?.role === "owner" || user?.role === "superadmin") && (
               <>
                 <TabsTrigger value="users">
                   <UserCog className="h-4 w-4 mr-2" />
@@ -419,8 +421,8 @@ const Index = () => {
             </Card>
           </TabsContent>
 
-          {/* SOLO OWNER */}
-          {user?.role === "owner" && (
+          {/* SOLO OWNER / SUPERADMIN */}
+          {(user?.role === "owner" || user?.role === "superadmin") && (
             <>
               <TabsContent value="users" className="space-y-4">
                 <UserManagement />

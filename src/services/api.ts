@@ -1,11 +1,9 @@
 // API Service per connectar amb el backend
 // CORRECCIÓ: Afegit credentials: 'include' a totes les crides per enviar cookies de sessió
 
-// In production, use relative path (Vercel proxy handles routing to backend)
+// In production, use VITE_API_URL (App Runner backend)
 // In development, use VITE_API_URL or localhost
-const API_URL = import.meta.env.DEV 
-  ? (import.meta.env.VITE_API_URL || 'http://localhost:5000')
-  : '';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export interface Appointment {
   id: number;
@@ -84,7 +82,7 @@ export interface Conversation {
 
 export async function getAppointments(): Promise<Appointment[]> {
   const response = await fetch(`${API_URL}/api/appointments`, {
-    credentials: 'include', // ← AFEGIT
+    credentials: 'include',
   });
   if (!response.ok) {
     throw new Error('Error obtenint reserves');
@@ -170,7 +168,7 @@ export async function deleteAppointment(id: number): Promise<void> {
 
 export async function getTables(): Promise<Table[]> {
   const response = await fetch(`${API_URL}/api/tables`, {
-    credentials: 'include', // ← AFEGIT
+    credentials: 'include',
   });
   if (!response.ok) {
     throw new Error('Error obtenint taules');
@@ -254,7 +252,7 @@ export async function deleteTable(tableId: number): Promise<void> {
 
 export async function getCustomers(): Promise<Customer[]> {
   const response = await fetch(`${API_URL}/api/customers`, {
-    credentials: 'include', // ← AFEGIT
+    credentials: 'include',
   });
   if (!response.ok) {
     throw new Error('Error obtenint clients');

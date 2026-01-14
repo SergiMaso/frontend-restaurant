@@ -1,10 +1,7 @@
 // Auth Service per connectar amb el backend d'autenticació
 
-// In production, use relative path (Vercel proxy handles routing to backend)
-// In development, use VITE_API_URL or localhost
-const API_URL = import.meta.env.DEV 
-  ? (import.meta.env.VITE_API_URL || 'http://localhost:5001')
-  : '';
+// Use VITE_API_URL for both production and development
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
 // DEBUG: Veure quina URL s'està usant
 console.log('🔧 API_URL configurada:', API_URL);
@@ -13,7 +10,8 @@ export interface User {
   id: number;
   email: string;
   full_name: string;
-  role: 'owner' | 'admin' | 'staff';
+  role: 'superadmin' | 'owner' | 'admin' | 'staff';
+  restaurant_id?: number | null;
 }
 
 export interface LoginData {
@@ -36,7 +34,7 @@ export interface SetupData {
 
 export interface InviteData {
   email: string;
-  role: 'admin' | 'staff';
+  role: 'owner' | 'admin' | 'staff';
 }
 
 export interface ChangePasswordData {

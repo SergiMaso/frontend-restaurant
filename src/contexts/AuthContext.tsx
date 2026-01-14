@@ -8,6 +8,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  isSuperadmin: boolean;
   isOwner: boolean;
   isAdmin: boolean;
   isStaff: boolean;
@@ -90,8 +91,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     login,
     logout,
     refreshUser,
-    isOwner: user?.role === 'owner',
-    isAdmin: user?.role === 'admin' || user?.role === 'owner',
+    isSuperadmin: user?.role === 'superadmin',
+    isOwner: user?.role === 'owner' || user?.role === 'superadmin',
+    isAdmin: user?.role === 'admin' || user?.role === 'owner' || user?.role === 'superadmin',
     isStaff: user?.role === 'staff',
   };
 

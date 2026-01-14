@@ -28,9 +28,11 @@ const ClientConfigManager = () => {
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
 
-  const { data: configs = [], isLoading } = useQuery({
+  const { data: configs = [], isLoading, refetch } = useQuery({
     queryKey: ["client-configs"],
     queryFn: getClientConfigs,
+    staleTime: 0,  // Always consider data stale
+    refetchOnMount: 'always',  // Always refetch when component mounts
   });
 
   const updateMutation = useMutation({
@@ -41,7 +43,8 @@ const ClientConfigManager = () => {
         title: "✅ Configuración actualitzada",
         description: "Los cambios se han guardado correctamente",
       });
-      queryClient.invalidateQueries({ queryKey: ["client-configs"] });
+      // Force immediate refetch instead of just invalidating
+      refetch();
       setEditingKey(null);
     },
     onError: (error: any) => {
@@ -81,6 +84,10 @@ const ClientConfigManager = () => {
     booking: "📅 Reservas",
     maintenance: "🔧 Mantenimiento",
     conversations: "💬 Conversaciones",
+    features: "⚡ Funcionalidades",
+    twilio: "📱 Twilio",
+    api_keys: "🔑 API Keys",
+    ai: "🤖 Inteligencia Artificial",
   };
 
   if (isLoading) {

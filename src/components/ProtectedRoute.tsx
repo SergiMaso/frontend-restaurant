@@ -27,8 +27,8 @@ export function ProtectedRoute({ children, requireOwner, requireAdmin }: Protect
     return <Navigate to="/login" replace />;
   }
 
-  // Si requereix Owner i no ho és
-  if (requireOwner && user.role !== 'owner') {
+  // Si requereix Owner i no ho és (superadmin també té accés)
+  if (requireOwner && user.role !== 'owner' && user.role !== 'superadmin') {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="text-center max-w-md">
@@ -42,8 +42,8 @@ export function ProtectedRoute({ children, requireOwner, requireAdmin }: Protect
     );
   }
 
-  // Si requereix Admin (owner o admin) i no ho és
-  if (requireAdmin && user.role !== 'owner' && user.role !== 'admin') {
+  // Si requereix Admin (owner, admin o superadmin) i no ho és
+  if (requireAdmin && user.role !== 'owner' && user.role !== 'admin' && user.role !== 'superadmin') {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="text-center max-w-md">
