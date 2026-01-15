@@ -227,7 +227,35 @@ export async function deactivateUser(userId: number): Promise<{ message: string 
   
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.error || 'Error desactivant usuari');
+    throw new Error(error.error || 'Error desactivando usuario');
+  }
+  
+  return response.json();
+}
+
+export async function reactivateUser(userId: number): Promise<{ message: string }> {
+  const response = await fetch(`${API_URL}/auth/users/${userId}/reactivate`, {
+    method: 'PUT',
+    credentials: 'include',
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Error reactivando usuario');
+  }
+  
+  return response.json();
+}
+
+export async function deleteUser(userId: number): Promise<{ message: string }> {
+  const response = await fetch(`${API_URL}/auth/users/${userId}`, {
+    method: 'DELETE',
+    credentials: 'include',
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Error eliminando usuario');
   }
   
   return response.json();

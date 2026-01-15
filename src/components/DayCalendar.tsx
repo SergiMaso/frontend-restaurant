@@ -546,7 +546,7 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
               
               <div className="flex gap-2 justify-end pt-4 border-t">
                 <Button variant="outline" onClick={() => setDetailsDialogOpen(false)}>
-                  Tancar
+                  Cerrar
                 </Button>
                 <Button onClick={handleEdit}>
                   <Pencil className="h-4 w-4 mr-2" />

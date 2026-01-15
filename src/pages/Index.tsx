@@ -13,6 +13,7 @@ import {
   UserCog,
   Settings,
   LogOut,
+  Key,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -41,6 +42,7 @@ import UserManagement from "@/components/UserManagement";
 import ClientConfigManager from "@/components/ClientConfigManager";
 import ReservationDialog from "@/components/ReservationDialog";
 import TableLayoutView from "@/components/TableLayoutView";
+import ChangePasswordDialog from "@/components/ChangePasswordDialog";
 import { getAppointments } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -59,6 +61,7 @@ const Index = () => {
   const [reservationDialogOpen, setReservationDialogOpen] = useState(false);
   const [editingReservation, setEditingReservation] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("horario");
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
 
   const { user, logout } = useAuth();
   const { restaurantName } = useRestaurantConfig();
@@ -150,16 +153,28 @@ const Index = () => {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
+                  onClick={() => setChangePasswordOpen(true)}
+                  className="cursor-pointer"
+                >
+                  <Key className="mr-2 h-4 w-4" />
+                  <span>Cambiar Contraseña</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
                   onClick={handleLogout}
                   className="text-destructive cursor-pointer"
                 >
                   <LogOut className="mr-2 h-4 w-4" />
-                  <span>Tancar Sessió</span>
+                  <span>Cerrar Sesión</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
         </div>
+
+        <ChangePasswordDialog 
+          open={changePasswordOpen} 
+          onOpenChange={setChangePasswordOpen} 
+        />
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">

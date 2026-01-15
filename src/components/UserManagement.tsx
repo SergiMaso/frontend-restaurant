@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { listUsers, sendInvitation, deactivateUser } from "@/services/auth";
+import { listUsers, sendInvitation, deactivateUser, reactivateUser, deleteUser } from "@/services/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { UserPlus, UserX, Copy, CheckCircle2 } from "lucide-react";
+import { UserPlus, UserX, UserCheck, Trash2, Copy, CheckCircle2 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useAuth } from "@/contexts/AuthContext";
@@ -93,6 +93,44 @@ const UserManagement = () => {
     },
   });
 
+  // Mutation per reactivar usuari
+  const reactivateMutation = useMutation({
+    mutationFn: reactivateUser,
+    onSuccess: () => {
+      toast({
+        title: "Usuario reactivado",
+        description: "El usuario ha sido reactivado correctamente",
+      });
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "No se ha podido reactivar el usuario",
+      });
+    },
+  });
+
+  // Mutation per eliminar usuari
+  const deleteMutation = useMutation({
+    mutationFn: deleteUser,
+    onSuccess: () => {
+      toast({
+        title: "Usuario eliminado",
+        description: "El usuario ha sido eliminado permanentemente",
+      });
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "No se ha podido eliminar el usuario",
+      });
+    },
+  });
+
   const handleInvite = () => {
     if (!email) {
       toast({
@@ -108,6 +146,14 @@ const UserManagement = () => {
 
   const handleDeactivate = (userId: number) => {
     deactivateMutation.mutate(userId);
+  };
+
+  const handleReactivate = (userId: number) => {
+    reactivateMutation.mutate(userId);
+  };
+
+  const handleDelete = (userId: number) => {
+    deleteMutation.mutate(userId);
   };
 
   const copyToClipboard = () => {
@@ -131,7 +177,7 @@ const UserManagement = () => {
     };
     
     const labels: Record<string, string> = {
-      owner: 'Propietari',
+      owner: 'Propietario',
       admin: 'Administrador',
       staff: 'Personal',
     };
@@ -147,7 +193,7 @@ const UserManagement = () => {
     return (
       <Card>
         <CardContent className="pt-6">
-          <p className="text-center text-muted-foreground">Carregant usuaris...</p>
+          <p className="text-center text-muted-foreground">Cargando usuarios...</p>
         </CardContent>
       </Card>
     );
@@ -254,7 +300,7 @@ const UserManagement = () => {
                         Cancelar
                       </Button>
                       <Button onClick={handleInvite} disabled={inviteMutation.isPending}>
-                        {inviteMutation.isPending ? 'Enviant...' : 'Enviar Invitació'}
+                        {inviteMutation.isPending ? 'Enviando...' : 'Enviar Invitación'}
                       </Button>
                     </DialogFooter>
                   </>
@@ -284,29 +330,30 @@ const UserManagement = () => {
                   <TableCell>{getRoleBadge(user.role)}</TableCell>
                   <TableCell>
                     <Badge variant={user.is_active ? 'default' : 'destructive'}>
-                      {user.is_active ? 'Actiu' : 'Inactiu'}
+                      {user.is_active ? 'Activo' : 'Inactivo'}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     {user.last_login 
                       ? format(new Date(user.last_login), "d MMM yyyy, HH:mm", { locale: es })
-                      : 'Mai'
+                      : 'Nunca'
                     }
                   </TableCell>
-                  <TableCell className="text-right">
-                    {user.role !== 'owner' && user.role !== 'superadmin' && user.is_active && (
+                  <TableCell className="text-right space-x-1">
+                    {/* Deactivate button - for active users */}
+                    {user.role !== 'superadmin' && user.is_active && (isSuperadmin || (user.role !== 'owner')) && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button variant="ghost" size="sm">
-                            <UserX className="h-4 w-4 mr-2" />
+                            <UserX className="h-4 w-4 mr-1" />
                             Desactivar
                           </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Desactivar usuari</AlertDialogTitle>
+                            <AlertDialogTitle>Desactivar usuario</AlertDialogTitle>
                             <AlertDialogDescription>
-                              Estás seguro que quieres desactivar a {user.full_name}? 
+                              ¿Estás seguro que quieres desactivar a {user.full_name}? 
                               No podrá acceder al sistema hasta que lo re-activen.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
@@ -317,6 +364,43 @@ const UserManagement = () => {
                               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                             >
                               Desactivar
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
+                    
+                    {/* Reactivate button - for inactive users */}
+                    {user.role !== 'superadmin' && !user.is_active && (isSuperadmin || (user.role !== 'owner')) && (
+                      <Button variant="ghost" size="sm" onClick={() => handleReactivate(user.id)}>
+                        <UserCheck className="h-4 w-4 mr-1" />
+                        Reactivar
+                      </Button>
+                    )}
+                    
+                    {/* Delete button - superadmin can delete anyone, owner can delete admin/staff */}
+                    {user.role !== 'superadmin' && (isSuperadmin || (user.role !== 'owner')) && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Eliminar usuario permanentemente</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              ¿Estás seguro que quieres eliminar a {user.full_name}? 
+                              Esta acción no se puede deshacer.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction 
+                              onClick={() => handleDelete(user.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Eliminar
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>

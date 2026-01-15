@@ -39,9 +39,9 @@ const ForgotPassword = () => {
               <UtensilsCrossed className="h-8 w-8 text-primary-foreground" />
             </div>
           </div>
-          <CardTitle className="text-2xl text-center">Recuperar Contrasenya</CardTitle>
+          <CardTitle className="text-2xl text-center">Recuperar Contraseña</CardTitle>
           <CardDescription className="text-center">
-            Introdueix el teu email i t'enviarem instruccions
+            Introduce tu email y te enviaremos instrucciones
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
@@ -57,7 +57,7 @@ const ForgotPassword = () => {
               <Alert className="bg-success/10 text-success border-success/20">
                 <CheckCircle2 className="h-4 w-4" />
                 <AlertDescription>
-                  Si l'email existeix, rebràs instruccions per recuperar la contrasenya. Comprova la teva safata d'entrada.
+                  Si el email existe, recibirás instrucciones para recuperar la contraseña. Revisa tu bandeja de entrada.
                 </AlertDescription>
               </Alert>
             )}
@@ -88,23 +88,23 @@ const ForgotPassword = () => {
                   {loading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Enviant...
+                      Enviando...
                     </>
                   ) : (
-                    "Enviar Instruccions"
+                    "Enviar Instrucciones"
                   )}
                 </Button>
                 <Link to="/login" className="w-full">
                   <Button variant="ghost" className="w-full">
                     <ArrowLeft className="mr-2 h-4 w-4" />
-                    Tornar al Login
+                    Volver al Login
                   </Button>
                 </Link>
               </>
             ) : (
               <Link to="/login" className="w-full">
                 <Button className="w-full">
-                  Anar al Login
+                  Ir al Login
                 </Button>
               </Link>
             )}

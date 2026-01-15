@@ -33,17 +33,17 @@ const ResetPassword = () => {
 
     // Validacions
     if (!token) {
-      setError("Token no vàlid");
+      setError("Token no válido");
       return;
     }
 
     if (password.length < 6) {
-      setError("La contrasenya ha de tenir mínim 6 caràcters");
+      setError("La contraseña debe tener mínimo 6 caracteres");
       return;
     }
 
     if (password !== confirmPassword) {
-      setError("Les contrasenyes no coincideixen");
+      setError("Las contraseñas no coinciden");
       return;
     }
 
@@ -56,14 +56,14 @@ const ResetPassword = () => {
       });
 
       toast({
-        title: "Contrasenya actualitzada!",
-        description: "Ara ja pots iniciar sessió amb la teva nova contrasenya.",
+        title: "¡Contraseña actualizada!",
+        description: "Ya puedes iniciar sesión con tu nueva contraseña.",
       });
 
       // Redirigir a login
       navigate("/login");
     } catch (error: any) {
-      setError(error.message || "Error resetejant la contrasenya");
+      setError(error.message || "Error al restablecer la contraseña");
     } finally {
       setLoading(false);
     }
@@ -78,9 +78,9 @@ const ResetPassword = () => {
               <UtensilsCrossed className="h-8 w-8 text-primary-foreground" />
             </div>
           </div>
-          <CardTitle className="text-2xl text-center">Nova Contrasenya</CardTitle>
+          <CardTitle className="text-2xl text-center">Nueva Contraseña</CardTitle>
           <CardDescription className="text-center">
-            Introdueix la teva nova contrasenya
+            Introduce tu nueva contraseña
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
@@ -96,17 +96,17 @@ const ResetPassword = () => {
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  Token de recuperació no vàlid o expirat.
+                  Token de recuperación no válido o expirado.
                 </AlertDescription>
               </Alert>
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="password">Nova Contrasenya</Label>
+              <Label htmlFor="password">Nueva Contraseña</Label>
               <Input
                 id="password"
                 type="password"
-                placeholder="Mínim 6 caràcters"
+                placeholder="Mínimo 6 caracteres"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -115,11 +115,11 @@ const ResetPassword = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirmar Contrasenya</Label>
+              <Label htmlFor="confirmPassword">Confirmar Contraseña</Label>
               <Input
                 id="confirmPassword"
                 type="password"
-                placeholder="Repeteix la contrasenya"
+                placeholder="Repite la contraseña"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
