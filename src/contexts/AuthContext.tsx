@@ -44,8 +44,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(response.user);
       
       toast({
-        title: "Login correcte",
-        description: `Benvingut/da, ${response.user.full_name}!`,
+        title: "Login correcto",
+        description: `Bienvenido/a, ${response.user.full_name}!`,
       });
     } catch (error: any) {
       toast({
