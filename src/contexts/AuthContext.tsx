@@ -51,7 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       toast({
         variant: "destructive",
         title: "Error en login",
-        description: error.message || "Email o password incorrectes",
+        description: error.message || "Email o password incorrectos",
       });
       throw error;
     }
@@ -63,8 +63,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       
       toast({
-        title: "Logout correcte",
-        description: "Sessió tancada correctament",
+        title: "Logout correcto",
+        description: "Sesión cerrada correctamente",
       });
     } catch (error: any) {
       toast({

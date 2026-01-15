@@ -1,10 +1,16 @@
-// Auth Service per connectar amb el backend d'autenticació
+// Auth Service - includes X-Restaurant-ID header for multi-tenant support
 
-// Use VITE_API_URL for both production and development
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
-// DEBUG: Veure quina URL s'està usant
-console.log('🔧 API_URL configurada:', API_URL);
+// Helper to get restaurant ID header
+function getRestaurantHeaders(): HeadersInit {
+  const restaurantId = localStorage.getItem('selectedRestaurantId');
+  const headers: HeadersInit = {};
+  if (restaurantId) {
+    headers['X-Restaurant-ID'] = restaurantId;
+  }
+  return headers;
+}
 
 export interface User {
   id: number;
@@ -61,7 +67,7 @@ export async function login(data: LoginData): Promise<{ user: User; message: str
     headers: {
       'Content-Type': 'application/json',
     },
-    credentials: 'include', // Important per cookies de sessió
+    credentials: 'include',
     body: JSON.stringify(data),
   });
   
@@ -74,6 +80,9 @@ export async function login(data: LoginData): Promise<{ user: User; message: str
 }
 
 export async function logout(): Promise<void> {
+  // Clear selected restaurant on logout
+  localStorage.removeItem('selectedRestaurantId');
+  
   const response = await fetch(`${API_URL}/auth/logout`, {
     method: 'POST',
     credentials: 'include',
@@ -137,6 +146,7 @@ export async function sendInvitation(data: InviteData): Promise<any> {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      ...getRestaurantHeaders(),
     },
     credentials: 'include',
     body: JSON.stringify(data),
@@ -203,12 +213,13 @@ export async function resetPassword(data: ResetPasswordData): Promise<{ message:
 }
 
 // ========================================
-// USER MANAGEMENT (només Owner)
+// USER MANAGEMENT
 // ========================================
 
 export async function listUsers(): Promise<any[]> {
   const response = await fetch(`${API_URL}/auth/users`, {
     credentials: 'include',
+    headers: getRestaurantHeaders(),
   });
   
   if (!response.ok) {
@@ -223,6 +234,7 @@ export async function deactivateUser(userId: number): Promise<{ message: string 
   const response = await fetch(`${API_URL}/auth/users/${userId}/deactivate`, {
     method: 'PUT',
     credentials: 'include',
+    headers: getRestaurantHeaders(),
   });
   
   if (!response.ok) {
@@ -237,6 +249,7 @@ export async function reactivateUser(userId: number): Promise<{ message: string 
   const response = await fetch(`${API_URL}/auth/users/${userId}/reactivate`, {
     method: 'PUT',
     credentials: 'include',
+    headers: getRestaurantHeaders(),
   });
   
   if (!response.ok) {
@@ -251,6 +264,7 @@ export async function deleteUser(userId: number): Promise<{ message: string }> {
   const response = await fetch(`${API_URL}/auth/users/${userId}`, {
     method: 'DELETE',
     credentials: 'include',
+    headers: getRestaurantHeaders(),
   });
   
   if (!response.ok) {

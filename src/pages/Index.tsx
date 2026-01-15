@@ -43,8 +43,10 @@ import ClientConfigManager from "@/components/ClientConfigManager";
 import ReservationDialog from "@/components/ReservationDialog";
 import TableLayoutView from "@/components/TableLayoutView";
 import ChangePasswordDialog from "@/components/ChangePasswordDialog";
+import RestaurantSelector from "@/components/RestaurantSelector";
 import { getAppointments } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRestaurant } from "@/contexts/RestaurantContext";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -54,7 +56,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { useRestaurantConfig } from "@/hooks/useRestaurantConfig";
 
 const Index = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -64,10 +65,10 @@ const Index = () => {
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
 
   const { user, logout } = useAuth();
-  const { restaurantName } = useRestaurantConfig();
+  const { selectedRestaurant, loading: restaurantLoading } = useRestaurant();
 
-  // DEBUG: Mostrar nom del restaurant
-  console.log("🔍 [Index] Nom del restaurant:", restaurantName);
+  // Use restaurant name from context
+  const restaurantName = selectedRestaurant?.name || 'Cargando...';
 
   const handleLogout = async () => {
     await logout();
@@ -82,10 +83,11 @@ const Index = () => {
       .substring(0, 2);
   };
 
-  // Obtenir reserves per calcular les d'avui
+  // Obtenir reserves per calcular les d'avui - only fetch when restaurant is loaded
   const { data: allAppointments } = useQuery({
-    queryKey: ["appointments"],
+    queryKey: ["appointments", selectedRestaurant?.id],
     queryFn: getAppointments,
+    enabled: !!selectedRestaurant, // Only fetch when restaurant is selected
   });
 
   // Comptar reserves d'avui (confirmed + completed)
@@ -99,6 +101,18 @@ const Index = () => {
         return false;
       }
     }).length || 0;
+
+  // Show loading while restaurant context is being loaded
+  if (restaurantLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
@@ -120,7 +134,10 @@ const Index = () => {
               </div>
             </div>
 
-            <DropdownMenu>
+            <div className="flex items-center gap-3">
+              <RestaurantSelector />
+              
+              <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                   <Avatar>
@@ -144,7 +161,7 @@ const Index = () => {
                       {user?.role === "superadmin"
                         ? "Superadmin"
                         : user?.role === "owner"
-                        ? "Propietari"
+                        ? "Propietario"
                         : user?.role === "admin"
                         ? "Administrador"
                         : "Personal"}
@@ -168,6 +185,7 @@ const Index = () => {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            </div>
           </div>
         </div>
 

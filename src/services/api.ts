@@ -1,9 +1,17 @@
 // API Service per connectar amb el backend
-// CORRECCIÓ: Afegit credentials: 'include' a totes les crides per enviar cookies de sessió
+// Includes X-Restaurant-ID header for multi-tenant support
 
-// In production, use VITE_API_URL (App Runner backend)
-// In development, use VITE_API_URL or localhost
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+// Helper to get restaurant ID header
+function getRestaurantHeaders(): HeadersInit {
+  const restaurantId = localStorage.getItem('selectedRestaurantId');
+  const headers: HeadersInit = {};
+  if (restaurantId) {
+    headers['X-Restaurant-ID'] = restaurantId;
+  }
+  return headers;
+}
 
 export interface Appointment {
   id: number;
@@ -83,6 +91,7 @@ export interface Conversation {
 export async function getAppointments(): Promise<Appointment[]> {
   const response = await fetch(`${API_URL}/api/appointments`, {
     credentials: 'include',
+    headers: getRestaurantHeaders(),
   });
   if (!response.ok) {
     throw new Error('Error obtenint reserves');
@@ -92,7 +101,8 @@ export async function getAppointments(): Promise<Appointment[]> {
 
 export async function getAppointment(id: number): Promise<Appointment> {
   const response = await fetch(`${API_URL}/api/appointments/${id}`, {
-    credentials: 'include', // ← AFEGIT
+    credentials: 'include',
+    headers: getRestaurantHeaders(),
   });
   if (!response.ok) {
     throw new Error('Error obtenint reserva');
@@ -101,44 +111,32 @@ export async function getAppointment(id: number): Promise<Appointment> {
 }
 
 export async function createAppointment(data: CreateAppointmentData): Promise<any> {
-  console.log("🚀 [API] Creant reserva amb dades:", data);
-
   const response = await fetch(`${API_URL}/api/appointments`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      ...getRestaurantHeaders(),
     },
-    credentials: 'include', // ← AFEGIT
+    credentials: 'include',
     body: JSON.stringify(data),
-  });
-
-  console.log("📡 [API] Resposta del servidor:", {
-    status: response.status,
-    statusText: response.statusText,
-    ok: response.ok
   });
 
   if (!response.ok) {
     const error = await response.json();
-    console.error("❌ [API] Error del backend:", error);
     throw new Error(error.error || 'Error creant reserva');
   }
 
-  const result = await response.json();
-  console.log("✅ [API] Reserva creada:", result);
-  return result;
+  return response.json();
 }
 
-export async function updateAppointment(
-  id: number,
-  data: UpdateAppointmentData
-): Promise<any> {
+export async function updateAppointment(id: number, data: UpdateAppointmentData): Promise<any> {
   const response = await fetch(`${API_URL}/api/appointments/${id}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
+      ...getRestaurantHeaders(),
     },
-    credentials: 'include', // ← AFEGIT
+    credentials: 'include',
     body: JSON.stringify(data),
   });
   
@@ -153,7 +151,8 @@ export async function updateAppointment(
 export async function deleteAppointment(id: number): Promise<void> {
   const response = await fetch(`${API_URL}/api/appointments/${id}`, {
     method: 'DELETE',
-    credentials: 'include', // ← AFEGIT
+    credentials: 'include',
+    headers: getRestaurantHeaders(),
   });
   
   if (!response.ok) {
@@ -169,6 +168,7 @@ export async function deleteAppointment(id: number): Promise<void> {
 export async function getTables(): Promise<Table[]> {
   const response = await fetch(`${API_URL}/api/tables`, {
     credentials: 'include',
+    headers: getRestaurantHeaders(),
   });
   if (!response.ok) {
     throw new Error('Error obtenint taules');
@@ -181,8 +181,9 @@ export async function createTable(data: CreateTableData): Promise<any> {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      ...getRestaurantHeaders(),
     },
-    credentials: 'include', // ← AFEGIT
+    credentials: 'include',
     body: JSON.stringify(data),
   });
   
@@ -194,16 +195,14 @@ export async function createTable(data: CreateTableData): Promise<any> {
   return response.json();
 }
 
-export async function updateTable(
-  tableId: number,
-  data: UpdateTableData
-): Promise<any> {
+export async function updateTable(tableId: number, data: UpdateTableData): Promise<any> {
   const response = await fetch(`${API_URL}/api/tables/${tableId}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
+      ...getRestaurantHeaders(),
     },
-    credentials: 'include', // ← AFEGIT
+    credentials: 'include',
     body: JSON.stringify(data),
   });
   
@@ -215,16 +214,14 @@ export async function updateTable(
   return response.json();
 }
 
-export async function updateTableStatus(
-  tableId: number,
-  status: string
-): Promise<void> {
+export async function updateTableStatus(tableId: number, status: string): Promise<void> {
   const response = await fetch(`${API_URL}/api/tables/${tableId}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
+      ...getRestaurantHeaders(),
     },
-    credentials: 'include', // ← AFEGIT
+    credentials: 'include',
     body: JSON.stringify({ status }),
   });
   
@@ -237,7 +234,8 @@ export async function updateTableStatus(
 export async function deleteTable(tableId: number): Promise<void> {
   const response = await fetch(`${API_URL}/api/tables/${tableId}`, {
     method: 'DELETE',
-    credentials: 'include', // ← AFEGIT
+    credentials: 'include',
+    headers: getRestaurantHeaders(),
   });
   
   if (!response.ok) {
@@ -253,6 +251,7 @@ export async function deleteTable(tableId: number): Promise<void> {
 export async function getCustomers(): Promise<Customer[]> {
   const response = await fetch(`${API_URL}/api/customers`, {
     credentials: 'include',
+    headers: getRestaurantHeaders(),
   });
   if (!response.ok) {
     throw new Error('Error obtenint clients');
@@ -262,7 +261,8 @@ export async function getCustomers(): Promise<Customer[]> {
 
 export async function getConversations(phone: string): Promise<Conversation[]> {
   const response = await fetch(`${API_URL}/api/conversations/${encodeURIComponent(phone)}`, {
-    credentials: 'include', // ← AFEGIT
+    credentials: 'include',
+    headers: getRestaurantHeaders(),
   });
   if (!response.ok) {
     throw new Error('Error obtenint converses');
@@ -296,7 +296,8 @@ export interface SetOpeningHoursData {
 
 export async function getOpeningHours(date: string): Promise<OpeningHours> {
   const response = await fetch(`${API_URL}/api/opening-hours?date=${date}`, {
-    credentials: 'include', // ← AFEGIT
+    credentials: 'include',
+    headers: getRestaurantHeaders(),
   });
   if (!response.ok) {
     throw new Error('Error obtenint horaris');
@@ -306,7 +307,8 @@ export async function getOpeningHours(date: string): Promise<OpeningHours> {
 
 export async function getOpeningHoursRange(fromDate: string, toDate: string): Promise<OpeningHours[]> {
   const response = await fetch(`${API_URL}/api/opening-hours?from=${fromDate}&to=${toDate}`, {
-    credentials: 'include', // ← AFEGIT
+    credentials: 'include',
+    headers: getRestaurantHeaders(),
   });
   if (!response.ok) {
     throw new Error('Error obtenint horaris');
@@ -319,8 +321,9 @@ export async function setOpeningHours(data: SetOpeningHoursData): Promise<any> {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      ...getRestaurantHeaders(),
     },
-    credentials: 'include', // ← AFEGIT
+    credentials: 'include',
     body: JSON.stringify(data),
   });
   
@@ -337,8 +340,9 @@ export async function updateOpeningHours(date: string, data: Partial<SetOpeningH
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
+      ...getRestaurantHeaders(),
     },
-    credentials: 'include', // ← AFEGIT
+    credentials: 'include',
     body: JSON.stringify(data),
   });
   
@@ -374,7 +378,8 @@ export interface UpdateWeeklyDefaultData {
 
 export async function getWeeklyDefaults(): Promise<WeeklyDefault[]> {
   const response = await fetch(`${API_URL}/api/weekly-defaults`, {
-    credentials: 'include', // ← AFEGIT
+    credentials: 'include',
+    headers: getRestaurantHeaders(),
   });
   if (!response.ok) {
     throw new Error('Error obtenint configuració setmanal');
@@ -382,16 +387,14 @@ export async function getWeeklyDefaults(): Promise<WeeklyDefault[]> {
   return response.json();
 }
 
-export async function updateWeeklyDefault(
-  dayOfWeek: number,
-  data: UpdateWeeklyDefaultData
-): Promise<any> {
+export async function updateWeeklyDefault(dayOfWeek: number, data: UpdateWeeklyDefaultData): Promise<any> {
   const response = await fetch(`${API_URL}/api/weekly-defaults/${dayOfWeek}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
+      ...getRestaurantHeaders(),
     },
-    credentials: 'include', // ← AFEGIT
+    credentials: 'include',
     body: JSON.stringify(data),
   });
   
@@ -419,6 +422,7 @@ export interface ClientConfig {
 export async function getClientConfigs(): Promise<ClientConfig[]> {
   const response = await fetch(`${API_URL}/api/config`, {
     credentials: 'include',
+    headers: getRestaurantHeaders(),
   });
 
   if (!response.ok) {
@@ -434,6 +438,7 @@ export async function updateClientConfig(key: string, value: string): Promise<an
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
+      ...getRestaurantHeaders(),
     },
     credentials: 'include',
     body: JSON.stringify({ value }),
@@ -463,6 +468,7 @@ export interface GlobalStats {
 export async function getGlobalStats(): Promise<GlobalStats> {
   const response = await fetch(`${API_URL}/api/stats/global`, {
     credentials: 'include',
+    headers: getRestaurantHeaders(),
   });
 
   if (!response.ok) {
@@ -487,6 +493,7 @@ export async function updateCustomer(phone: string, data: UpdateCustomerData): P
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
+      ...getRestaurantHeaders(),
     },
     credentials: 'include',
     body: JSON.stringify(data),
@@ -504,6 +511,7 @@ export async function deleteCustomer(phone: string): Promise<void> {
   const response = await fetch(`${API_URL}/api/customers/${encodeURIComponent(phone)}`, {
     method: 'DELETE',
     credentials: 'include',
+    headers: getRestaurantHeaders(),
   });
 
   if (!response.ok) {
@@ -513,7 +521,7 @@ export async function deleteCustomer(phone: string): Promise<void> {
 }
 
 // ==========================================
-// APPOINTMENT ACTIONS (seated, left, no-show)
+// APPOINTMENT ACTIONS
 // ==========================================
 
 export async function markAppointmentSeated(appointmentId: number): Promise<any> {
@@ -521,6 +529,7 @@ export async function markAppointmentSeated(appointmentId: number): Promise<any>
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      ...getRestaurantHeaders(),
     },
     credentials: 'include',
   });
@@ -538,6 +547,7 @@ export async function markAppointmentLeft(appointmentId: number): Promise<any> {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      ...getRestaurantHeaders(),
     },
     credentials: 'include',
   });
@@ -555,6 +565,7 @@ export async function markAppointmentNoShow(appointmentId: number): Promise<any>
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      ...getRestaurantHeaders(),
     },
     credentials: 'include',
   });
@@ -581,6 +592,7 @@ export async function sendMessage(data: SendMessageData): Promise<any> {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      ...getRestaurantHeaders(),
     },
     credentials: 'include',
     body: JSON.stringify(data),
@@ -612,6 +624,7 @@ export async function previewBroadcast(data: BroadcastData): Promise<{ recipient
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      ...getRestaurantHeaders(),
     },
     credentials: 'include',
     body: JSON.stringify(data),
@@ -630,6 +643,7 @@ export async function sendBroadcast(data: BroadcastData): Promise<{ sent: number
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      ...getRestaurantHeaders(),
     },
     credentials: 'include',
     body: JSON.stringify(data),
@@ -661,6 +675,7 @@ export interface Media {
 export async function getMedia(): Promise<Media[]> {
   const response = await fetch(`${API_URL}/api/media`, {
     credentials: 'include',
+    headers: getRestaurantHeaders(),
   });
 
   if (!response.ok) {
@@ -672,9 +687,17 @@ export async function getMedia(): Promise<Media[]> {
 }
 
 export async function uploadMedia(formData: FormData): Promise<Media> {
+  // For FormData, we need to add the header differently
+  const restaurantId = localStorage.getItem('selectedRestaurantId');
+  const headers: HeadersInit = {};
+  if (restaurantId) {
+    headers['X-Restaurant-ID'] = restaurantId;
+  }
+
   const response = await fetch(`${API_URL}/api/media`, {
     method: 'POST',
     credentials: 'include',
+    headers,
     body: formData,
   });
 
@@ -690,6 +713,7 @@ export async function deleteMedia(mediaId: number): Promise<void> {
   const response = await fetch(`${API_URL}/api/media/${mediaId}`, {
     method: 'DELETE',
     credentials: 'include',
+    headers: getRestaurantHeaders(),
   });
 
   if (!response.ok) {
@@ -703,6 +727,7 @@ export async function toggleMediaActive(mediaId: number, active: boolean): Promi
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
+      ...getRestaurantHeaders(),
     },
     credentials: 'include',
     body: JSON.stringify({ active }),
