@@ -107,10 +107,20 @@ const WeeklyScheduleManager = () => {
             key={day.day_of_week}
             onClick={() => handleDayClick(day)}
             variant="outline"
-            className={`h-16 flex flex-col items-center justify-center gap-1 transition-all text-xs ${getDayColor(day.status)}`}
+            className={`h-auto min-h-[80px] flex flex-col items-center justify-center gap-1 transition-all text-xs p-2 ${getDayColor(day.status)}`}
           >
             <span className="text-lg">{getStatusIcon(day.status)}</span>
             <span className="font-semibold text-xs">{day.day_name}</span>
+            {day.status !== "closed" && (
+              <div className="flex flex-col items-center text-[10px] opacity-80">
+                {(day.status === "full_day" || day.status === "lunch_only") && day.lunch_start && (
+                  <span>🍽️ {day.lunch_start?.slice(0,5)}-{day.lunch_end?.slice(0,5)}</span>
+                )}
+                {(day.status === "full_day" || day.status === "dinner_only") && day.dinner_start && (
+                  <span>🌙 {day.dinner_start?.slice(0,5)}-{day.dinner_end?.slice(0,5)}</span>
+                )}
+              </div>
+            )}
           </Button>
         ))}
       </div>

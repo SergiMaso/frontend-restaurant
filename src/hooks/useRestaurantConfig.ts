@@ -44,7 +44,9 @@ export const useRestaurantConfig = () => {
 
   const restaurantName = getConfigValue("restaurant_name", "Restaurant");
   const maxPeoplePerBooking = getConfigNumber("max_people_per_booking", 8);
-  const defaultBookingDuration = getConfigNumber("default_booking_duration_hours", 2);
+  // Config stores minutes, convert to hours for the frontend
+  const defaultBookingDurationMinutes = getConfigNumber("default_booking_duration_minutes", 90);
+  const defaultBookingDuration = defaultBookingDurationMinutes / 60;
 
   // Time slots configuration
   const timeSlotsMode = getConfigValue("time_slots_mode", "interval");
