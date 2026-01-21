@@ -462,7 +462,7 @@ const MediaManager = () => {
                       </a>
                     </Button>
                     <Button variant="outline" asChild>
-                      <a href={previewMedia.file_url} download>
+                      <a href={previewMedia.file_url} target="_blank" rel="noopener noreferrer" download>
                         <Download className="h-4 w-4 mr-2" />
                         {t("media.download")}
                       </a>
@@ -488,7 +488,7 @@ const MediaManager = () => {
                     </a>
                   </Button>
                   <Button variant="outline" asChild>
-                    <a href={previewMedia?.file_url} download>
+                    <a href={previewMedia?.file_url} target="_blank" rel="noopener noreferrer" download>
                       <Download className="h-4 w-4 mr-2" />
                       {t("media.download")}
                     </a>

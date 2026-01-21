@@ -152,14 +152,50 @@ const StatsView = () => {
 
   // Calcular estadísticas filtradas
   const stats = useMemo(() => {
-    // SIEMPRE calcular desde appointments filtrados (incluye hoy)
-    const completed = filteredAppointments.filter((apt: any) => apt.duration_minutes && !apt.no_show);
-    const noShows = filteredAppointments.filter((apt: any) => apt.no_show);
-    const withDelay = filteredAppointments.filter((apt: any) => apt.delay_minutes !== null && apt.delay_minutes !== undefined);
+    const now = new Date();
+    now.setHours(23, 59, 59, 999); // End of today
 
-    // Calcular retrasos
-    const delays = withDelay.map((apt: any) => apt.delay_minutes);
-    const avgDelay = delays.length > 0 
+    // Helper to check if appointment has ACTUAL recorded times (not defaults)
+    // An appointment is truly completed if:
+    // 1. It has seated_at AND left_at timestamps (meaning staff actually recorded entry/exit)
+    // 2. OR duration_minutes is different from the default 90 (meaning it was calculated from real times)
+    const hasActualTimes = (apt: any) => {
+      // If there are seated_at and left_at timestamps, it's real data
+      if (apt.seated_at && apt.left_at) return true;
+      // If duration is exactly 90 and there's no seated_at, it's likely a default
+      if (apt.duration_minutes === 90 && !apt.seated_at) return false;
+      // If there's a non-90 duration, it was probably calculated from real times
+      if (apt.duration_minutes && apt.duration_minutes !== 90) return true;
+      return false;
+    };
+
+    // Helper to check if delay was actually recorded (not default 0)
+    const hasActualDelay = (apt: any) => {
+      // If seated_at exists, the delay was calculated from real data
+      if (apt.seated_at) return true;
+      // If delay is exactly 0 and no seated_at, it's likely default
+      if (apt.delay_minutes === 0 && !apt.seated_at) return false;
+      // Non-zero delay means it was recorded
+      if (apt.delay_minutes && apt.delay_minutes !== 0) return true;
+      return false;
+    };
+
+    // Only count past/today appointments with ACTUAL recorded times as completed
+    const completed = filteredAppointments.filter((apt: any) => {
+      const aptDate = parseISO(apt.date);
+      return hasActualTimes(apt) && !apt.no_show && aptDate <= now;
+    });
+    const noShows = filteredAppointments.filter((apt: any) => apt.no_show);
+
+    // Only include appointments with ACTUAL recorded delay (not default 0)
+    const withDelay = filteredAppointments.filter((apt: any) => {
+      const aptDate = parseISO(apt.date);
+      return hasActualDelay(apt) && aptDate <= now;
+    });
+
+    // Calcular retrasos (negative delays = early arrival, count as 0)
+    const delays = withDelay.map((apt: any) => Math.max(0, apt.delay_minutes || 0));
+    const avgDelay = delays.length > 0
       ? Math.round(delays.reduce((sum, d) => sum + d, 0) / delays.length)
       : 0;
 
@@ -177,6 +213,9 @@ const StatsView = () => {
 
     // Top customers del periodo filtrado
     const customerStats = new Map();
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+
     filteredAppointments.forEach((apt: any) => {
       if (!apt.phone) return;
       if (!customerStats.has(apt.phone)) {
@@ -188,15 +227,18 @@ const StatsView = () => {
           durations: [],
         });
       }
-      const stats = customerStats.get(apt.phone);
+      const custStats = customerStats.get(apt.phone);
+      const aptDate = parseISO(apt.date);
+
       if (apt.no_show) {
-        stats.no_shows++;
-      } else if (apt.duration_minutes) {
-        stats.visits++;
-        stats.durations.push(apt.duration_minutes);
-      } else if (apt.status === 'confirmed' && !apt.no_show) {
-        // Contar visitas confirmadas aunque no tengan duración aún
-        stats.visits++;
+        custStats.no_shows++;
+      } else if (hasActualTimes(apt) && aptDate <= today) {
+        // Only count as visit if has ACTUAL recorded times (not defaults) and is in the past/today
+        custStats.visits++;
+        custStats.durations.push(apt.duration_minutes);
+      } else if (apt.status === 'completed' && apt.seated_at && aptDate <= today) {
+        // Count completed status with seated_at even without full duration if in past/today
+        custStats.visits++;
       }
     });
 
@@ -500,7 +542,7 @@ const StatsView = () => {
                     )}
                     <Badge variant="secondary" className="flex items-center gap-1">
                       <Users className="h-3 w-3" />
-                      {t("stats.visits", { count: customer.visits })}
+                      {customer.visits} {t("stats.visits")}
                     </Badge>
                     {customer.no_shows > 0 && (
                       <Badge variant="destructive" className="flex items-center gap-1">
