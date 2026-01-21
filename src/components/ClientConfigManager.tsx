@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getClientConfigs, updateClientConfig } from "@/services/api";
 import {
@@ -23,6 +24,8 @@ import { Settings, Save, Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 const ClientConfigManager = () => {
+  const { t } = useTranslation("dashboard");
+  const { t: tCommon } = useTranslation("common");
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [editingKey, setEditingKey] = useState<string | null>(null);
@@ -40,8 +43,8 @@ const ClientConfigManager = () => {
       updateClientConfig(key, value),
     onSuccess: () => {
       toast({
-        title: "✅ Configuración actualitzada",
-        description: "Los cambios se han guardado correctamente",
+        title: t("config.updateSuccess"),
+        description: t("config.updateSuccessDesc"),
       });
       // Force immediate refetch instead of just invalidating
       refetch();
@@ -50,7 +53,7 @@ const ClientConfigManager = () => {
     onError: (error: any) => {
       toast({
         variant: "destructive",
-        title: "❌ Error",
+        title: tCommon("error"),
         description: error.message,
       });
     },
@@ -80,14 +83,38 @@ const ClientConfigManager = () => {
   }, {} as Record<string, typeof configs>);
 
   const categoryNames: Record<string, string> = {
-    restaurant: "🏢 Restaurante",
-    booking: "📅 Reservas",
-    maintenance: "🔧 Mantenimiento",
-    conversations: "💬 Conversaciones",
-    features: "⚡ Funcionalidades",
-    twilio: "📱 Twilio",
-    api_keys: "🔑 API Keys",
-    ai: "🤖 Inteligencia Artificial",
+    restaurant: `🏢 ${t("config.categoryRestaurant")}`,
+    booking: `📅 ${t("config.categoryBooking")}`,
+    maintenance: `🔧 ${t("config.categoryMaintenance")}`,
+    conversations: `💬 ${t("config.categoryConversations")}`,
+    features: `⚡ ${t("config.categoryFeatures")}`,
+    twilio: `📱 ${t("config.categoryTwilio")}`,
+    api_keys: `🔑 ${t("config.categoryApiKeys")}`,
+    ai: `🤖 ${t("config.categoryAi")}`,
+  };
+
+  // Get translated description, fall back to DB description if not found
+  const getConfigDescription = (key: string, dbDescription: string) => {
+    // Try the key as-is first
+    const translationKey = `config.keys.${key}`;
+    const translated = t(translationKey);
+    if (translated !== translationKey) {
+      return translated;
+    }
+    // Try lowercase version
+    const lowerKey = `config.keys.${key.toLowerCase()}`;
+    const lowerTranslated = t(lowerKey);
+    if (lowerTranslated !== lowerKey) {
+      return lowerTranslated;
+    }
+    // Try snake_case version (convert from camelCase or kebab-case)
+    const snakeKey = `config.keys.${key.replace(/-/g, '_').replace(/([A-Z])/g, '_$1').toLowerCase()}`;
+    const snakeTranslated = t(snakeKey);
+    if (snakeTranslated !== snakeKey) {
+      return snakeTranslated;
+    }
+    // Fall back to DB description
+    return dbDescription;
   };
 
   if (isLoading) {
@@ -111,9 +138,9 @@ const ClientConfigManager = () => {
               <Settings className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <CardTitle>Configuración del Cliente</CardTitle>
+              <CardTitle>{t("config.title")}</CardTitle>
               <CardDescription>
-                Gestiona las variables configurables del sistema en tiempo real
+                {t("config.subtitle")}
               </CardDescription>
             </div>
           </div>
@@ -133,11 +160,11 @@ const ClientConfigManager = () => {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-[30%]">Clave</TableHead>
-                        <TableHead className="w-[20%]">Valor</TableHead>
-                        <TableHead className="w-[35%]">Descripción</TableHead>
+                        <TableHead className="w-[30%]">{t("config.key")}</TableHead>
+                        <TableHead className="w-[20%]">{t("config.value")}</TableHead>
+                        <TableHead className="w-[35%]">{t("config.description")}</TableHead>
                         <TableHead className="text-right w-[15%]">
-                          Acciones
+                          {t("config.actions")}
                         </TableHead>
                       </TableRow>
                     </TableHeader>
@@ -163,7 +190,7 @@ const ClientConfigManager = () => {
                             )}
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground">
-                            {config.description}
+                            {getConfigDescription(config.key, config.description)}
                           </TableCell>
                           <TableCell className="text-right">
                             {editingKey === config.key ? (
@@ -174,7 +201,7 @@ const ClientConfigManager = () => {
                                   disabled={updateMutation.isPending}
                                 >
                                   <Save className="h-4 w-4 mr-1" />
-                                  Guardar
+                                  {tCommon("save")}
                                 </Button>
                                 <Button
                                   size="sm"
@@ -182,7 +209,7 @@ const ClientConfigManager = () => {
                                   onClick={handleCancel}
                                   disabled={updateMutation.isPending}
                                 >
-                                  Cancelar
+                                  {tCommon("cancel")}
                                 </Button>
                               </div>
                             ) : (
@@ -194,7 +221,7 @@ const ClientConfigManager = () => {
                                 }
                               >
                                 <Pencil className="h-4 w-4 mr-1" />
-                                Editar
+                                {tCommon("edit")}
                               </Button>
                             )}
                           </TableCell>
@@ -214,15 +241,15 @@ const ClientConfigManager = () => {
           <div className="flex items-start gap-3">
             <div className="text-primary mt-0.5">ℹ️</div>
             <div className="text-sm text-muted-foreground space-y-1">
-              <p className="font-medium text-foreground">Información:</p>
+              <p className="font-medium text-foreground">{t("config.info")}:</p>
               <ul className="list-disc list-inside space-y-1">
                 <li>
-                  Los cambios se aplican instantaneamente
+                  {t("config.infoInstant")}
                 </li>
                 <li>
-                    Los horarios y mesas se configuran en sus respectivas pestanyas
+                  {t("config.infoTabs")}
                 </li>
-                <li>Los valores numéricos deben ser enteros positivos</li>
+                <li>{t("config.infoNumbers")}</li>
               </ul>
             </div>
           </div>

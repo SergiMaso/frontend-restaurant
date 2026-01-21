@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Users, Ban, Check, Edit, Trash2, Link, Plus } from "lucide-react";
@@ -28,6 +29,8 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
   const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [tableToDelete, setTableToDelete] = useState<any | null>(null);
+  const { t } = useTranslation("dashboard");
+  const { t: tCommon } = useTranslation("common");
 
   const { data: tables, isLoading } = useQuery({
     queryKey: ["tables"],
@@ -39,11 +42,11 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
       updateTable(tableId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tables"] });
-      toast.success("Taula actualitzada correctament");
+      toast.success(t("tables.saveSuccess"));
       setDialogOpen(false);
     },
     onError: (error: Error) => {
-      toast.error("Error actualitzant taula: " + error.message);
+      toast.error(t("tables.saveError") + ": " + error.message);
     },
   });
 
@@ -51,11 +54,11 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
     mutationFn: createTable,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tables"] });
-      toast.success("Taula creada correctament");
+      toast.success(t("tables.saveSuccess"));
       setDialogOpen(false);
     },
     onError: (error: Error) => {
-      toast.error("Error creant taula: " + error.message);
+      toast.error(t("tables.saveError") + ": " + error.message);
     },
   });
 
@@ -63,11 +66,11 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
     mutationFn: deleteTable,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tables"] });
-      toast.success("Taula eliminada correctament");
+      toast.success(t("tables.deleteSuccess"));
       setDeleteDialogOpen(false);
     },
     onError: (error: Error) => {
-      toast.error("Error eliminant taula: " + error.message);
+      toast.error(t("tables.deleteError") + ": " + error.message);
     },
   });
 
@@ -126,22 +129,11 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
   };
 
   const getStatusLabel = (status: string) => {
-    switch (status) {
-      case "available":
-        return "Disponible";
-      case "unavailable":
-        return "No disponible";
-      case "occupied":
-        return "Ocupada";
-      case "reserved":
-        return "Reservada";
-      default:
-        return status;
-    }
+    return tCommon(`tableStatus.${status}`) || status;
   };
 
   if (isLoading) {
-    return <div className="text-center py-8 text-muted-foreground">Carregant taules...</div>;
+    return <div className="text-center py-8 text-muted-foreground">{tCommon("loading")}</div>;
   }
 
   return (
@@ -150,7 +142,7 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
       <div className="mb-4">
         <Button onClick={handleCreate}>
           <Plus className="h-4 w-4 mr-2" />
-          Añadir Mesa
+          {t("tables.create")}
         </Button>
       </div>
 
@@ -162,7 +154,7 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
           >
             <div className="flex items-start justify-between mb-3">
               <div>
-                <h3 className="font-bold text-lg">Mesa {table.table_number}</h3>
+                <h3 className="font-bold text-lg">{t("reservations.table")} {table.table_number}</h3>
                 <Badge className={getStatusColor(table.status)}>
                   {getStatusLabel(table.status)}
                 </Badge>
@@ -182,7 +174,7 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
                 <div className="flex flex-wrap gap-1">
                   {table.pairing.map((pairNum: number) => (
                     <Badge key={pairNum} variant="secondary" className="text-xs">
-                      Mesa {pairNum}
+                      {t("reservations.table")} {pairNum}
                     </Badge>
                   ))}
                 </div>
@@ -197,7 +189,7 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
                 className="flex-1"
               >
                 <Edit className="h-4 w-4 mr-1" />
-                Editar
+                {tCommon("edit")}
               </Button>
 
               <Button
@@ -209,12 +201,12 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
                 {table.status === 'available' ? (
                   <>
                     <Ban className="h-4 w-4 mr-1" />
-                    Deshabilitar
+                    {tCommon("disable")}
                   </>
                 ) : (
                   <>
                     <Check className="h-4 w-4 mr-1" />
-                    Habilitar
+                    {tCommon("enable")}
                   </>
                 )}
               </Button>
@@ -233,7 +225,7 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
 
       {tables?.length === 0 && (
         <div className="text-center py-12 text-muted-foreground">
-          <p>No hi ha taules registrades</p>
+          <p>{tCommon("noResults")}</p>
         </div>
       )}
 
@@ -249,19 +241,18 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Estàs segur?</AlertDialogTitle>
+            <AlertDialogTitle>{tCommon("areYouSure")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Aquesta acció eliminarà la taula {tableToDelete?.table_number} permanentment.
-              Només es pot eliminar si no té reserves futures.
+              {t("tables.confirmDelete")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel·lar</AlertDialogCancel>
+            <AlertDialogCancel>{tCommon("cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Eliminar
+              {tCommon("delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import {
   Dialog,
   DialogContent,
@@ -20,7 +21,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { setOpeningHours, type SetOpeningHoursData } from "@/services/api";
 
 interface OpeningHoursDialogProps {
@@ -45,6 +46,9 @@ const OpeningHoursDialog = ({ open, onOpenChange, date, initialData }: OpeningHo
   const [dinnerStart, setDinnerStart] = useState("19:00");
   const [dinnerEnd, setDinnerEnd] = useState("22:30");
   const [notes, setNotes] = useState("");
+  const { t } = useTranslation("dashboard");
+  const { t: tCommon } = useTranslation("common");
+  const { dateLocale } = useLanguage();
 
   useEffect(() => {
     if (initialData) {
@@ -70,11 +74,11 @@ const OpeningHoursDialog = ({ open, onOpenChange, date, initialData }: OpeningHo
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["opening-hours"] });
-      toast.success("Horaris guardats correctament");
+      toast.success(t("weeklySchedule.saveSuccess"));
       onOpenChange(false);
     },
     onError: (error: Error) => {
-      toast.error("Error: " + error.message);
+      toast.error(tCommon("error") + ": " + error.message);
     },
   });
 
@@ -107,13 +111,13 @@ const OpeningHoursDialog = ({ open, onOpenChange, date, initialData }: OpeningHo
   const getStatusLabel = (value: string) => {
     switch (value) {
       case "closed":
-        return "🔴 Tancat";
+        return "🔴 " + t("weeklySchedule.statusClosed");
       case "lunch_only":
-        return "🟡 Només dinar";
+        return "🟡 " + t("weeklySchedule.statusLunchOnly");
       case "dinner_only":
-        return "🟡 Només sopar";
+        return "🟡 " + t("weeklySchedule.statusDinnerOnly");
       case "full_day":
-        return "🟢 Tot el dia";
+        return "🟢 " + t("weeklySchedule.statusFullDay");
       default:
         return value;
     }
@@ -123,16 +127,16 @@ const OpeningHoursDialog = ({ open, onOpenChange, date, initialData }: OpeningHo
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Configurar horarios</DialogTitle>
+          <DialogTitle>{t("weeklySchedule.configureHours")}</DialogTitle>
           <DialogDescription>
-            {format(date, "EEEE, d 'de' MMMM 'de' yyyy", { locale: es })}
+            {format(date, "EEEE, d MMMM yyyy", { locale: dateLocale })}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Estat del restaurant */}
           <div className="space-y-2">
-            <Label htmlFor="status">Estado del restaurante</Label>
+            <Label htmlFor="status">{t("weeklySchedule.restaurantStatus")}</Label>
             <Select value={status} onValueChange={setStatus}>
               <SelectTrigger>
                 <SelectValue />
@@ -149,10 +153,10 @@ const OpeningHoursDialog = ({ open, onOpenChange, date, initialData }: OpeningHo
           {/* Horaris de dinar */}
           {(status === "full_day" || status === "lunch_only") && (
             <div className="space-y-2">
-              <Label className="text-base font-semibold">🍽️ Horario mediodía</Label>
+              <Label className="text-base font-semibold">🍽️ {t("weeklySchedule.lunchSchedule")}</Label>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="lunchStart">Apertura</Label>
+                  <Label htmlFor="lunchStart">{t("weeklySchedule.openTime")}</Label>
                   <Input
                     id="lunchStart"
                     type="time"
@@ -161,7 +165,7 @@ const OpeningHoursDialog = ({ open, onOpenChange, date, initialData }: OpeningHo
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="lunchEnd">Cierre</Label>
+                  <Label htmlFor="lunchEnd">{t("weeklySchedule.closeTime")}</Label>
                   <Input
                     id="lunchEnd"
                     type="time"
@@ -176,10 +180,10 @@ const OpeningHoursDialog = ({ open, onOpenChange, date, initialData }: OpeningHo
           {/* Horaris de sopar */}
           {(status === "full_day" || status === "dinner_only") && (
             <div className="space-y-2">
-              <Label className="text-base font-semibold">🌙 Horario noche</Label>
+              <Label className="text-base font-semibold">🌙 {t("weeklySchedule.dinnerSchedule")}</Label>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="dinnerStart">Apertura</Label>
+                  <Label htmlFor="dinnerStart">{t("weeklySchedule.openTime")}</Label>
                   <Input
                     id="dinnerStart"
                     type="time"
@@ -188,7 +192,7 @@ const OpeningHoursDialog = ({ open, onOpenChange, date, initialData }: OpeningHo
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="dinnerEnd">Cierre</Label>
+                  <Label htmlFor="dinnerEnd">{t("weeklySchedule.closeTime")}</Label>
                   <Input
                     id="dinnerEnd"
                     type="time"
@@ -202,26 +206,26 @@ const OpeningHoursDialog = ({ open, onOpenChange, date, initialData }: OpeningHo
 
           {/* Notes */}
           <div className="space-y-2">
-            <Label htmlFor="notes">Notas internas (opcional)</Label>
+            <Label htmlFor="notes">{t("weeklySchedule.internalNotes")}</Label>
             <Textarea
               id="notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Ex: Dia festiu, Esdeveniment privat, etc."
+              placeholder={t("weeklySchedule.notesPlaceholder")}
               rows={3}
             />
             <p className="text-xs text-muted-foreground">
-              Estas notas solo son visibles por el personal del restaurante
+              {t("weeklySchedule.notesHelp")}
             </p>
           </div>
 
           {/* Botons */}
           <div className="flex gap-2 justify-end pt-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel·lar
+              {tCommon("cancel")}
             </Button>
             <Button type="submit" disabled={mutation.isPending}>
-              {mutation.isPending ? "Guardant..." : "Guardar"}
+              {mutation.isPending ? tCommon("saving") : tCommon("save")}
             </Button>
           </div>
         </form>

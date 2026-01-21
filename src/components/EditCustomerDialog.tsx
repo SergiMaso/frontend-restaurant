@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
@@ -38,6 +39,8 @@ interface EditCustomerDialogProps {
 }
 
 const EditCustomerDialog = ({ open, onOpenChange, customer }: EditCustomerDialogProps) => {
+  const { t } = useTranslation("dashboard");
+  const { t: tCommon } = useTranslation("common");
   const queryClient = useQueryClient();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -56,11 +59,11 @@ const EditCustomerDialog = ({ open, onOpenChange, customer }: EditCustomerDialog
     mutationFn: (data: any) => updateCustomer(customer.phone, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["customers"] });
-      toast.success("Cliente actualizado correctamente");
+      toast.success(t("customers.updateSuccess"));
       onOpenChange(false);
     },
     onError: (error: Error) => {
-      toast.error("Error: " + error.message);
+      toast.error(tCommon("error") + ": " + error.message);
     },
   });
 
@@ -68,25 +71,25 @@ const EditCustomerDialog = ({ open, onOpenChange, customer }: EditCustomerDialog
     mutationFn: () => deleteCustomer(customer.phone),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["customers"] });
-      toast.success("Cliente eliminado correctamente");
+      toast.success(t("customers.deleteSuccess"));
       setDeleteDialogOpen(false);
       onOpenChange(false);
     },
     onError: (error: Error) => {
-      toast.error("Error: " + error.message);
+      toast.error(tCommon("error") + ": " + error.message);
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!name.trim()) {
-      toast.error("El nombre es obligatorio");
+      toast.error(t("customers.nameRequired"));
       return;
     }
 
     if (!phone.trim()) {
-      toast.error("El teléfono es obligatorio");
+      toast.error(t("customers.phoneRequired"));
       return;
     }
 
@@ -122,16 +125,16 @@ const EditCustomerDialog = ({ open, onOpenChange, customer }: EditCustomerDialog
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Editar Cliente</DialogTitle>
+            <DialogTitle>{t("customers.editTitle")}</DialogTitle>
             <DialogDescription>
-              Modifica la información del cliente
+              {t("customers.editDescription")}
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="phone">
-                Teléfono <span className="text-destructive">*</span>
+                {t("customers.phone")} <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="phone"
@@ -142,28 +145,28 @@ const EditCustomerDialog = ({ open, onOpenChange, customer }: EditCustomerDialog
                 required
               />
               <p className="text-xs text-muted-foreground">
-                ⚠️ Cambiar el teléfono creará un nuevo cliente
+                {t("customers.phoneChangeWarning")}
               </p>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="name">
-                Nombre <span className="text-destructive">*</span>
+                {t("customers.name")} <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Nombre del cliente"
+                placeholder={t("customers.namePlaceholder")}
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="language">Idioma Preferido</Label>
+              <Label htmlFor="language">{t("customers.preferredLanguage")}</Label>
               <Select value={language} onValueChange={setLanguage}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecciona idioma" />
+                  <SelectValue placeholder={t("customers.selectLanguage")} />
                 </SelectTrigger>
                 <SelectContent>
                   {languages.map((lang) => (
@@ -177,23 +180,23 @@ const EditCustomerDialog = ({ open, onOpenChange, customer }: EditCustomerDialog
 
             <div className="flex gap-2 justify-between pt-4">
               {/* Botó eliminar a l'esquerra */}
-              <Button 
-                type="button" 
-                variant="destructive" 
+              <Button
+                type="button"
+                variant="destructive"
                 onClick={() => setDeleteDialogOpen(true)}
                 disabled={deleteMutation.isPending}
               >
                 <Trash2 className="h-4 w-4 mr-2" />
-                Eliminar
+                {tCommon("delete")}
               </Button>
-              
+
               {/* Botons cancel·lar i guardar a la dreta */}
               <div className="flex gap-2 ml-auto">
                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                  Cancelar
+                  {tCommon("cancel")}
                 </Button>
                 <Button type="submit" disabled={updateMutation.isPending}>
-                  {updateMutation.isPending ? "Guardando..." : "Guardar Cambios"}
+                  {updateMutation.isPending ? tCommon("saving") : tCommon("saveChanges")}
                 </Button>
               </div>
             </div>
@@ -205,22 +208,21 @@ const EditCustomerDialog = ({ open, onOpenChange, customer }: EditCustomerDialog
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+            <AlertDialogTitle>{tCommon("areYouSure")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. Se eliminará permanentemente el cliente{" "}
-              <span className="font-semibold">{name}</span> ({phone}).
+              {t("customers.deleteWarning", { name, phone })}
               <p className="mt-3 text-destructive font-semibold">
-                ⚠️ También se eliminarán todas sus conversaciones y estadísticas.
+                {t("customers.deleteConversationsWarning")}
               </p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel>{tCommon("cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deleteMutation.isPending ? "Eliminando..." : "Sí, eliminar"}
+              {deleteMutation.isPending ? tCommon("deleting") : tCommon("yesDelete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

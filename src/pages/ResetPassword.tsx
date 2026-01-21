@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { resetPassword } from "@/services/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,9 +19,9 @@ const ResetPassword = () => {
   const [error, setError] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useTranslation("auth");
 
   useEffect(() => {
-    // Obtenir token de la URL
     const tokenFromUrl = searchParams.get("token");
     if (tokenFromUrl) {
       setToken(tokenFromUrl);
@@ -31,19 +32,18 @@ const ResetPassword = () => {
     e.preventDefault();
     setError("");
 
-    // Validacions
     if (!token) {
-      setError("Token no válido");
+      setError(t("resetPassword.invalidToken"));
       return;
     }
 
     if (password.length < 6) {
-      setError("La contraseña debe tener mínimo 6 caracteres");
+      setError(t("changePassword.errorMinLength"));
       return;
     }
 
     if (password !== confirmPassword) {
-      setError("Las contraseñas no coinciden");
+      setError(t("changePassword.errorMismatch"));
       return;
     }
 
@@ -56,14 +56,13 @@ const ResetPassword = () => {
       });
 
       toast({
-        title: "¡Contraseña actualizada!",
-        description: "Ya puedes iniciar sesión con tu nueva contraseña.",
+        title: t("resetPassword.success"),
+        description: t("resetPassword.successMessage"),
       });
 
-      // Redirigir a login
       navigate("/login");
     } catch (error: any) {
-      setError(error.message || "Error al restablecer la contraseña");
+      setError(error.message || t("resetPassword.invalidToken"));
     } finally {
       setLoading(false);
     }
@@ -78,9 +77,9 @@ const ResetPassword = () => {
               <UtensilsCrossed className="h-8 w-8 text-primary-foreground" />
             </div>
           </div>
-          <CardTitle className="text-2xl text-center">Nueva Contraseña</CardTitle>
+          <CardTitle className="text-2xl text-center">{t("resetPassword.title")}</CardTitle>
           <CardDescription className="text-center">
-            Introduce tu nueva contraseña
+            {t("resetPassword.subtitle")}
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
@@ -96,17 +95,17 @@ const ResetPassword = () => {
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  Token de recuperación no válido o expirado.
+                  {t("resetPassword.invalidToken")}
                 </AlertDescription>
               </Alert>
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="password">Nueva Contraseña</Label>
+              <Label htmlFor="password">{t("resetPassword.newPassword")}</Label>
               <Input
                 id="password"
                 type="password"
-                placeholder="Mínimo 6 caracteres"
+                placeholder={t("resetPassword.newPasswordPlaceholder")}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -115,46 +114,36 @@ const ResetPassword = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirmar Contraseña</Label>
+              <Label htmlFor="confirmPassword">{t("resetPassword.confirmPassword")}</Label>
               <Input
                 id="confirmPassword"
                 type="password"
-                placeholder="Repite la contraseña"
+                placeholder={t("resetPassword.confirmPasswordPlaceholder")}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
                 disabled={loading || !token}
               />
             </div>
-
-            {token && (
-              <Alert className="bg-success/10 text-success border-success/20">
-                <CheckCircle2 className="h-4 w-4" />
-                <AlertDescription>
-                  Token vàlid. Pots establir la teva nova contrasenya.
-                </AlertDescription>
-              </Alert>
-            )}
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
-            <Button 
-              type="submit" 
-              className="w-full" 
+            <Button
+              type="submit"
+              className="w-full"
               disabled={loading || !token}
             >
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Actualitzant...
+                  {t("resetPassword.loading")}
                 </>
               ) : (
-                "Actualitzar Contrasenya"
+                t("resetPassword.submit")
               )}
             </Button>
             <div className="text-sm text-center text-muted-foreground">
-              Recordes la contrasenya?{" "}
               <Link to="/login" className="text-primary hover:underline">
-                Inicia sessió
+                {t("resetPassword.goToLogin")}
               </Link>
             </div>
           </CardFooter>

@@ -1,0 +1,83 @@
+{
+  "loading": "Loading...",
+  "save": "Save",
+  "saving": "Saving...",
+  "cancel": "Cancel",
+  "delete": "Delete",
+  "deleting": "Deleting...",
+  "edit": "Edit",
+  "close": "Close",
+  "create": "Create",
+  "confirm": "Confirm",
+  "error": "Error",
+  "success": "Success",
+  "yes": "Yes",
+  "no": "No",
+  "search": "Search",
+  "noResults": "No results found",
+  "actions": "Actions",
+  "required": "Required",
+  "name": "Name",
+  "email": "Email",
+  "phone": "Phone",
+  "date": "Date",
+  "time": "Time",
+  "status": "Status",
+  "notes": "Notes",
+  "description": "Description",
+  "active": "Active",
+  "inactive": "Inactive",
+  "roles": {
+    "superadmin": "Superadmin",
+    "owner": "Owner",
+    "admin": "Administrator",
+    "staff": "Staff"
+  },
+  "reservationStatus": {
+    "pending": "Pending",
+    "confirmed": "Confirmed",
+    "completed": "Completed",
+    "cancelled": "Cancelled",
+    "no_show": "No Show"
+  },
+  "tableStatus": {
+    "available": "Available",
+    "unavailable": "Unavailable",
+    "occupied": "Occupied",
+    "reserved": "Reserved"
+  },
+  "enable": "Enable",
+  "disable": "Disable",
+  "add": "Add",
+  "table": "Table",
+  "areYouSure": "Are you sure?",
+  "saveChanges": "Save Changes",
+  "yesDelete": "Yes, delete",
+  "days": {
+    "monday": "Monday",
+    "tuesday": "Tuesday",
+    "wednesday": "Wednesday",
+    "thursday": "Thursday",
+    "friday": "Friday",
+    "saturday": "Saturday",
+    "sunday": "Sunday"
+  },
+  "daysShort": {
+    "mon": "Mon",
+    "tue": "Tue",
+    "wed": "Wed",
+    "thu": "Thu",
+    "fri": "Fri",
+    "sat": "Sat",
+    "sun": "Sun"
+  },
+  "daysLetter": {
+    "mon": "M",
+    "tue": "T",
+    "wed": "W",
+    "thu": "T",
+    "fri": "F",
+    "sat": "S",
+    "sun": "S"
+  }
+}

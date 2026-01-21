@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useRestaurant, Restaurant } from '@/contexts/RestaurantContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -39,7 +40,9 @@ const RestaurantSelector = () => {
   const { restaurants, selectedRestaurant, setSelectedRestaurant, refreshRestaurants, canSwitchRestaurant } = useRestaurant();
   const { isSuperadmin } = useAuth();
   const { toast } = useToast();
-  
+  const { t } = useTranslation('dashboard');
+  const { t: tCommon } = useTranslation('common');
+
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [manageDialogOpen, setManageDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -67,8 +70,8 @@ const RestaurantSelector = () => {
     if (!newRestaurantName.trim() || !newRestaurantSlug.trim()) {
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: 'Nombre y slug son obligatorios',
+        title: tCommon('error'),
+        description: t('restaurant.nameRequired'),
       });
       return;
     }
@@ -84,27 +87,27 @@ const RestaurantSelector = () => {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Error creating restaurant');
+        throw new Error(error.error || t('restaurant.createError'));
       }
 
       const newRestaurant = await response.json();
-      
+
       toast({
-        title: 'Restaurante creado',
-        description: `${newRestaurantName} ha sido creado correctamente`,
+        title: t('restaurant.createSuccess'),
+        description: `${newRestaurantName}`,
       });
 
       await refreshRestaurants();
       setSelectedRestaurant(newRestaurant);
-      
+
       setCreateDialogOpen(false);
       setNewRestaurantName('');
       setNewRestaurantSlug('');
     } catch (error: any) {
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: error.message || 'No se pudo crear el restaurante',
+        title: tCommon('error'),
+        description: error.message || t('restaurant.createError'),
       });
     } finally {
       setCreating(false);
@@ -123,15 +126,14 @@ const RestaurantSelector = () => {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Error deleting restaurant');
+        throw new Error(error.error || t('restaurant.deleteError'));
       }
 
       toast({
-        title: 'Restaurante eliminado',
-        description: `${restaurantToDelete.name} ha sido eliminado`,
+        title: t('restaurant.deleteSuccess'),
+        description: restaurantToDelete.name,
       });
 
-      // If we deleted the selected restaurant, select another one
       if (selectedRestaurant?.id === restaurantToDelete.id) {
         const remaining = restaurants.filter(r => r.id !== restaurantToDelete.id);
         if (remaining.length > 0) {
@@ -141,14 +143,13 @@ const RestaurantSelector = () => {
 
       setDeleteDialogOpen(false);
       setRestaurantToDelete(null);
-      
-      // Reload to refresh everything
+
       window.location.reload();
     } catch (error: any) {
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: error.message || 'No se pudo eliminar el restaurante',
+        title: tCommon('error'),
+        description: error.message || t('restaurant.deleteError'),
       });
     } finally {
       setDeleting(false);
@@ -175,15 +176,15 @@ const RestaurantSelector = () => {
           <Button variant="outline" className="gap-2">
             <Building2 className="h-4 w-4" />
             <span className="max-w-[150px] truncate">
-              {selectedRestaurant?.name || 'Seleccionar'}
+              {selectedRestaurant?.name || t('restaurant.select')}
             </span>
             <ChevronDown className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-56">
-          <DropdownMenuLabel>Restaurantes</DropdownMenuLabel>
+          <DropdownMenuLabel>{t('tabs.tables').replace('Mesas', 'Restaurantes').replace('Tables', 'Restaurants').replace('Taules', 'Restaurants')}</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          
+
           {restaurants.map((restaurant) => (
             <DropdownMenuItem
               key={restaurant.id}
@@ -198,7 +199,7 @@ const RestaurantSelector = () => {
               </div>
             </DropdownMenuItem>
           ))}
-          
+
           {isSuperadmin && (
             <>
               <DropdownMenuSeparator />
@@ -207,14 +208,14 @@ const RestaurantSelector = () => {
                 className="cursor-pointer text-primary"
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Crear Nuevo Restaurante
+                {t('restaurant.createNew')}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => setManageDialogOpen(true)}
                 className="cursor-pointer"
               >
                 <Settings className="h-4 w-4 mr-2" />
-                Gestionar Restaurantes
+                {t('restaurant.manage')}
               </DropdownMenuItem>
             </>
           )}
@@ -225,15 +226,15 @@ const RestaurantSelector = () => {
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Crear Nuevo Restaurante</DialogTitle>
+            <DialogTitle>{t('restaurant.createNew')}</DialogTitle>
             <DialogDescription>
-              Añade un nuevo restaurante al sistema
+              {t('restaurant.create')}
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Nombre del Restaurante</Label>
+              <Label htmlFor="name">{t('restaurant.name')}</Label>
               <Input
                 id="name"
                 placeholder="El Buen Sabor"
@@ -241,27 +242,24 @@ const RestaurantSelector = () => {
                 onChange={(e) => handleNameChange(e.target.value)}
               />
             </div>
-            
+
             <div className="space-y-2">
-              <Label htmlFor="slug">Identificador (slug)</Label>
+              <Label htmlFor="slug">{t('restaurant.slug')}</Label>
               <Input
                 id="slug"
                 placeholder="el-buen-sabor"
                 value={newRestaurantSlug}
                 onChange={(e) => setNewRestaurantSlug(e.target.value)}
               />
-              <p className="text-xs text-muted-foreground">
-                Se usa para identificar el restaurante internamente
-              </p>
             </div>
           </div>
-          
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
-              Cancelar
+              {tCommon('cancel')}
             </Button>
             <Button onClick={handleCreateRestaurant} disabled={creating}>
-              {creating ? 'Creando...' : 'Crear Restaurante'}
+              {creating ? tCommon('saving') : t('restaurant.create')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -271,12 +269,12 @@ const RestaurantSelector = () => {
       <Dialog open={manageDialogOpen} onOpenChange={setManageDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Gestionar Restaurantes</DialogTitle>
+            <DialogTitle>{t('restaurant.manage')}</DialogTitle>
             <DialogDescription>
-              Administra los restaurantes del sistema
+              {t('users.description')}
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-2 py-4 max-h-[300px] overflow-y-auto">
             {restaurants.map((restaurant) => (
               <div
@@ -298,10 +296,10 @@ const RestaurantSelector = () => {
               </div>
             ))}
           </div>
-          
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setManageDialogOpen(false)}>
-              Cerrar
+              {tCommon('close')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -311,20 +309,19 @@ const RestaurantSelector = () => {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Eliminar restaurante</AlertDialogTitle>
+            <AlertDialogTitle>{tCommon('delete')}</AlertDialogTitle>
             <AlertDialogDescription>
-              ¿Estás seguro que quieres eliminar "{restaurantToDelete?.name}"? 
-              Esta acción desactivará el restaurante y todos sus datos.
+              {t('restaurant.confirmDelete')} "{restaurantToDelete?.name}"
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel>{tCommon('cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteRestaurant}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               disabled={deleting}
             >
-              {deleting ? 'Eliminando...' : 'Eliminar'}
+              {deleting ? tCommon('deleting') : tCommon('delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

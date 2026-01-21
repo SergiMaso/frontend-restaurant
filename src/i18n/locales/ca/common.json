@@ -1,0 +1,83 @@
+{
+  "loading": "Carregant...",
+  "save": "Desar",
+  "saving": "Desant...",
+  "cancel": "Cancel·lar",
+  "delete": "Eliminar",
+  "deleting": "Eliminant...",
+  "edit": "Editar",
+  "close": "Tancar",
+  "create": "Crear",
+  "confirm": "Confirmar",
+  "error": "Error",
+  "success": "Èxit",
+  "yes": "Sí",
+  "no": "No",
+  "search": "Cercar",
+  "noResults": "No s'han trobat resultats",
+  "actions": "Accions",
+  "required": "Obligatori",
+  "name": "Nom",
+  "email": "Correu electrònic",
+  "phone": "Telèfon",
+  "date": "Data",
+  "time": "Hora",
+  "status": "Estat",
+  "notes": "Notes",
+  "description": "Descripció",
+  "active": "Actiu",
+  "inactive": "Inactiu",
+  "roles": {
+    "superadmin": "Superadmin",
+    "owner": "Propietari",
+    "admin": "Administrador",
+    "staff": "Personal"
+  },
+  "reservationStatus": {
+    "pending": "Pendent",
+    "confirmed": "Confirmada",
+    "completed": "Completada",
+    "cancelled": "Cancel·lada",
+    "no_show": "No presentat"
+  },
+  "tableStatus": {
+    "available": "Disponible",
+    "unavailable": "No disponible",
+    "occupied": "Ocupada",
+    "reserved": "Reservada"
+  },
+  "enable": "Habilitar",
+  "disable": "Deshabilitar",
+  "add": "Afegir",
+  "table": "Taula",
+  "areYouSure": "Estàs segur?",
+  "saveChanges": "Desar Canvis",
+  "yesDelete": "Sí, eliminar",
+  "days": {
+    "monday": "Dilluns",
+    "tuesday": "Dimarts",
+    "wednesday": "Dimecres",
+    "thursday": "Dijous",
+    "friday": "Divendres",
+    "saturday": "Dissabte",
+    "sunday": "Diumenge"
+  },
+  "daysShort": {
+    "mon": "Dl",
+    "tue": "Dt",
+    "wed": "Dc",
+    "thu": "Dj",
+    "fri": "Dv",
+    "sat": "Ds",
+    "sun": "Dg"
+  },
+  "daysLetter": {
+    "mon": "L",
+    "tue": "M",
+    "wed": "X",
+    "thu": "J",
+    "fri": "V",
+    "sat": "S",
+    "sun": "G"
+  }
+}

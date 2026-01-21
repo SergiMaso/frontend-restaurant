@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { listUsers, sendInvitation, deactivateUser, reactivateUser, deleteUser } from "@/services/auth";
 import { Button } from "@/components/ui/button";
@@ -13,8 +14,8 @@ import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { UserPlus, UserX, UserCheck, Trash2, Copy, CheckCircle2 } from "lucide-react";
 import { format } from "date-fns";
-import { es } from "date-fns/locale";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface User {
   id: number;
@@ -27,12 +28,15 @@ interface User {
 }
 
 const UserManagement = () => {
+  const { t } = useTranslation("dashboard");
+  const { t: tCommon } = useTranslation("common");
+  const { dateLocale } = useLanguage();
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<'owner' | 'admin' | 'staff'>('admin');
   const [registerLink, setRegisterLink] = useState<string | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
-  
+
   const { toast } = useToast();
   const { isSuperadmin } = useAuth();
   const queryClient = useQueryClient();
@@ -48,12 +52,12 @@ const UserManagement = () => {
     mutationFn: sendInvitation,
     onSuccess: (data) => {
       toast({
-        title: "Invitación enviada",
-        description: data.email_sent 
-          ? `Invitación enviada a ${email}` 
-          : "Invitación creada. Copia el link y envialo manualmente.",
+        title: t("users.invitationSent"),
+        description: data.email_sent
+          ? t("users.invitationSentTo", { email })
+          : t("users.invitationCreatedManual"),
       });
-      
+
       // Si hi ha link manual, mostrar-lo
       if (data.register_link) {
         setRegisterLink(data.register_link);
@@ -62,14 +66,14 @@ const UserManagement = () => {
         setEmail("");
         setRole('admin');
       }
-      
+
       queryClient.invalidateQueries({ queryKey: ['users'] });
     },
     onError: (error: any) => {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: error.message || "No se ha podido enviar la invitación",
+        title: tCommon("error"),
+        description: error.message || t("users.invitationError"),
       });
     },
   });
@@ -79,16 +83,16 @@ const UserManagement = () => {
     mutationFn: deactivateUser,
     onSuccess: () => {
       toast({
-        title: "Usuario desactivado",
-        description: "El usuario ha sido desactivado correctamente",
+        title: t("users.userDeactivated"),
+        description: t("users.userDeactivatedDesc"),
       });
       queryClient.invalidateQueries({ queryKey: ['users'] });
     },
     onError: (error: any) => {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: error.message || "No se ha podido desactivar el usuario",
+        title: tCommon("error"),
+        description: error.message || t("users.deactivateError"),
       });
     },
   });
@@ -98,16 +102,16 @@ const UserManagement = () => {
     mutationFn: reactivateUser,
     onSuccess: () => {
       toast({
-        title: "Usuario reactivado",
-        description: "El usuario ha sido reactivado correctamente",
+        title: t("users.userReactivated"),
+        description: t("users.userReactivatedDesc"),
       });
       queryClient.invalidateQueries({ queryKey: ['users'] });
     },
     onError: (error: any) => {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: error.message || "No se ha podido reactivar el usuario",
+        title: tCommon("error"),
+        description: error.message || t("users.reactivateError"),
       });
     },
   });
@@ -117,16 +121,16 @@ const UserManagement = () => {
     mutationFn: deleteUser,
     onSuccess: () => {
       toast({
-        title: "Usuario eliminado",
-        description: "El usuario ha sido eliminado permanentemente",
+        title: t("users.userDeleted"),
+        description: t("users.userDeletedDesc"),
       });
       queryClient.invalidateQueries({ queryKey: ['users'] });
     },
     onError: (error: any) => {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: error.message || "No se ha podido eliminar el usuario",
+        title: tCommon("error"),
+        description: error.message || t("users.deleteError"),
       });
     },
   });
@@ -135,12 +139,12 @@ const UserManagement = () => {
     if (!email) {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "El email es obligatorio",
+        title: tCommon("error"),
+        description: t("users.emailRequired"),
       });
       return;
     }
-    
+
     inviteMutation.mutate({ email, role });
   };
 
@@ -161,30 +165,30 @@ const UserManagement = () => {
       navigator.clipboard.writeText(registerLink);
       setCopiedLink(true);
       setTimeout(() => setCopiedLink(false), 2000);
-      
+
       toast({
-        title: "Link copiado",
-        description: "El link ha sido copiado al portapapeles",
+        title: t("users.linkCopied"),
+        description: t("users.linkCopiedDesc"),
       });
     }
   };
 
-  const getRoleBadge = (role: string) => {
+  const getRoleBadge = (userRole: string) => {
     const variants: Record<string, any> = {
       owner: 'default',
       admin: 'secondary',
       staff: 'outline',
     };
-    
+
     const labels: Record<string, string> = {
-      owner: 'Propietario',
-      admin: 'Administrador',
-      staff: 'Personal',
+      owner: t("users.roleOwner"),
+      admin: t("users.roleAdmin"),
+      staff: t("users.roleStaff"),
     };
-    
+
     return (
-      <Badge variant={variants[role] || 'outline'}>
-        {labels[role] || role}
+      <Badge variant={variants[userRole] || 'outline'}>
+        {labels[userRole] || userRole}
       </Badge>
     );
   };
@@ -193,7 +197,7 @@ const UserManagement = () => {
     return (
       <Card>
         <CardContent className="pt-6">
-          <p className="text-center text-muted-foreground">Cargando usuarios...</p>
+          <p className="text-center text-muted-foreground">{tCommon("loading")}</p>
         </CardContent>
       </Card>
     );
@@ -205,22 +209,22 @@ const UserManagement = () => {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Gestión de Usuarios</CardTitle>
-              <CardDescription>Administra los usuarios del sistema</CardDescription>
+              <CardTitle>{t("users.title")}</CardTitle>
+              <CardDescription>{t("users.subtitle")}</CardDescription>
             </div>
-            
+
             <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
               <DialogTrigger asChild>
                 <Button>
                   <UserPlus className="h-4 w-4 mr-2" />
-                  Invitar Usuario
+                  {t("users.invite")}
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Invitar Nuevo Usuario</DialogTitle>
+                  <DialogTitle>{t("users.inviteTitle")}</DialogTitle>
                   <DialogDescription>
-                    Envia una invitación por email para que el usuario se registre en la plataforma.
+                    {t("users.inviteDescription")}
                   </DialogDescription>
                 </DialogHeader>
                 
@@ -228,39 +232,39 @@ const UserManagement = () => {
                   // Mostrar link de registre
                   <div className="space-y-4">
                     <div className="p-4 bg-muted rounded-md">
-                      <p className="text-sm font-medium mb-2">Link de registro:</p>
+                      <p className="text-sm font-medium mb-2">{t("users.registerLink")}:</p>
                       <p className="text-xs break-all">{registerLink}</p>
                     </div>
-                    
-                    <Button 
-                      onClick={copyToClipboard} 
+
+                    <Button
+                      onClick={copyToClipboard}
                       className="w-full"
                       variant={copiedLink ? "outline" : "default"}
                     >
                       {copiedLink ? (
                         <>
                           <CheckCircle2 className="h-4 w-4 mr-2" />
-                          Copiado!
+                          {t("users.copied")}
                         </>
                       ) : (
                         <>
                           <Copy className="h-4 w-4 mr-2" />
-                          Copiar Link
+                          {t("users.copyLink")}
                         </>
                       )}
                     </Button>
-                    
-                    <Button 
+
+                    <Button
                       onClick={() => {
                         setInviteDialogOpen(false);
                         setRegisterLink(null);
                         setEmail("");
                         setRole('admin');
-                      }} 
+                      }}
                       variant="outline"
                       className="w-full"
                     >
-                      Cerrar
+                      {tCommon("close")}
                     </Button>
                   </div>
                 ) : (
@@ -268,39 +272,39 @@ const UserManagement = () => {
                   <>
                     <div className="space-y-4 py-4">
                       <div className="space-y-2">
-                        <Label htmlFor="email">Email</Label>
+                        <Label htmlFor="email">{t("users.email")}</Label>
                         <Input
                           id="email"
                           type="email"
-                          placeholder="usuari@exemple.com"
+                          placeholder="user@example.com"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                         />
                       </div>
-                      
+
                       <div className="space-y-2">
-                        <Label htmlFor="role">Rol</Label>
+                        <Label htmlFor="role">{t("users.role")}</Label>
                         <Select value={role} onValueChange={(value: 'owner' | 'admin' | 'staff') => setRole(value)}>
                           <SelectTrigger>
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
                             {isSuperadmin && (
-                              <SelectItem value="owner">Propietario (control total del restaurante)</SelectItem>
+                              <SelectItem value="owner">{t("users.roleOwnerDesc")}</SelectItem>
                             )}
-                            <SelectItem value="admin">Administrador (puede gestionar reservas y clientes)</SelectItem>
-                            <SelectItem value="staff">Personal (solo visualización)</SelectItem>
+                            <SelectItem value="admin">{t("users.roleAdminDesc")}</SelectItem>
+                            <SelectItem value="staff">{t("users.roleStaffDesc")}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                     </div>
-                    
+
                     <DialogFooter>
                       <Button variant="outline" onClick={() => setInviteDialogOpen(false)}>
-                        Cancelar
+                        {tCommon("cancel")}
                       </Button>
                       <Button onClick={handleInvite} disabled={inviteMutation.isPending}>
-                        {inviteMutation.isPending ? 'Enviando...' : 'Enviar Invitación'}
+                        {inviteMutation.isPending ? t("users.sending") : t("users.sendInvitation")}
                       </Button>
                     </DialogFooter>
                   </>
@@ -314,12 +318,12 @@ const UserManagement = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Nombre</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Rol</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead>Último Login</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
+                <TableHead>{t("users.name")}</TableHead>
+                <TableHead>{t("users.email")}</TableHead>
+                <TableHead>{t("users.role")}</TableHead>
+                <TableHead>{t("users.status")}</TableHead>
+                <TableHead>{t("users.lastLogin")}</TableHead>
+                <TableHead className="text-right">{t("users.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -330,13 +334,13 @@ const UserManagement = () => {
                   <TableCell>{getRoleBadge(user.role)}</TableCell>
                   <TableCell>
                     <Badge variant={user.is_active ? 'default' : 'destructive'}>
-                      {user.is_active ? 'Activo' : 'Inactivo'}
+                      {user.is_active ? t("users.active") : t("users.inactive")}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {user.last_login 
-                      ? format(new Date(user.last_login), "d MMM yyyy, HH:mm", { locale: es })
-                      : 'Nunca'
+                    {user.last_login
+                      ? format(new Date(user.last_login), "d MMM yyyy, HH:mm", { locale: dateLocale })
+                      : t("users.never")
                     }
                   </TableCell>
                   <TableCell className="text-right space-x-1">
@@ -346,38 +350,37 @@ const UserManagement = () => {
                         <AlertDialogTrigger asChild>
                           <Button variant="ghost" size="sm">
                             <UserX className="h-4 w-4 mr-1" />
-                            Desactivar
+                            {t("users.deactivate")}
                           </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Desactivar usuario</AlertDialogTitle>
+                            <AlertDialogTitle>{t("users.deactivateTitle")}</AlertDialogTitle>
                             <AlertDialogDescription>
-                              ¿Estás seguro que quieres desactivar a {user.full_name}? 
-                              No podrá acceder al sistema hasta que lo re-activen.
+                              {t("users.deactivateConfirm", { name: user.full_name })}
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction 
+                            <AlertDialogCancel>{tCommon("cancel")}</AlertDialogCancel>
+                            <AlertDialogAction
                               onClick={() => handleDeactivate(user.id)}
                               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                             >
-                              Desactivar
+                              {t("users.deactivate")}
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
                     )}
-                    
+
                     {/* Reactivate button - for inactive users */}
                     {user.role !== 'superadmin' && !user.is_active && (isSuperadmin || (user.role !== 'owner')) && (
                       <Button variant="ghost" size="sm" onClick={() => handleReactivate(user.id)}>
                         <UserCheck className="h-4 w-4 mr-1" />
-                        Reactivar
+                        {t("users.reactivate")}
                       </Button>
                     )}
-                    
+
                     {/* Delete button - superadmin can delete anyone, owner can delete admin/staff */}
                     {user.role !== 'superadmin' && (isSuperadmin || (user.role !== 'owner')) && (
                       <AlertDialog>
@@ -388,19 +391,18 @@ const UserManagement = () => {
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Eliminar usuario permanentemente</AlertDialogTitle>
+                            <AlertDialogTitle>{t("users.deleteTitle")}</AlertDialogTitle>
                             <AlertDialogDescription>
-                              ¿Estás seguro que quieres eliminar a {user.full_name}? 
-                              Esta acción no se puede deshacer.
+                              {t("users.deleteConfirm", { name: user.full_name })}
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction 
+                            <AlertDialogCancel>{tCommon("cancel")}</AlertDialogCancel>
+                            <AlertDialogAction
                               onClick={() => handleDelete(user.id)}
                               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                             >
-                              Eliminar
+                              {tCommon("delete")}
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
@@ -414,7 +416,7 @@ const UserManagement = () => {
           
           {users.length === 0 && (
             <div className="text-center py-12 text-muted-foreground">
-              No hay usuarios registrados
+              {t("users.noUsers")}
             </div>
           )}
         </CardContent>

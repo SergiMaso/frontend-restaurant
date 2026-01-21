@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { User, getCurrentUser, login as loginApi, logout as logoutApi } from '@/services/auth';
 import { useToast } from '@/hooks/use-toast';
 
@@ -20,8 +21,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { t } = useTranslation('auth');
 
-  // Carregar usuari actual al iniciar
   useEffect(() => {
     checkAuth();
   }, []);
@@ -31,7 +32,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const currentUser = await getCurrentUser();
       setUser(currentUser);
     } catch (error) {
-      // No autenticat
       setUser(null);
     } finally {
       setLoading(false);
@@ -42,16 +42,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const response = await loginApi({ email, password });
       setUser(response.user);
-      
+
       toast({
-        title: "Login correcto",
-        description: `Bienvenido/a, ${response.user.full_name}!`,
+        title: t('login.success'),
+        description: t('login.welcome', { name: response.user.full_name }),
       });
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Error en login",
-        description: error.message || "Email o password incorrectos",
+        title: t('login.error'),
+        description: error.message || t('login.invalidCredentials'),
       });
       throw error;
     }
@@ -61,15 +61,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await logoutApi();
       setUser(null);
-      
+
       toast({
-        title: "Logout correcto",
-        description: "Sesión cerrada correctamente",
+        title: t('logout.success'),
+        description: t('logout.successMessage'),
       });
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Error en logout",
+        title: t('logout.error'),
         description: error.message,
       });
       throw error;

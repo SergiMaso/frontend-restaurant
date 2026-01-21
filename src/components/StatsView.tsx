@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,14 +9,17 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Clock, Users, XCircle, TrendingUp, Award, AlertCircle, Calendar as CalendarIcon, User, Phone } from "lucide-react";
 import { useState, useMemo, useRef, useEffect } from "react";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, isWithinInterval, parseISO } from "date-fns";
-import { es } from "date-fns/locale";
 import { Input } from "@/components/ui/input";
 import { Command, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
 import { getGlobalStats, getAppointments, getCustomers } from "@/services/api";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 type TimeFilter = 'all' | 'today' | 'week' | 'month' | 'year' | 'custom';
 
 const StatsView = () => {
+  const { t } = useTranslation("dashboard");
+  const { t: tCommon } = useTranslation("common");
+  const { dateLocale } = useLanguage();
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
   const [customerFilter, setCustomerFilter] = useState('');
   const [selectedCustomerPhone, setSelectedCustomerPhone] = useState<string | null>(null);
@@ -95,7 +99,7 @@ const StatsView = () => {
         endToday.setHours(23, 59, 59, 999);
         return { start: startToday, end: endToday };
       case 'week':
-        return { start: startOfWeek(now, { locale: es }), end: endOfWeek(now, { locale: es }) };
+        return { start: startOfWeek(now, { locale: dateLocale }), end: endOfWeek(now, { locale: dateLocale }) };
       case 'month':
         return { start: startOfMonth(now), end: endOfMonth(now) };
       case 'year':
@@ -220,16 +224,16 @@ const StatsView = () => {
 
   const getFilterLabel = () => {
     switch (timeFilter) {
-      case 'today': return 'Hoy';
-      case 'week': return 'Esta semana';
-      case 'month': return 'Este mes';
-      case 'year': return 'Este año';
-      case 'custom': 
+      case 'today': return t("stats.today");
+      case 'week': return t("stats.thisWeek");
+      case 'month': return t("stats.thisMonth");
+      case 'year': return t("stats.thisYear");
+      case 'custom':
         if (dateRange.from && dateRange.to) {
           return `${format(dateRange.from, 'dd/MM/yy')} - ${format(dateRange.to, 'dd/MM/yy')}`;
         }
-        return 'Rango personalizado';
-      default: return 'Siempre';
+        return t("stats.customRange");
+      default: return t("stats.allTime");
     }
   };
 
@@ -248,11 +252,11 @@ const StatsView = () => {
   };
 
   if (globalLoading || appointmentsLoading) {
-    return <div className="text-center py-8 text-muted-foreground">Cargando estadísticas...</div>;
+    return <div className="text-center py-8 text-muted-foreground">{tCommon("loading")}</div>;
   }
 
   if (!stats) {
-    return <div className="text-center py-8 text-muted-foreground">No hay datos disponibles</div>;
+    return <div className="text-center py-8 text-muted-foreground">{t("stats.noData")}</div>;
   }
 
   return (
@@ -263,15 +267,15 @@ const StatsView = () => {
           <Select value={timeFilter} onValueChange={(value: TimeFilter) => setTimeFilter(value)}>
             <SelectTrigger>
               <CalendarIcon className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Período de tiempo" />
+              <SelectValue placeholder={t("stats.timePeriod")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Siempre</SelectItem>
-              <SelectItem value="today">Hoy</SelectItem>
-              <SelectItem value="week">Esta semana</SelectItem>
-              <SelectItem value="month">Este mes</SelectItem>
-              <SelectItem value="year">Este año</SelectItem>
-              <SelectItem value="custom">Rango personalizado</SelectItem>
+              <SelectItem value="all">{t("stats.allTime")}</SelectItem>
+              <SelectItem value="today">{t("stats.today")}</SelectItem>
+              <SelectItem value="week">{t("stats.thisWeek")}</SelectItem>
+              <SelectItem value="month">{t("stats.thisMonth")}</SelectItem>
+              <SelectItem value="year">{t("stats.thisYear")}</SelectItem>
+              <SelectItem value="custom">{t("stats.customRange")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -284,7 +288,7 @@ const StatsView = () => {
                 {dateRange.from && dateRange.to ? (
                   `${format(dateRange.from, 'dd/MM/yyyy')} - ${format(dateRange.to, 'dd/MM/yyyy')}`
                 ) : (
-                  'Seleccionar rango'
+                  t("stats.selectRange")
                 )}
               </Button>
             </PopoverTrigger>
@@ -293,7 +297,7 @@ const StatsView = () => {
                 mode="range"
                 selected={{ from: dateRange.from, to: dateRange.to }}
                 onSelect={(range: any) => setDateRange(range || {})}
-                locale={es}
+                locale={dateLocale}
                 numberOfMonths={2}
               />
             </PopoverContent>
@@ -304,7 +308,7 @@ const StatsView = () => {
         <div className="flex-1 relative" ref={customerInputRef}>
           <Input
             type="text"
-            placeholder="Buscar cliente (nombre o teléfono)..."
+            placeholder={t("stats.searchCustomer")}
             value={customerFilter}
             onChange={(e) => {
               setCustomerFilter(e.target.value);
@@ -354,11 +358,11 @@ const StatsView = () => {
         </div>
 
         {(timeFilter !== 'all' || customerFilter) && (
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={handleClearFilters}
           >
-            Limpiar filtros
+            {t("stats.clearFilters")}
           </Button>
         )}
       </div>
@@ -366,8 +370,8 @@ const StatsView = () => {
       {/* Indicador de filtro activo */}
       {(timeFilter !== 'all' || customerFilter) && (
         <Badge variant="secondary" className="text-sm">
-          📊 Mostrando datos de: {getFilterLabel()}
-          {customerFilter && ` | Cliente: "${customerFilter}"`}
+          {t("stats.showingData")}: {getFilterLabel()}
+          {customerFilter && ` | ${t("stats.customer")}: "${customerFilter}"`}
         </Badge>
       )}
 
@@ -377,13 +381,13 @@ const StatsView = () => {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Clock className="h-4 w-4 text-blue-500" />
-              Duración Media
+              {t("stats.avgDuration")}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.avg_duration} min</div>
             <p className="text-xs text-muted-foreground mt-1">
-              Min: {stats.min_duration} | Max: {stats.max_duration}
+              {t("stats.min")}: {stats.min_duration} | {t("stats.max")}: {stats.max_duration}
             </p>
           </CardContent>
         </Card>
@@ -392,7 +396,7 @@ const StatsView = () => {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <AlertCircle className="h-4 w-4 text-orange-500" />
-              Retraso Medio
+              {t("stats.avgDelay")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -400,7 +404,7 @@ const StatsView = () => {
               {stats.avg_delay > 0 ? '+' : ''}{stats.avg_delay || 0} min
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              {stats.total_with_delay || 0} analizadas
+              {t("stats.analyzed", { count: stats.total_with_delay || 0 })}
             </p>
           </CardContent>
         </Card>
@@ -409,13 +413,13 @@ const StatsView = () => {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Users className="h-4 w-4 text-green-500" />
-              Visitas Completadas
+              {t("stats.completedVisits")}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.total_completed}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              Con tiempo registrado
+              {t("stats.withTimeRecorded")}
             </p>
           </CardContent>
         </Card>
@@ -424,13 +428,13 @@ const StatsView = () => {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <XCircle className="h-4 w-4 text-red-500" />
-              No-shows
+              {t("stats.noShows")}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.total_no_shows}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              Total registrado
+              {t("stats.totalRecorded")}
             </p>
           </CardContent>
         </Card>
@@ -439,7 +443,7 @@ const StatsView = () => {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-purple-500" />
-              Tasa de Asistencia
+              {t("stats.attendanceRate")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -449,7 +453,7 @@ const StatsView = () => {
                 : 0}%
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Clientes que vinieron
+              {t("stats.customersThatCame")}
             </p>
           </CardContent>
         </Card>
@@ -460,9 +464,9 @@ const StatsView = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Award className="h-5 w-5 text-yellow-500" />
-            Top 10 Clientes
+            {t("stats.topCustomers")}
           </CardTitle>
-          <CardDescription>Clientes con más visitas en el período seleccionado</CardDescription>
+          <CardDescription>{t("stats.topCustomersDesc")}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -496,7 +500,7 @@ const StatsView = () => {
                     )}
                     <Badge variant="secondary" className="flex items-center gap-1">
                       <Users className="h-3 w-3" />
-                      {customer.visits} visitas
+                      {t("stats.visits", { count: customer.visits })}
                     </Badge>
                     {customer.no_shows > 0 && (
                       <Badge variant="destructive" className="flex items-center gap-1">
@@ -509,7 +513,7 @@ const StatsView = () => {
               ))
             ) : (
               <div className="text-center py-8 text-muted-foreground">
-                No hay datos de clientes para este período
+                {t("stats.noCustomerData")}
               </div>
             )}
           </div>

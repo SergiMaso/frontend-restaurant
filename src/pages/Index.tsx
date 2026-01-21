@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { format, isSameDay } from "date-fns";
-import { es } from "date-fns/locale";
+import { useTranslation } from "react-i18next";
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   Calendar,
   Users,
@@ -44,6 +45,7 @@ import ReservationDialog from "@/components/ReservationDialog";
 import TableLayoutView from "@/components/TableLayoutView";
 import ChangePasswordDialog from "@/components/ChangePasswordDialog";
 import RestaurantSelector from "@/components/RestaurantSelector";
+import LanguageSelector from "@/components/LanguageSelector";
 import { getAppointments } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRestaurant } from "@/contexts/RestaurantContext";
@@ -66,9 +68,11 @@ const Index = () => {
 
   const { user, logout } = useAuth();
   const { selectedRestaurant, loading: restaurantLoading } = useRestaurant();
+  const { t } = useTranslation("dashboard");
+  const { t: tCommon } = useTranslation("common");
+  const { dateLocale } = useLanguage();
 
-  // Use restaurant name from context
-  const restaurantName = selectedRestaurant?.name || 'Cargando...';
+  const restaurantName = selectedRestaurant?.name || tCommon("loading");
 
   const handleLogout = async () => {
     await logout();
@@ -83,14 +87,17 @@ const Index = () => {
       .substring(0, 2);
   };
 
-  // Obtenir reserves per calcular les d'avui - only fetch when restaurant is loaded
+  const getRoleLabel = (role: string | undefined) => {
+    if (!role) return "";
+    return tCommon(`roles.${role}`);
+  };
+
   const { data: allAppointments } = useQuery({
     queryKey: ["appointments", selectedRestaurant?.id],
     queryFn: getAppointments,
-    enabled: !!selectedRestaurant, // Only fetch when restaurant is selected
+    enabled: !!selectedRestaurant,
   });
 
-  // Comptar reserves d'avui (confirmed + completed)
   const todayReservations =
     allAppointments?.filter((apt: any) => {
       if (apt.status !== "confirmed" && apt.status !== "completed") return false;
@@ -102,13 +109,12 @@ const Index = () => {
       }
     }).length || 0;
 
-  // Show loading while restaurant context is being loaded
   if (restaurantLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Cargando...</p>
+          <p className="text-muted-foreground">{tCommon("loading")}</p>
         </div>
       </div>
     );
@@ -129,94 +135,88 @@ const Index = () => {
                   {restaurantName}
                 </h1>
                 <p className="text-muted-foreground">
-                  Sistema de gestión de reservas
+                  {t("header.subtitle")}
                 </p>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
+              <LanguageSelector />
               <RestaurantSelector />
-              
+
               <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                  <Avatar>
-                    <AvatarFallback className="bg-primary text-primary-foreground">
-                      {user ? getInitials(user.full_name) : "U"}
-                    </AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">
-                      {user?.full_name}
-                    </p>
-                    <p className="text-xs leading-none text-muted-foreground">
-                      {user?.email}
-                    </p>
-                    <p className="text-xs leading-none text-muted-foreground capitalize">
-                      Rol:{" "}
-                      {user?.role === "superadmin"
-                        ? "Superadmin"
-                        : user?.role === "owner"
-                        ? "Propietario"
-                        : user?.role === "admin"
-                        ? "Administrador"
-                        : "Personal"}
-                    </p>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => setChangePasswordOpen(true)}
-                  className="cursor-pointer"
-                >
-                  <Key className="mr-2 h-4 w-4" />
-                  <span>Cambiar Contraseña</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={handleLogout}
-                  className="text-destructive cursor-pointer"
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Cerrar Sesión</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                    <Avatar>
+                      <AvatarFallback className="bg-primary text-primary-foreground">
+                        {user ? getInitials(user.full_name) : "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">
+                        {user?.full_name}
+                      </p>
+                      <p className="text-xs leading-none text-muted-foreground">
+                        {user?.email}
+                      </p>
+                      <p className="text-xs leading-none text-muted-foreground capitalize">
+                        {t("header.role")}: {getRoleLabel(user?.role)}
+                      </p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => setChangePasswordOpen(true)}
+                    className="cursor-pointer"
+                  >
+                    <Key className="mr-2 h-4 w-4" />
+                    <span>{t("userMenu.changePassword")}</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={handleLogout}
+                    className="text-destructive cursor-pointer"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>{t("userMenu.logout")}</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>
 
-        <ChangePasswordDialog 
-          open={changePasswordOpen} 
-          onOpenChange={setChangePasswordOpen} 
+        <ChangePasswordDialog
+          open={changePasswordOpen}
+          onOpenChange={setChangePasswordOpen}
         />
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          {/* Fecha Seleccionada */}
+          {/* Selected Date */}
           <Card className="border-border/50 shadow-card hover:shadow-elegant transition-all duration-300">
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-semibold flex items-center gap-2">
                 <Calendar className="h-5 w-5 text-primary" />
-                Fecha Seleccionada
+                {t("stats.selectedDate")}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-2xl font-bold">
-                {format(selectedDate, "d 'de' MMMM", { locale: es })}
+                {format(selectedDate, "d MMMM yyyy", { locale: dateLocale })}
               </p>
             </CardContent>
           </Card>
 
-          {/* Acción Rápida */}
+          {/* Quick Action */}
           <Card className="border-border/50 shadow-card hover:shadow-elegant transition-all duration-300">
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-semibold flex items-center gap-2">
                 <Plus className="h-5 w-5 text-accent" />
-                Acción Rápida
+                {t("stats.quickAction")}
               </CardTitle>
             </CardHeader>
             <CardContent className="flex items-center justify-center">
@@ -226,17 +226,17 @@ const Index = () => {
                 className="w-full max-w-xs"
               >
                 <Plus className="h-5 w-5 mr-2" />
-                Nueva Reserva
+                {t("stats.newReservation")}
               </Button>
             </CardContent>
           </Card>
 
-          {/* Reservas de Hoy */}
+          {/* Today's Reservations */}
           <Card className="border-border/50 shadow-card hover:shadow-elegant transition-all duration-300">
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-semibold flex items-center gap-2">
                 <UtensilsCrossed className="h-5 w-5 text-success" />
-                Reservas de Hoy
+                {t("stats.todayReservations")}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -245,7 +245,7 @@ const Index = () => {
                   {todayReservations}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  {todayReservations === 1 ? "reserva" : "reservas"}
+                  {todayReservations === 1 ? t("stats.reservation") : t("stats.reservations")}
                 </p>
               </div>
             </CardContent>
@@ -256,56 +256,55 @@ const Index = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <div className="w-full max-w-6xl mx-auto overflow-x-auto">
             <TabsList className="inline-flex w-full flex-nowrap">
+              <TabsTrigger value="calendario">
+                <Calendar className="h-4 w-4 mr-2" />
+                {t("tabs.calendar")}
+              </TabsTrigger>
+              <TabsTrigger value="horario">
+                <Clock className="h-4 w-4 mr-2" />
+                {t("tabs.schedule")}
+              </TabsTrigger>
+              <TabsTrigger value="layout">
+                <LayoutGrid className="h-4 w-4 mr-2" />
+                {t("tabs.layout")}
+              </TabsTrigger>
+              <TabsTrigger value="tables">{t("tabs.tables")}</TabsTrigger>
+              <TabsTrigger value="reservations">{t("tabs.reservations")}</TabsTrigger>
+              <TabsTrigger value="customers">
+                <Users className="h-4 w-4 mr-2" />
+                {t("tabs.customers")}
+              </TabsTrigger>
+              <TabsTrigger value="media">
+                <FileImage className="h-4 w-4 mr-2" />
+                {t("tabs.media")}
+              </TabsTrigger>
+              <TabsTrigger value="stats">
+                <BarChart3 className="h-4 w-4 mr-2" />
+                {t("tabs.stats")}
+              </TabsTrigger>
 
-            <TabsTrigger value="calendario">
-              <Calendar className="h-4 w-4 mr-2" />
-              Calendario
-            </TabsTrigger>
-            <TabsTrigger value="horario">
-              <Clock className="h-4 w-4 mr-2" />
-              Horario
-            </TabsTrigger>
-            <TabsTrigger value="layout">
-              <LayoutGrid className="h-4 w-4 mr-2" />
-              Layout
-            </TabsTrigger>
-            <TabsTrigger value="tables">Mesas</TabsTrigger>
-            <TabsTrigger value="reservations">Reservas</TabsTrigger>
-            <TabsTrigger value="customers">
-              <Users className="h-4 w-4 mr-2" />
-              Clientes
-            </TabsTrigger>
-            <TabsTrigger value="media">
-              <FileImage className="h-4 w-4 mr-2" />
-              Media
-            </TabsTrigger>
-            <TabsTrigger value="stats">
-              <BarChart3 className="h-4 w-4 mr-2" />
-              Estadísticas
-            </TabsTrigger>
-
-            {(user?.role === "owner" || user?.role === "superadmin") && (
-              <>
-                <TabsTrigger value="users">
-                  <UserCog className="h-4 w-4 mr-2" />
-                  Usuarios
-                </TabsTrigger>
-                <TabsTrigger value="config">
-                  <Settings className="h-4 w-4 mr-2" />
-                  Config
-                </TabsTrigger>
-              </>
-            )}
-          </TabsList>
+              {(user?.role === "owner" || user?.role === "superadmin") && (
+                <>
+                  <TabsTrigger value="users">
+                    <UserCog className="h-4 w-4 mr-2" />
+                    {t("tabs.users")}
+                  </TabsTrigger>
+                  <TabsTrigger value="config">
+                    <Settings className="h-4 w-4 mr-2" />
+                    {t("tabs.config")}
+                  </TabsTrigger>
+                </>
+              )}
+            </TabsList>
           </div>
 
-          {/* CALENDARIO */}
+          {/* CALENDAR TAB */}
           <TabsContent value="calendario" className="space-y-6">
             <Card className="border-border/50 shadow-card">
               <CardHeader>
-                <CardTitle>Configuración Semanal</CardTitle>
+                <CardTitle>{t("calendarTab.weeklyConfig")}</CardTitle>
                 <CardDescription>
-                  Define los horarios por defecto para cada día de la semana
+                  {t("calendarTab.weeklyConfigDesc")}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -315,9 +314,9 @@ const Index = () => {
 
             <Card className="border-border/50 shadow-card">
               <CardHeader>
-                <CardTitle>Calendario y Excepciones</CardTitle>
+                <CardTitle>{t("calendarTab.calendarExceptions")}</CardTitle>
                 <CardDescription>
-                  Gestiona los horarios de apertura y visualiza las reservas
+                  {t("calendarTab.calendarExceptionsDesc")}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -331,14 +330,15 @@ const Index = () => {
             </Card>
           </TabsContent>
 
-          {/* HORARIO */}
+          {/* SCHEDULE TAB */}
           <TabsContent value="horario" className="space-y-4">
             <Card className="border-border/50 shadow-card">
               <CardHeader>
-                <CardTitle>Horario del Día</CardTitle>
+                <CardTitle>{t("scheduleTab.title")}</CardTitle>
                 <CardDescription>
-                  Gestiona las reservas para{" "}
-                  {format(selectedDate, "EEEE d 'de' MMMM", { locale: es })}
+                  {t("scheduleTab.description", {
+                    date: format(selectedDate, "EEEE d MMMM", { locale: dateLocale })
+                  })}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -354,7 +354,7 @@ const Index = () => {
             </Card>
           </TabsContent>
 
-          {/* LAYOUT */}
+          {/* LAYOUT TAB */}
           <TabsContent value="layout" className="space-y-4">
             <Card className="border-border/50 shadow-card">
               <CardContent className="pt-6">
@@ -363,14 +363,14 @@ const Index = () => {
             </Card>
           </TabsContent>
 
-          {/* MESAS */}
+          {/* TABLES TAB */}
           <TabsContent value="tables" className="space-y-4">
             <Card className="border-border/50 shadow-card">
               <CardHeader>
                 <div>
-                  <CardTitle>Gestión de Mesas</CardTitle>
+                  <CardTitle>{t("tablesTab.title")}</CardTitle>
                   <CardDescription>
-                    Administra las mesas del restaurante
+                    {t("tablesTab.description")}
                   </CardDescription>
                 </div>
               </CardHeader>
@@ -380,15 +380,15 @@ const Index = () => {
             </Card>
           </TabsContent>
 
-          {/* RESERVAS */}
+          {/* RESERVATIONS TAB */}
           <TabsContent value="reservations" className="space-y-4">
             <Card className="border-border/50 shadow-card">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle>Gestión de Reservas</CardTitle>
+                    <CardTitle>{t("reservationsTab.title")}</CardTitle>
                     <CardDescription>
-                      Administra las reservas del restaurante
+                      {t("reservationsTab.description")}
                     </CardDescription>
                   </div>
                   <Button
@@ -398,7 +398,7 @@ const Index = () => {
                     }}
                   >
                     <Plus className="h-4 w-4 mr-2" />
-                    Nueva Reserva
+                    {t("stats.newReservation")}
                   </Button>
                 </div>
               </CardHeader>
@@ -415,13 +415,13 @@ const Index = () => {
             </Card>
           </TabsContent>
 
-          {/* CLIENTES */}
+          {/* CUSTOMERS TAB */}
           <TabsContent value="customers" className="space-y-4">
             <Card className="border-border/50 shadow-card">
               <CardHeader>
-                <CardTitle>Clientes</CardTitle>
+                <CardTitle>{t("customersTab.title")}</CardTitle>
                 <CardDescription>
-                  Lista de clientes registrados y conversaciones
+                  {t("customersTab.description")}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -430,7 +430,7 @@ const Index = () => {
             </Card>
           </TabsContent>
 
-          {/* MEDIA */}
+          {/* MEDIA TAB */}
           <TabsContent value="media" className="space-y-4">
             <Card className="border-border/50 shadow-card">
               <CardContent className="pt-6">
@@ -439,13 +439,13 @@ const Index = () => {
             </Card>
           </TabsContent>
 
-          {/* ESTADÍSTICAS */}
+          {/* STATS TAB */}
           <TabsContent value="stats" className="space-y-4">
             <Card className="border-border/50 shadow-card">
               <CardHeader>
-                <CardTitle>Estadísticas</CardTitle>
+                <CardTitle>{t("statsTab.title")}</CardTitle>
                 <CardDescription>
-                  Visión general del rendimiento del restaurante
+                  {t("statsTab.description")}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -454,7 +454,7 @@ const Index = () => {
             </Card>
           </TabsContent>
 
-          {/* SOLO OWNER / SUPERADMIN */}
+          {/* OWNER / SUPERADMIN ONLY */}
           {(user?.role === "owner" || user?.role === "superadmin") && (
             <>
               <TabsContent value="users" className="space-y-4">

@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
-import { es } from "date-fns/locale";
+import { useTranslation } from "react-i18next";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Calendar, Pencil, User, UserCheck, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,20 +21,18 @@ interface DayCalendarProps {
   onEdit?: (reservation: any) => void;
 }
 
-// Horaris de 12:00 a 24:00 (cada 15 minuts)
 const timeSlots = Array.from({ length: 49 }, (_, i) => {
   const totalMinutes = 12 * 60 + i * 15;
   const hour = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
-  
+
   if (hour === 24 && minutes === 0) {
     return "24:00";
   }
-  
+
   return `${hour.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
 });
 
-// Funció per parsejar timestamp ignorant timezone (tractar com a hora local)
 const parseAsLocalTime = (timestamp: string): Date => {
   const withoutTz = timestamp.split('+')[0].split('Z')[0];
   return new Date(withoutTz);
@@ -43,6 +42,9 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
   const [selectedReservation, setSelectedReservation] = useState<any>(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const queryClient = useQueryClient();
+  const { t } = useTranslation("dashboard");
+  const { t: tCommon } = useTranslation("common");
+  const { dateLocale } = useLanguage();
 
   const { data: tables, isLoading: tablesLoading } = useQuery({
     queryKey: ["tables"],
@@ -54,19 +56,16 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
     queryFn: getAppointments,
   });
 
-  // Mutations per tracking
   const seatedMutation = useMutation({
     mutationFn: markAppointmentSeated,
     onSuccess: async (data) => {
-      // Refrescar les dades del servidor
       await queryClient.invalidateQueries({ queryKey: ["appointments"] });
-      
-      const delayMsg = data.delay_minutes 
-        ? ` (Retraso: ${data.delay_minutes > 0 ? '+' : ''}${data.delay_minutes} min)`
+
+      const delayMsg = data.delay_minutes
+        ? ` (${data.delay_minutes > 0 ? '+' : ''}${data.delay_minutes} min)`
         : '';
-      toast.success(`✅ Cliente sentado!${delayMsg}`);
-      
-      // Esperar una mica i reobrir amb dades fresques
+      toast.success(`✅ ${t("calendar.seated")}${delayMsg}`);
+
       setTimeout(async () => {
         const appointments = await queryClient.fetchQuery({ queryKey: ["appointments"] });
         const updated = appointments.find((apt: any) => apt.id === selectedReservation?.id);
@@ -76,19 +75,17 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
       }, 500);
     },
     onError: () => {
-      toast.error("❌ Error marcando como sentado");
+      toast.error(`❌ ${tCommon("error")}`);
     },
   });
 
   const leftMutation = useMutation({
     mutationFn: markAppointmentLeft,
     onSuccess: async (data) => {
-      // Refrescar les dades del servidor
       await queryClient.invalidateQueries({ queryKey: ["appointments"] });
-      
-      toast.success(`👋 Cliente marchó! Duración: ${data.duration_minutes} min`);
-      
-      // Esperar una mica i reobrir amb dades fresques
+
+      toast.success(`👋 ${t("calendar.left")} ${data.duration_minutes} min`);
+
       setTimeout(async () => {
         const appointments = await queryClient.fetchQuery({ queryKey: ["appointments"] });
         const updated = appointments.find((apt: any) => apt.id === selectedReservation?.id);
@@ -98,7 +95,7 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
       }, 500);
     },
     onError: () => {
-      toast.error("❌ Error marcando salida");
+      toast.error(`❌ ${tCommon("error")}`);
     },
   });
 
@@ -108,11 +105,11 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
       queryClient.invalidateQueries({ queryKey: ["customers"] });
       queryClient.invalidateQueries({ queryKey: ["globalStats"] });
-      toast.success("❌ No-show registrado");
+      toast.success(`❌ ${t("calendar.noShowRegistered")}`);
       setDetailsDialogOpen(false);
     },
     onError: () => {
-      toast.error("❌ Error registrando no-show");
+      toast.error(`❌ ${tCommon("error")}`);
     },
   });
 
@@ -129,20 +126,19 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
   };
 
   const handleNoShow = () => {
-    if (selectedReservation && window.confirm("¿Estás seguro de que quieres marcar esta reserva como no-show?")) {
+    if (selectedReservation && window.confirm(t("calendar.confirmNoShow"))) {
       noShowMutation.mutate(selectedReservation.id);
     }
   };
 
-  // Filtrar reserves per la data seleccionada i només confirmed o completed
   const reservations = allAppointments?.filter((r) => {
     if (r.status !== 'confirmed' && r.status !== 'completed') return false;
-    
+
     try {
       const reservationDate = parseISO(r.date);
       const selectedDateStr = format(selectedDate, "yyyy-MM-dd");
       const reservationDateStr = format(reservationDate, "yyyy-MM-dd");
-      
+
       return reservationDateStr === selectedDateStr;
     } catch (e) {
       console.error("Error parsing date:", r.date, e);
@@ -181,16 +177,14 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
   };
 
   const getStatusColor = (status: string, hasNotes: boolean = false) => {
-    // Si està completat (ha marxat), color verd
     if (status === "completed") {
       return "bg-green-500/90 hover:bg-green-600 border-green-400/20 text-white";
     }
-    
-    // Si té notes, color blau
+
     if (hasNotes) {
       return "bg-blue-500/90 hover:bg-blue-600 border-blue-400/20 text-white";
     }
-    
+
     switch (status) {
       case "confirmed":
         return "bg-primary/90 hover:bg-primary border-primary/20 text-primary-foreground";
@@ -207,7 +201,6 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
 
   const getReservationsForTableAndTime = (tableId: number, time: string) => {
     const result = reservations?.filter((r) => {
-      // Comprovar si aquesta taula està dins de table_ids
       if (!r.table_ids || !Array.isArray(r.table_ids)) return false;
       if (!r.table_ids.includes(tableId)) return false;
 
@@ -245,9 +238,9 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
       const [slotHour, slotMin] = time.split(':').map(Number);
       const slotMinutes = slotHour * 60 + slotMin;
       const startMinutes = startTime.getHours() * 60 + startTime.getMinutes();
-      
+
       const roundedStartMinutes = roundToNearestSlot(startMinutes);
-      
+
       return roundedStartMinutes === slotMinutes;
     } catch (e) {
       console.error("Error checking reservation start:", reservation.start_time, e);
@@ -272,20 +265,20 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
     const now = new Date();
     const selectedDateStr = format(selectedDate, "yyyy-MM-dd");
     const todayStr = format(now, "yyyy-MM-dd");
-    
+
     if (selectedDateStr !== todayStr) return null;
-    
+
     const currentHour = now.getHours();
     const currentMinute = now.getMinutes();
-    
+
     if (currentHour < 12 || currentHour >= 24) return null;
-    
+
     const slotIndex = (currentHour - 12) * 4 + Math.floor(currentMinute / 15);
     const minuteOffset = (currentMinute % 15) / 15;
-    
+
     return slotIndex + minuteOffset;
   };
-  
+
   const currentTimePosition = getCurrentTimePosition();
 
   return (
@@ -293,26 +286,26 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={goToPreviousDay} size="sm">
-            ← Anterior
+            ← {t("calendar.previousMonth").split(' ')[0]}
           </Button>
           <Button variant="outline" onClick={goToToday} size="sm">
-            Hoy
+            {t("calendar.today")}
           </Button>
           <Button variant="outline" onClick={goToNextDay} size="sm">
-            Siguiente →
+            {t("calendar.nextMonth").split(' ')[0]} →
           </Button>
         </div>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Calendar className="h-4 w-4" />
-          {format(selectedDate, "EEEE, d 'de' MMMM 'de' yyyy", { locale: es })}
+          {format(selectedDate, "EEEE, d MMMM yyyy", { locale: dateLocale })}
         </div>
       </div>
 
       {isLoading ? (
-        <div className="text-center py-8 text-muted-foreground">Carregant...</div>
+        <div className="text-center py-8 text-muted-foreground">{tCommon("loading")}</div>
       ) : !tables || tables.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
-          No hay mesas configuradas. Añade mesas primero.
+          {t("tables.noTables")}
         </div>
       ) : (
         <div className="border border-border/50 rounded-lg overflow-hidden bg-card">
@@ -320,12 +313,10 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
             <div className="inline-block min-w-full">
               <div className="flex border-b border-border/50 bg-muted/50 sticky top-0 z-20">
                 <div className="w-12 px-1 py-1.5 text-[10px] font-semibold border-r border-border/50 flex-shrink-0">
-                  Hora
+                  {tCommon("time")}
                 </div>
                 {tables.map((table) => {
                   const numTables = tables.length;
-                  // Si hi ha menys de 15 taules, usar flex-1 per repartir espai
-                  // Si n'hi ha més, usar min-w fixe per permetre scroll
                   const flexClass = numTables <= 15 ? 'flex-1' : '';
                   const minWidth = numTables > 15 ? 'min-w-[80px]' : 'min-w-[60px]';
 
@@ -347,14 +338,14 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
                 {timeSlots.map((time, index) => (
                   <div key={time} className="flex min-h-[20px] relative">
                     {currentTimePosition !== null && index === Math.floor(currentTimePosition) && (
-                      <div 
+                      <div
                         className="absolute left-0 right-0 border-t-2 border-red-500 z-10 pointer-events-none"
-                        style={{ 
+                        style={{
                           top: `${(currentTimePosition - Math.floor(currentTimePosition)) * 20}px`
                         }}
                       />
                     )}
-                    
+
                     <div className="w-12 px-1 py-0.5 text-[9px] font-medium border-r border-border/50 flex-shrink-0 bg-muted/30 flex items-center">
                       {time}
                     </div>
@@ -363,23 +354,19 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
                       const reservation = tableReservations[0];
                       const isStart = reservation && isReservationStart(reservation, time);
 
-                      // Mateix sistema que al header
                       const numTables = tables.length;
                       const flexClass = numTables <= 15 ? 'flex-1' : '';
                       const minWidth = numTables > 15 ? 'min-w-[80px]' : 'min-w-[60px]';
 
-                      // Detectar si és una reserva amb múltiples taules i si té observacions
                       const isMultiTable = reservation && reservation.table_ids && reservation.table_ids.length > 1;
                       const hasNotes = !!reservation?.notes;
 
                       let colorClass;
                       if (isMultiTable) {
-                        // Múltiples taules
                         colorClass = hasNotes
-                          ? 'bg-green-500/90 hover:bg-green-600 border-green-400/20 text-white'  // Verd: múltiples taules amb notes
-                          : 'bg-yellow-500/90 hover:bg-yellow-600 border-yellow-400/20 text-white';  // Groc: múltiples taules sense notes
+                          ? 'bg-green-500/90 hover:bg-green-600 border-green-400/20 text-white'
+                          : 'bg-yellow-500/90 hover:bg-yellow-600 border-yellow-400/20 text-white';
                       } else {
-                        // Una sola taula: taronja (sense notes) o blau (amb notes)
                         colorClass = getStatusColor(reservation?.status, hasNotes);
                       }
 
@@ -395,7 +382,6 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
                                 height: `calc(${getReservationRowSpan(reservation)} * 20px - 4px)`,
                               }}
                               onClick={() => handleReservationClick(reservation)}
-                              title="Click para ver detalles"
                             >
                               <div className="font-semibold truncate text-[9px] leading-tight">
                                 {reservation.client_name}
@@ -419,25 +405,23 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
         </div>
       )}
 
-      {/* Diàleg de detalls de la reserva */}
       <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Detalles de la Reserva</DialogTitle>
+            <DialogTitle>{t("reservations.details")}</DialogTitle>
           </DialogHeader>
-          
+
           {selectedReservation && (
             <div className="space-y-4">
-              {/* Badges d'estat */}
               <div className="flex gap-2 flex-wrap">
                 {selectedReservation.status === 'completed' && (
                   <Badge className="bg-green-500 text-white border-green-400">
-                    ✅ Finalizado
+                    ✅ {tCommon("reservationStatus.completed")}
                   </Badge>
                 )}
                 {selectedReservation.seated_at && (
                   <Badge variant="success" className="bg-green-100 text-green-700 border-green-300">
-                    🪑 Sentado: {format(parseAsLocalTime(selectedReservation.seated_at), "HH:mm")}
+                    🪑 {format(parseAsLocalTime(selectedReservation.seated_at), "HH:mm")}
                     {selectedReservation.delay_minutes && (
                       <span className="ml-1">
                         ({selectedReservation.delay_minutes > 0 ? '+' : ''}{selectedReservation.delay_minutes} min)
@@ -447,110 +431,108 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
                 )}
                 {selectedReservation.left_at && (
                   <Badge variant="secondary">
-                    👋 Salió: {format(parseAsLocalTime(selectedReservation.left_at), "HH:mm")} 
+                    👋 {format(parseAsLocalTime(selectedReservation.left_at), "HH:mm")}
                     ({selectedReservation.duration_minutes} min)
                   </Badge>
                 )}
                 {selectedReservation.no_show && (
                   <Badge variant="destructive">
-                    ❌ No-show
+                    ❌ {tCommon("reservationStatus.no_show")}
                   </Badge>
                 )}
               </div>
 
               <div className="space-y-3 text-sm">
                 <div className="flex items-start gap-2">
-                  <span className="font-semibold min-w-[100px]">👤 Nombre:</span>
+                  <span className="font-semibold min-w-[100px]">👤 {tCommon("name")}:</span>
                   <span>{selectedReservation.client_name}</span>
                 </div>
-                
+
                 <div className="flex items-start gap-2">
-                  <span className="font-semibold min-w-[100px]">📞 Teléfono:</span>
+                  <span className="font-semibold min-w-[100px]">📞 {tCommon("phone")}:</span>
                   <span>{selectedReservation.phone}</span>
                 </div>
-                
+
                 <div className="flex items-start gap-2">
-                  <span className="font-semibold min-w-[100px]">👥 Personas:</span>
+                  <span className="font-semibold min-w-[100px]">👥 {t("reservations.guests")}:</span>
                   <span>{selectedReservation.num_people}</span>
                 </div>
-                
+
                 <div className="flex items-start gap-2">
-                  <span className="font-semibold min-w-[100px]">📅 Fecha:</span>
-                  <span>{format(parseISO(selectedReservation.date), "d 'de' MMMM 'de' yyyy")}</span>
+                  <span className="font-semibold min-w-[100px]">📅 {tCommon("date")}:</span>
+                  <span>{format(parseISO(selectedReservation.date), "d MMMM yyyy", { locale: dateLocale })}</span>
                 </div>
-                
+
                 <div className="flex items-start gap-2">
-                  <span className="font-semibold min-w-[100px]">🕐 Hora:</span>
+                  <span className="font-semibold min-w-[100px]">🕐 {tCommon("time")}:</span>
                   <span>{format(parseAsLocalTime(selectedReservation.start_time), "HH:mm")}</span>
                 </div>
-                
+
                 <div className="flex items-start gap-2">
-                  <span className="font-semibold min-w-[100px]">🪑 Mesa{selectedReservation.table_ids && selectedReservation.table_ids.length > 1 ? 's' : ''}:</span>
+                  <span className="font-semibold min-w-[100px]">🪑 {t("reservations.table")}:</span>
                   <span>
-                    {selectedReservation.table_numbers ? `Mesa ${selectedReservation.table_numbers}` : 'N/A'}
-                    {selectedReservation.table_capacity > 0 && ` (capacitat ${selectedReservation.table_capacity})`}
+                    {selectedReservation.table_numbers ? `${t("reservations.table")} ${selectedReservation.table_numbers}` : 'N/A'}
+                    {selectedReservation.table_capacity > 0 && ` (${selectedReservation.table_capacity})`}
                   </span>
                 </div>
-                
+
                 {selectedReservation.notes && (
                   <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-200 dark:border-blue-800">
                     <div className="flex items-start gap-2">
-                      <span className="font-semibold">📝 Notas:</span>
+                      <span className="font-semibold">📝 {tCommon("notes")}:</span>
                     </div>
                     <p className="mt-1 text-sm whitespace-pre-wrap">{selectedReservation.notes}</p>
                   </div>
                 )}
               </div>
-              
-              {/* Botons de tracking */}
+
               {!selectedReservation.no_show && (
                 <div className="flex gap-2 flex-wrap pt-2 border-t">
                   {selectedReservation.status !== 'completed' && !selectedReservation.seated_at && (
-                    <Button 
-                      onClick={handleSeated} 
+                    <Button
+                      onClick={handleSeated}
                       size="sm"
                       variant="outline"
                       className="flex-1"
                     >
                       <User className="h-4 w-4 mr-2" />
-                      Sentado
+                      {t("calendar.seated")}
                     </Button>
                   )}
-                  
+
                   {selectedReservation.status !== 'completed' && selectedReservation.seated_at && !selectedReservation.left_at && (
-                    <Button 
-                      onClick={handleLeft} 
+                    <Button
+                      onClick={handleLeft}
                       size="sm"
                       variant="outline"
                       className="flex-1"
                     >
                       <UserCheck className="h-4 w-4 mr-2" />
-                      Ha salido
+                      {t("calendar.left")}
                     </Button>
                   )}
-                  
-                  {/* No-show button: show for confirmed (not seated) OR completed (to correct mistakes) */}
+
                   {(!selectedReservation.seated_at || selectedReservation.status === 'completed') && (
-                    <Button 
-                      onClick={handleNoShow} 
-                      size="sm" 
+                    <Button
+                      onClick={handleNoShow}
+                      size="sm"
                       variant="destructive"
                       className="flex-1"
                     >
                       <XCircle className="h-4 w-4 mr-2" />
-                      {selectedReservation.status === 'completed' ? 'Convertir a No-show' : 'No show'}
+                      {tCommon("reservationStatus.no_show")}
                     </Button>
                   )}
                 </div>
               )}
-              
+
               <div className="flex gap-2 justify-end pt-4 border-t">
                 <Button variant="outline" onClick={() => setDetailsDialogOpen(false)}>
-                  Cerrar
+                  {tCommon("close")}
                 </Button>
                 <Button onClick={handleEdit}>
                   <Pencil className="h-4 w-4 mr-2" />
-                  Editar
+                  {tCommon("edit")}
                 </Button>
               </div>
             </div>

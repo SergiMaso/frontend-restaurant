@@ -1,0 +1,83 @@
+{
+  "loading": "Cargando...",
+  "save": "Guardar",
+  "saving": "Guardando...",
+  "cancel": "Cancelar",
+  "delete": "Eliminar",
+  "deleting": "Eliminando...",
+  "edit": "Editar",
+  "close": "Cerrar",
+  "create": "Crear",
+  "confirm": "Confirmar",
+  "error": "Error",
+  "success": "Éxito",
+  "yes": "Sí",
+  "no": "No",
+  "search": "Buscar",
+  "noResults": "No se encontraron resultados",
+  "actions": "Acciones",
+  "required": "Obligatorio",
+  "name": "Nombre",
+  "email": "Email",
+  "phone": "Teléfono",
+  "date": "Fecha",
+  "time": "Hora",
+  "status": "Estado",
+  "notes": "Notas",
+  "description": "Descripción",
+  "active": "Activo",
+  "inactive": "Inactivo",
+  "roles": {
+    "superadmin": "Superadmin",
+    "owner": "Propietario",
+    "admin": "Administrador",
+    "staff": "Personal"
+  },
+  "reservationStatus": {
+    "pending": "Pendiente",
+    "confirmed": "Confirmada",
+    "completed": "Completada",
+    "cancelled": "Cancelada",
+    "no_show": "No presentado"
+  },
+  "tableStatus": {
+    "available": "Disponible",
+    "unavailable": "No disponible",
+    "occupied": "Ocupada",
+    "reserved": "Reservada"
+  },
+  "enable": "Habilitar",
+  "disable": "Deshabilitar",
+  "add": "Añadir",
+  "table": "Mesa",
+  "areYouSure": "¿Estás seguro?",
+  "saveChanges": "Guardar Cambios",
+  "yesDelete": "Sí, eliminar",
+  "days": {
+    "monday": "Lunes",
+    "tuesday": "Martes",
+    "wednesday": "Miércoles",
+    "thursday": "Jueves",
+    "friday": "Viernes",
+    "saturday": "Sábado",
+    "sunday": "Domingo"
+  },
+  "daysShort": {
+    "mon": "Lun",
+    "tue": "Mar",
+    "wed": "Mié",
+    "thu": "Jue",
+    "fri": "Vie",
+    "sat": "Sáb",
+    "sun": "Dom"
+  },
+  "daysLetter": {
+    "mon": "L",
+    "tue": "M",
+    "wed": "X",
+    "thu": "J",
+    "fri": "V",
+    "sat": "S",
+    "sun": "D"
+  }
+}

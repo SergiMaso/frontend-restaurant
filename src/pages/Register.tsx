@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { register } from "@/services/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +20,7 @@ const Register = () => {
   const [error, setError] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useTranslation("auth");
 
   useEffect(() => {
     const tokenFromUrl = searchParams.get("token");
@@ -32,17 +34,17 @@ const Register = () => {
     setError("");
 
     if (!token) {
-      setError("Token de invitación no válido");
+      setError(t("register.invalidToken"));
       return;
     }
 
     if (password.length < 6) {
-      setError("La contraseña debe tener mínimo 6 caracteres");
+      setError(t("register.passwordMinLength"));
       return;
     }
 
     if (password !== confirmPassword) {
-      setError("Las contraseñas no coinciden");
+      setError(t("register.passwordMismatch"));
       return;
     }
 
@@ -56,13 +58,13 @@ const Register = () => {
       });
 
       toast({
-        title: "¡Registro completado!",
-        description: "Ya puedes iniciar sesión con tu email y contraseña.",
+        title: t("register.success"),
+        description: t("register.successMessage"),
       });
 
       navigate("/login");
     } catch (error: any) {
-      setError(error.message || "Error en el registro");
+      setError(error.message || t("register.error"));
     } finally {
       setLoading(false);
     }
@@ -77,9 +79,9 @@ const Register = () => {
               <UtensilsCrossed className="h-8 w-8 text-primary-foreground" />
             </div>
           </div>
-          <CardTitle className="text-2xl text-center">Completar Registro</CardTitle>
+          <CardTitle className="text-2xl text-center">{t("register.title")}</CardTitle>
           <CardDescription className="text-center">
-            Introduce tus datos para crear tu cuenta
+            {t("register.subtitle")}
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
@@ -95,17 +97,17 @@ const Register = () => {
               <Alert>
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  Necesitas un token de invitación válido para registrarte.
+                  {t("register.tokenRequired")}
                 </AlertDescription>
               </Alert>
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="fullName">Nombre Completo</Label>
+              <Label htmlFor="fullName">{t("register.fullName")}</Label>
               <Input
                 id="fullName"
                 type="text"
-                placeholder="Tu nombre"
+                placeholder={t("register.fullNamePlaceholder")}
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 required
@@ -114,11 +116,11 @@ const Register = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Contraseña</Label>
+              <Label htmlFor="password">{t("register.password")}</Label>
               <Input
                 id="password"
                 type="password"
-                placeholder="Mínimo 6 caracteres"
+                placeholder={t("register.passwordPlaceholder")}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -127,11 +129,11 @@ const Register = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirmar Contraseña</Label>
+              <Label htmlFor="confirmPassword">{t("register.confirmPassword")}</Label>
               <Input
                 id="confirmPassword"
                 type="password"
-                placeholder="Repite la contraseña"
+                placeholder={t("register.confirmPasswordPlaceholder")}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
@@ -143,30 +145,30 @@ const Register = () => {
               <Alert className="bg-success/10 text-success border-success/20">
                 <CheckCircle2 className="h-4 w-4" />
                 <AlertDescription>
-                  Token de invitación válido. Puedes completar el registro.
+                  {t("register.tokenValid")}
                 </AlertDescription>
               </Alert>
             )}
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
-            <Button 
-              type="submit" 
-              className="w-full" 
+            <Button
+              type="submit"
+              className="w-full"
               disabled={loading || !token}
             >
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Registrando...
+                  {t("register.loading")}
                 </>
               ) : (
-                "Completar Registro"
+                t("register.submit")
               )}
             </Button>
             <div className="text-sm text-center text-muted-foreground">
-              ¿Ya tienes cuenta?{" "}
+              {t("register.loginPrompt")}{" "}
               <Link to="/login" className="text-primary hover:underline">
-                Iniciar sesión
+                {t("register.loginLink")}
               </Link>
             </div>
           </CardFooter>

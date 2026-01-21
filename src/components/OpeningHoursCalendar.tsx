@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths, isSameDay, parseISO } from "date-fns";
-import { es } from "date-fns/locale";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { ChevronLeft, ChevronRight, Clock, Eye, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +17,8 @@ const OpeningHoursCalendar = ({ onViewDay }: OpeningHoursCalendarProps) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const { t } = useTranslation("dashboard");
+  const { dateLocale } = useLanguage();
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
@@ -140,14 +143,14 @@ const OpeningHoursCalendar = ({ onViewDay }: OpeningHoursCalendarProps) => {
       {/* Header amb navegació */}
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold capitalize">
-          {format(currentMonth, "MMMM yyyy", { locale: es })}
+          {format(currentMonth, "MMMM yyyy", { locale: dateLocale })}
         </h2>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={goToPreviousMonth}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <Button variant="outline" size="sm" onClick={goToToday}>
-            Hoy
+            {t("calendar.today")}
           </Button>
           <Button variant="outline" size="sm" onClick={goToNextMonth}>
             <ChevronRight className="h-4 w-4" />
@@ -159,19 +162,19 @@ const OpeningHoursCalendar = ({ onViewDay }: OpeningHoursCalendarProps) => {
       <div className="flex flex-wrap gap-3 text-sm">
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded bg-green-500" />
-          <span>Todo el día</span>
+          <span>{t("calendar.fullDay")}</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded bg-yellow-500" />
-          <span>Solo comida</span>
+          <span>{t("calendar.lunchOnly")}</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded bg-orange-500" />
-          <span>Solo cena</span>
+          <span>{t("calendar.dinnerOnly")}</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded bg-red-500" />
-          <span>Cerrado</span>
+          <span>{t("calendar.closed")}</span>
         </div>
       </div>
 
@@ -179,12 +182,12 @@ const OpeningHoursCalendar = ({ onViewDay }: OpeningHoursCalendarProps) => {
       <div className="border border-border/50 rounded-lg overflow-hidden bg-card">
         {/* Dies de la setmana */}
         <div className="grid grid-cols-7 border-b border-border/50 bg-muted/50">
-          {["L", "M", "X", "J", "V", "S", "D"].map((day) => (
+          {["mon", "tue", "wed", "thu", "fri", "sat", "sun"].map((day) => (
             <div
               key={day}
               className="p-3 text-center text-sm font-semibold text-muted-foreground"
             >
-              {day}
+              {t(`daysLetter.${day}`, { ns: "common" })}
             </div>
           ))}
         </div>
@@ -225,7 +228,7 @@ const OpeningHoursCalendar = ({ onViewDay }: OpeningHoursCalendarProps) => {
                   {reservationsCount > 0 && (
                     <div className="mb-2">
                       <Badge variant="secondary" className="text-xs px-1.5 py-0">
-                        {reservationsCount} {reservationsCount === 1 ? "reserva" : "reserves"}
+                        {reservationsCount} {reservationsCount === 1 ? t("calendar.reservation") : t("calendar.reservations_plural")}
                       </Badge>
                     </div>
                   )}
@@ -267,7 +270,7 @@ const OpeningHoursCalendar = ({ onViewDay }: OpeningHoursCalendarProps) => {
                       className="text-xs w-full"
                     >
                       <Edit className="h-3 w-3 mr-1" />
-                      Editar
+                      {t("calendar.edit")}
                     </Button>
                     <Button
                       size="sm"
@@ -276,7 +279,7 @@ const OpeningHoursCalendar = ({ onViewDay }: OpeningHoursCalendarProps) => {
                       className="text-xs w-full"
                     >
                       <Eye className="h-3 w-3 mr-1" />
-                      Ver día
+                      {t("calendar.viewDay")}
                     </Button>
                   </div>
                 </div>
@@ -288,12 +291,12 @@ const OpeningHoursCalendar = ({ onViewDay }: OpeningHoursCalendarProps) => {
 
       {/* Informació addicional */}
       <div className="text-sm text-muted-foreground bg-muted/30 p-4 rounded-lg">
-        <p className="font-semibold mb-2">ℹ️ Información:</p>
+        <p className="font-semibold mb-2">ℹ️ {t("calendar.info")}:</p>
         <ul className="space-y-1 list-disc list-inside">
-          <li>Pasa el cursor por encima de cualquier día para ver las opciones</li>
-          <li><strong>Editar</strong>: Configura los horarios de apertura del restaurante</li>
-          <li><strong>Ver día</strong>: Ver el horario detallado de reservas de ese día</li>
-          <li>Los días sin configuración utilizarán el horario por defecto (12:00-15:00 y 19:00-22:30)</li>
+          <li>{t("calendar.infoHover")}</li>
+          <li><strong>{t("calendar.edit")}</strong>: {t("calendar.infoEdit")}</li>
+          <li><strong>{t("calendar.viewDay")}</strong>: {t("calendar.infoViewDay")}</li>
+          <li>{t("calendar.infoDefault")}</li>
         </ul>
       </div>
 

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,6 +26,7 @@ const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialogProps)
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { t } = useTranslation("auth");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,8 +34,8 @@ const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialogProps)
     if (newPassword.length < 6) {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "La nueva contraseña debe tener mínimo 6 caracteres",
+        title: t("common:error"),
+        description: t("changePassword.errorMinLength"),
       });
       return;
     }
@@ -41,8 +43,8 @@ const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialogProps)
     if (newPassword !== confirmPassword) {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Las contraseñas no coinciden",
+        title: t("common:error"),
+        description: t("changePassword.errorMismatch"),
       });
       return;
     }
@@ -51,8 +53,8 @@ const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialogProps)
     try {
       await changePassword({ old_password: oldPassword, new_password: newPassword });
       toast({
-        title: "¡Contraseña actualizada!",
-        description: "Tu contraseña ha sido cambiada correctamente",
+        title: t("changePassword.success"),
+        description: t("changePassword.successMessage"),
       });
       onOpenChange(false);
       setOldPassword("");
@@ -61,8 +63,8 @@ const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialogProps)
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: error.message || "No se pudo cambiar la contraseña",
+        title: t("common:error"),
+        description: error.message || t("changePassword.error"),
       });
     } finally {
       setLoading(false);
@@ -73,15 +75,15 @@ const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialogProps)
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Cambiar Contraseña</DialogTitle>
+          <DialogTitle>{t("changePassword.title")}</DialogTitle>
           <DialogDescription>
-            Introduce tu contraseña actual y la nueva contraseña
+            {t("changePassword.subtitle")}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="oldPassword">Contraseña Actual</Label>
+              <Label htmlFor="oldPassword">{t("changePassword.oldPassword")}</Label>
               <Input
                 id="oldPassword"
                 type="password"
@@ -92,11 +94,11 @@ const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialogProps)
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="newPassword">Nueva Contraseña</Label>
+              <Label htmlFor="newPassword">{t("changePassword.newPassword")}</Label>
               <Input
                 id="newPassword"
                 type="password"
-                placeholder="Mínimo 6 caracteres"
+                placeholder={t("changePassword.newPasswordPlaceholder")}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 required
@@ -104,7 +106,7 @@ const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialogProps)
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirmar Nueva Contraseña</Label>
+              <Label htmlFor="confirmPassword">{t("changePassword.confirmPassword")}</Label>
               <Input
                 id="confirmPassword"
                 type="password"
@@ -117,16 +119,16 @@ const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialogProps)
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
-              Cancelar
+              {t("common:cancel")}
             </Button>
             <Button type="submit" disabled={loading}>
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Guardando...
+                  {t("changePassword.loading")}
                 </>
               ) : (
-                "Cambiar Contraseña"
+                t("changePassword.submit")
               )}
             </Button>
           </DialogFooter>

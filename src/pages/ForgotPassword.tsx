@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { forgotPassword } from "@/services/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +14,7 @@ const ForgotPassword = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const { t } = useTranslation("auth");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,7 +26,7 @@ const ForgotPassword = () => {
       await forgotPassword({ email });
       setSuccess(true);
     } catch (error: any) {
-      setError(error.message || "Error enviant email de recuperació");
+      setError(error.message || t("forgotPassword.error"));
     } finally {
       setLoading(false);
     }
@@ -39,9 +41,9 @@ const ForgotPassword = () => {
               <UtensilsCrossed className="h-8 w-8 text-primary-foreground" />
             </div>
           </div>
-          <CardTitle className="text-2xl text-center">Recuperar Contraseña</CardTitle>
+          <CardTitle className="text-2xl text-center">{t("forgotPassword.title")}</CardTitle>
           <CardDescription className="text-center">
-            Introduce tu email y te enviaremos instrucciones
+            {t("forgotPassword.subtitle")}
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
@@ -57,18 +59,18 @@ const ForgotPassword = () => {
               <Alert className="bg-success/10 text-success border-success/20">
                 <CheckCircle2 className="h-4 w-4" />
                 <AlertDescription>
-                  Si el email existe, recibirás instrucciones para recuperar la contraseña. Revisa tu bandeja de entrada.
+                  {t("forgotPassword.success")}
                 </AlertDescription>
               </Alert>
             )}
 
             {!success && (
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t("forgotPassword.email")}</Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="admin@amaru.com"
+                  placeholder={t("forgotPassword.emailPlaceholder")}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -80,31 +82,31 @@ const ForgotPassword = () => {
           <CardFooter className="flex flex-col space-y-4">
             {!success ? (
               <>
-                <Button 
-                  type="submit" 
-                  className="w-full" 
+                <Button
+                  type="submit"
+                  className="w-full"
                   disabled={loading}
                 >
                   {loading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Enviando...
+                      {t("forgotPassword.loading")}
                     </>
                   ) : (
-                    "Enviar Instrucciones"
+                    t("forgotPassword.submit")
                   )}
                 </Button>
                 <Link to="/login" className="w-full">
                   <Button variant="ghost" className="w-full">
                     <ArrowLeft className="mr-2 h-4 w-4" />
-                    Volver al Login
+                    {t("forgotPassword.backToLogin")}
                   </Button>
                 </Link>
               </>
             ) : (
               <Link to="/login" className="w-full">
                 <Button className="w-full">
-                  Ir al Login
+                  {t("forgotPassword.goToLogin")}
                 </Button>
               </Link>
             )}

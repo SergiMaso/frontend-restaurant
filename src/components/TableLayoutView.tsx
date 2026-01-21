@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Maximize2, Minimize2, RotateCw } from "lucide-react";
 import { getTables } from "@/services/api";
@@ -11,6 +12,8 @@ interface TablePosition {
 }
 
 const TableLayoutView = () => {
+  const { t } = useTranslation("dashboard");
+  const { t: tCommon } = useTranslation("common");
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [tablePositions, setTablePositions] = useState<TablePosition[]>([]);
   const [draggingId, setDraggingId] = useState<number | null>(null);
@@ -114,19 +117,19 @@ const TableLayoutView = () => {
   };
 
   if (isLoading) {
-    return <div className="text-center py-8 text-muted-foreground">Carregant...</div>;
+    return <div className="text-center py-8 text-muted-foreground">{tCommon("loading")}</div>;
   }
 
   return (
     <div className={`${isFullscreen ? "fixed inset-0 z-50 bg-background" : "relative"}`}>
       <div className="flex justify-between items-center mb-4 p-4">
-        <h2 className="text-2xl font-bold">Disposición de las Mesas</h2>
+        <h2 className="text-2xl font-bold">{t("layout.title")}</h2>
         <div className="flex gap-2">
           <Button
             variant="outline"
             size="icon"
             onClick={resetPositions}
-            title="Restaurar posiciones"
+            title={t("layout.resetPositions")}
           >
             <RotateCw className="h-4 w-4" />
           </Button>
@@ -175,14 +178,14 @@ const TableLayoutView = () => {
 
         {(!tables || tables.length === 0) && (
           <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-            No hi ha taules configurades.
+            {t("layout.noTables")}
           </div>
         )}
       </div>
 
       <div className="mt-4 p-4 bg-muted/30 rounded-lg">
         <p className="text-sm text-muted-foreground">
-          💡 Arrastra las mesas para cambiar su posición. Las posiciones se guardan automáticamente.
+          {t("layout.dragHelp")}
         </p>
       </div>
     </div>

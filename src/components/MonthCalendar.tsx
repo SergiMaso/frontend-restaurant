@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, parseISO, addMonths, subMonths } from "date-fns";
-import { es } from "date-fns/locale";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +16,8 @@ interface MonthCalendarProps {
 
 const MonthCalendar = ({ selectedDate, onDateChange, onDateClick }: MonthCalendarProps) => {
   const [currentMonth, setCurrentMonth] = useState(selectedDate);
+  const { t } = useTranslation("dashboard");
+  const { dateLocale, language } = useLanguage();
 
   const { data: allAppointments } = useQuery({
     queryKey: ["appointments"],
@@ -84,14 +87,14 @@ const MonthCalendar = ({ selectedDate, onDateChange, onDateClick }: MonthCalenda
       {/* Header amb navegació */}
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">
-          {format(currentMonth, "MMMM yyyy", { locale: es })}
+          {format(currentMonth, "MMMM yyyy", { locale: dateLocale })}
         </h2>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={goToPreviousMonth}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <Button variant="outline" size="sm" onClick={goToToday}>
-            Hoy
+            {t("calendar.today")}
           </Button>
           <Button variant="outline" size="sm" onClick={goToNextMonth}>
             <ChevronRight className="h-4 w-4" />
@@ -103,12 +106,12 @@ const MonthCalendar = ({ selectedDate, onDateChange, onDateClick }: MonthCalenda
       <div className="border border-border/50 rounded-lg overflow-hidden bg-card">
         {/* Dies de la setmana */}
         <div className="grid grid-cols-7 border-b border-border/50 bg-muted/50">
-          {["L", "M", "X", "J", "V", "S", "D"].map((day) => (
+          {["mon", "tue", "wed", "thu", "fri", "sat", "sun"].map((day) => (
             <div
               key={day}
               className="p-2 text-center text-sm font-semibold text-muted-foreground"
             >
-              {day}
+              {t(`daysLetter.${day}`, { ns: "common" })}
             </div>
           ))}
         </div>
@@ -183,17 +186,17 @@ const MonthCalendar = ({ selectedDate, onDateChange, onDateClick }: MonthCalenda
       <div className="flex items-center gap-4 text-sm text-muted-foreground">
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-primary" />
-          <span>Hoy</span>
+          <span>{t("calendar.today")}</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-sm ring-2 ring-primary" />
-          <span>Seleccionado</span>
+          <span>{t("calendar.selected")}</span>
         </div>
         <div className="flex items-center gap-2">
           <Badge variant="secondary" className="text-xs">
             3
           </Badge>
-          <span>Número de reservas</span>
+          <span>{t("calendar.reservationCount")}</span>
         </div>
       </div>
     </div>
