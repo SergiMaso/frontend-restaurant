@@ -155,42 +155,29 @@ const StatsView = () => {
     const now = new Date();
     now.setHours(23, 59, 59, 999); // End of today
 
-    // Helper to check if appointment has ACTUAL recorded times (not defaults)
-    // An appointment is truly completed if:
-    // 1. It has seated_at AND left_at timestamps (meaning staff actually recorded entry/exit)
-    // 2. OR duration_minutes is different from the default 90 (meaning it was calculated from real times)
-    const hasActualTimes = (apt: any) => {
-      // If there are seated_at and left_at timestamps, it's real data
-      if (apt.seated_at && apt.left_at) return true;
-      // If duration is exactly 90 and there's no seated_at, it's likely a default
-      if (apt.duration_minutes === 90 && !apt.seated_at) return false;
-      // If there's a non-90 duration, it was probably calculated from real times
-      if (apt.duration_minutes && apt.duration_minutes !== 90) return true;
-      return false;
+    // Helper to check if appointment is truly completed
+    // Must have left_at to be considered finished (customer left the restaurant)
+    const isCompleted = (apt: any) => {
+      return !!apt.left_at;
     };
 
-    // Helper to check if delay was actually recorded (not default 0)
+    // Helper to check if delay was actually recorded
+    // Delay is only meaningful if seated_at exists (calculated from actual arrival)
     const hasActualDelay = (apt: any) => {
-      // If seated_at exists, the delay was calculated from real data
-      if (apt.seated_at) return true;
-      // If delay is exactly 0 and no seated_at, it's likely default
-      if (apt.delay_minutes === 0 && !apt.seated_at) return false;
-      // Non-zero delay means it was recorded
-      if (apt.delay_minutes && apt.delay_minutes !== 0) return true;
-      return false;
+      return !!apt.seated_at;
     };
 
-    // Only count past/today appointments with ACTUAL recorded times as completed
+    // Only count appointments where customer has left (left_at exists)
     const completed = filteredAppointments.filter((apt: any) => {
       const aptDate = parseISO(apt.date);
-      return hasActualTimes(apt) && !apt.no_show && aptDate <= now;
+      return isCompleted(apt) && !apt.no_show && aptDate <= now;
     });
     const noShows = filteredAppointments.filter((apt: any) => apt.no_show);
 
-    // Only include appointments with ACTUAL recorded delay (not default 0)
+    // Only include completed appointments with ACTUAL recorded delay
     const withDelay = filteredAppointments.filter((apt: any) => {
       const aptDate = parseISO(apt.date);
-      return hasActualDelay(apt) && aptDate <= now;
+      return hasActualDelay(apt) && !apt.no_show && aptDate <= now;
     });
 
     // Calcular retrasos (negative delays = early arrival, count as 0)
@@ -232,13 +219,12 @@ const StatsView = () => {
 
       if (apt.no_show) {
         custStats.no_shows++;
-      } else if (hasActualTimes(apt) && aptDate <= today) {
-        // Only count as visit if has ACTUAL recorded times (not defaults) and is in the past/today
+      } else if (isCompleted(apt) && aptDate <= today) {
+        // Only count as visit if customer has left (left_at exists) and is in the past/today
         custStats.visits++;
-        custStats.durations.push(apt.duration_minutes);
-      } else if (apt.status === 'completed' && apt.seated_at && aptDate <= today) {
-        // Count completed status with seated_at even without full duration if in past/today
-        custStats.visits++;
+        if (apt.duration_minutes) {
+          custStats.durations.push(apt.duration_minutes);
+        }
       }
     });
 

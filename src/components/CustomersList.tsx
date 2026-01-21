@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Users, Phone, Calendar, MessageCircle, X, Search, Send, Edit, UtensilsCrossed } from "lucide-react";
-import { getCustomers, getConversations, sendMessage, type Conversation } from "@/services/api";
-import { format } from "date-fns";
+import { getCustomers, getConversations, sendMessage, getAppointments, type Conversation } from "@/services/api";
+import { format, parseISO } from "date-fns";
 import { useState, useMemo, useEffect, useRef } from "react";
 import BroadcastManager from "@/components/BroadcastManager";
 import EditCustomerDialog from "@/components/EditCustomerDialog";
@@ -31,6 +31,35 @@ const CustomersList = () => {
     queryKey: ["customers"],
     queryFn: getCustomers,
   });
+
+  const { data: allAppointments } = useQuery({
+    queryKey: ["appointments"],
+    queryFn: getAppointments,
+  });
+
+  // Calculate real visit counts from appointments (only past visits with actual completion)
+  const realVisitCounts = useMemo(() => {
+    if (!allAppointments) return new Map<string, number>();
+
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+
+    const counts = new Map<string, number>();
+
+    allAppointments.forEach((apt: any) => {
+      if (!apt.phone || apt.status === 'cancelled' || apt.no_show) return;
+
+      const aptDate = parseISO(apt.date);
+      if (aptDate > today) return; // Skip future appointments
+
+      // Only count if left_at exists (customer finished their visit)
+      if (apt.left_at) {
+        counts.set(apt.phone, (counts.get(apt.phone) || 0) + 1);
+      }
+    });
+
+    return counts;
+  }, [allAppointments]);
 
   const { data: conversations, isLoading: conversationsLoading } = useQuery({
     queryKey: ["conversations", selectedCustomer],
@@ -202,7 +231,7 @@ const CustomersList = () => {
             <div className="flex items-center gap-2 flex-wrap">
               <Badge variant="outline" className="flex items-center gap-1">
                 <Users className="h-3 w-3" />
-                {t("customers.visits", { count: customer.visit_count })}
+                {t("customers.visits", { count: realVisitCounts.get(customer.phone) || 0 })}
               </Badge>
               {customer.no_show_count > 0 && (
                 <Badge variant="destructive" className="flex items-center gap-1">
