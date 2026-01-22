@@ -90,7 +90,22 @@
     "title": "Disposición de Mesas",
     "resetPositions": "Restaurar posiciones",
     "dragHelp": "Arrastra las mesas para cambiar su posición. Las posiciones se guardan automáticamente.",
-    "noTables": "No hay mesas configuradas"
+    "dragHelpExtended": "Arrastra las mesas para moverlas. Doble clic para cambiar forma (redonda/cuadrada). Clic en paredes para eliminarlas.",
+    "noTables": "No hay mesas configuradas",
+    "undo": "Deshacer",
+    "redo": "Rehacer",
+    "lock": "Bloquear disposición",
+    "unlock": "Desbloquear disposición",
+    "lockedMode": "Disposición bloqueada",
+    "unlockToEdit": "Haz clic en el candado para desbloquear y editar la disposición.",
+    "fullscreen": "Pantalla completa",
+    "exitFullscreen": "Salir de pantalla completa",
+    "drawWalls": "Dibujar paredes",
+    "clearWalls": "Borrar todas las paredes",
+    "clickToStartWall": "Clic para empezar a dibujar una pared",
+    "clickToFinishWall": "Clic para terminar la pared (Esc para cancelar)",
+    "drawingHelp": "Clic para colocar puntos de la pared. Pulsa Esc o Cancelar para abortar. Sal del modo dibujo para mover mesas.",
+    "scale": "Escala"
   },
   "tables": {
     "title": "Gestión de Mesas",
@@ -495,6 +510,10 @@
     "internalNotes": "Notas internas (opcional)",
     "notesPlaceholder": "Ej: Día festivo, Evento privado, etc.",
     "notesHelp": "Estas notas solo son visibles por el personal del restaurante"
+  },
+  "offline": {
+    "banner": "Estás sin conexión. Mostrando datos en caché.",
+    "actionDisabled": "Esta acción requiere conexión a internet"
   },
   "restaurant": {
     "select": "Seleccionar Restaurante",

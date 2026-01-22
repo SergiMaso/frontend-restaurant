@@ -2,6 +2,7 @@ import { useState } from "react";
 import { format, isSameDay } from "date-fns";
 import { useTranslation } from "react-i18next";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import {
   Calendar,
   Users,
@@ -15,6 +16,7 @@ import {
   Settings,
   LogOut,
   Key,
+  WifiOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -66,6 +68,7 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState("horario");
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
 
+  const isOnline = useOnlineStatus();
   const { user, logout } = useAuth();
   const { selectedRestaurant, loading: restaurantLoading } = useRestaurant();
   const { t } = useTranslation("dashboard");
@@ -122,6 +125,14 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
+      {/* Offline Banner */}
+      {!isOnline && (
+        <div className="bg-amber-500 text-white px-4 py-2 text-center flex items-center justify-center gap-2">
+          <WifiOff className="h-4 w-4" />
+          <span>{t("offline.banner")}</span>
+        </div>
+      )}
+
       <div className="container mx-auto p-4 md:p-8">
         {/* Header */}
         <div className="mb-8">
@@ -224,6 +235,8 @@ const Index = () => {
                 onClick={() => setReservationDialogOpen(true)}
                 size="lg"
                 className="w-full max-w-xs"
+                disabled={!isOnline}
+                title={!isOnline ? t("offline.actionDisabled") : undefined}
               >
                 <Plus className="h-5 w-5 mr-2" />
                 {t("stats.newReservation")}
@@ -396,6 +409,8 @@ const Index = () => {
                       setEditingReservation(null);
                       setReservationDialogOpen(true);
                     }}
+                    disabled={!isOnline}
+                    title={!isOnline ? t("offline.actionDisabled") : undefined}
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     {t("stats.newReservation")}

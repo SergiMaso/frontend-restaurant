@@ -54,6 +54,7 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
   const { data: allAppointments, isLoading: appointmentsLoading } = useQuery({
     queryKey: ["appointments"],
     queryFn: getAppointments,
+    refetchInterval: 120000, // Auto-refresh every 2 minutes
   });
 
   const seatedMutation = useMutation({

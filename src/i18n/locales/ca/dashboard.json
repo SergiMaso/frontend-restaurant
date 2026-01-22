@@ -90,7 +90,22 @@
     "title": "Disposició de Taules",
     "resetPositions": "Restaurar posicions",
     "dragHelp": "Arrossega les taules per canviar la seva posició. Les posicions es desen automàticament.",
-    "noTables": "No hi ha taules configurades"
+    "dragHelpExtended": "Arrossega les taules per moure-les. Doble clic per canviar la forma (rodona/quadrada). Clic a les parets per eliminar-les.",
+    "noTables": "No hi ha taules configurades",
+    "undo": "Desfer",
+    "redo": "Refer",
+    "lock": "Bloquejar disposició",
+    "unlock": "Desbloquejar disposició",
+    "lockedMode": "Disposició bloquejada",
+    "unlockToEdit": "Fes clic al cadenat per desbloquejar i editar la disposició.",
+    "fullscreen": "Pantalla completa",
+    "exitFullscreen": "Sortir de pantalla completa",
+    "drawWalls": "Dibuixar parets",
+    "clearWalls": "Esborrar totes les parets",
+    "clickToStartWall": "Clic per començar a dibuixar una paret",
+    "clickToFinishWall": "Clic per acabar la paret (Esc per cancel·lar)",
+    "drawingHelp": "Clic per col·locar punts de la paret. Prem Esc o Cancel·lar per abortar. Surt del mode dibuix per moure taules.",
+    "scale": "Escala"
   },
   "tables": {
     "title": "Gestió de Taules",
@@ -494,6 +509,10 @@
     "internalNotes": "Notes internes (opcional)",
     "notesPlaceholder": "Ex: Dia festiu, Esdeveniment privat, etc.",
     "notesHelp": "Aquestes notes només són visibles pel personal del restaurant"
+  },
+  "offline": {
+    "banner": "Estàs sense connexió. Mostrant dades en memòria cau.",
+    "actionDisabled": "Aquesta acció requereix connexió a internet"
   },
   "restaurant": {
     "select": "Seleccionar Restaurant",

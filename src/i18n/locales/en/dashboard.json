@@ -90,7 +90,22 @@
     "title": "Table Layout",
     "resetPositions": "Reset positions",
     "dragHelp": "Drag tables to change their position. Positions are saved automatically.",
-    "noTables": "No tables configured"
+    "dragHelpExtended": "Drag tables to move them. Double-click to change shape (round/square). Click on walls to delete them.",
+    "noTables": "No tables configured",
+    "undo": "Undo",
+    "redo": "Redo",
+    "lock": "Lock layout",
+    "unlock": "Unlock layout",
+    "lockedMode": "Layout locked",
+    "unlockToEdit": "Click the lock button to unlock and edit the layout.",
+    "fullscreen": "Fullscreen",
+    "exitFullscreen": "Exit fullscreen",
+    "drawWalls": "Draw walls",
+    "clearWalls": "Clear all walls",
+    "clickToStartWall": "Click to start drawing a wall",
+    "clickToFinishWall": "Click to finish the wall (Esc to cancel)",
+    "drawingHelp": "Click to place wall points. Press Esc or click Cancel to abort. Exit drawing mode to move tables.",
+    "scale": "Scale"
   },
   "tables": {
     "title": "Table Management",
@@ -494,6 +509,10 @@
     "internalNotes": "Internal notes (optional)",
     "notesPlaceholder": "E.g.: Holiday, Private event, etc.",
     "notesHelp": "These notes are only visible to restaurant staff"
+  },
+  "offline": {
+    "banner": "You are offline. Viewing cached data.",
+    "actionDisabled": "This action requires internet connection"
   },
   "restaurant": {
     "select": "Select Restaurant",

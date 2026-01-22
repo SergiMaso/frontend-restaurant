@@ -27,6 +27,7 @@ const ReservationsList = ({ selectedDate, onEdit, onDateChange }: ReservationsLi
   const { data: reservations, isLoading } = useQuery({
     queryKey: ["appointments"],
     queryFn: getAppointments,
+    refetchInterval: 120000, // Auto-refresh every 2 minutes
   });
 
   // Filtrar reserves per la data seleccionada i només confirmed
