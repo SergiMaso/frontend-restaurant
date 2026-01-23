@@ -68,7 +68,8 @@
   },
   "scheduleTab": {
     "title": "Day Schedule",
-    "description": "Manage reservations for {{date}}"
+    "description": "Manage reservations for {{date}}",
+    "fullscreenHint": "Tap on an empty slot to create a reservation"
   },
   "tablesTab": {
     "title": "Table Management",

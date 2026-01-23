@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import { useTranslation } from "react-i18next";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Calendar, Pencil, User, UserCheck, XCircle } from "lucide-react";
+import { Pencil, User, UserCheck, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -19,6 +19,8 @@ interface DayCalendarProps {
   selectedDate: Date;
   onDateChange: (date: Date) => void;
   onEdit?: (reservation: any) => void;
+  isFullscreen?: boolean;
+  onSlotClick?: (time: string, tableId: number) => void;
 }
 
 const timeSlots = Array.from({ length: 49 }, (_, i) => {
@@ -38,13 +40,67 @@ const parseAsLocalTime = (timestamp: string): Date => {
   return new Date(withoutTz);
 };
 
-const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) => {
+const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false, onSlotClick }: DayCalendarProps) => {
   const [selectedReservation, setSelectedReservation] = useState<any>(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startY, setStartY] = useState(0);
+  const [scrollTop, setScrollTop] = useState(0);
   const queryClient = useQueryClient();
   const { t } = useTranslation("dashboard");
   const { t: tCommon } = useTranslation("common");
   const { dateLocale } = useLanguage();
+
+  // Drag-to-scroll functionality
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const handleMouseDown = (e: MouseEvent) => {
+      // Only start drag if not clicking on a reservation or other interactive element
+      const target = e.target as HTMLElement;
+      if (target.closest('.cursor-pointer') || target.closest('button')) return;
+
+      setIsDragging(true);
+      setStartY(e.pageY - container.offsetTop);
+      setScrollTop(container.scrollTop);
+      container.style.cursor = 'grabbing';
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      e.preventDefault();
+      const y = e.pageY - container.offsetTop;
+      const walk = (y - startY) * 1.5; // Scroll speed multiplier
+      container.scrollTop = scrollTop - walk;
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+      container.style.cursor = 'grab';
+    };
+
+    const handleMouseLeave = () => {
+      setIsDragging(false);
+      container.style.cursor = 'grab';
+    };
+
+    container.addEventListener('mousedown', handleMouseDown);
+    container.addEventListener('mousemove', handleMouseMove);
+    container.addEventListener('mouseup', handleMouseUp);
+    container.addEventListener('mouseleave', handleMouseLeave);
+
+    // Set initial cursor
+    container.style.cursor = 'grab';
+
+    return () => {
+      container.removeEventListener('mousedown', handleMouseDown);
+      container.removeEventListener('mousemove', handleMouseMove);
+      container.removeEventListener('mouseup', handleMouseUp);
+      container.removeEventListener('mouseleave', handleMouseLeave);
+    };
+  }, [isDragging, startY, scrollTop]);
 
   const { data: tables, isLoading: tablesLoading } = useQuery({
     queryKey: ["tables"],
@@ -148,22 +204,6 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
   });
 
   const isLoading = tablesLoading || appointmentsLoading;
-
-  const goToPreviousDay = () => {
-    const newDate = new Date(selectedDate);
-    newDate.setDate(newDate.getDate() - 1);
-    onDateChange(newDate);
-  };
-
-  const goToNextDay = () => {
-    const newDate = new Date(selectedDate);
-    newDate.setDate(newDate.getDate() + 1);
-    onDateChange(newDate);
-  };
-
-  const goToToday = () => {
-    onDateChange(new Date());
-  };
 
   const handleReservationClick = (reservation: any) => {
     setSelectedReservation(reservation);
@@ -284,24 +324,6 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={goToPreviousDay} size="sm">
-            ← {t("calendar.previousMonth").split(' ')[0]}
-          </Button>
-          <Button variant="outline" onClick={goToToday} size="sm">
-            {t("calendar.today")}
-          </Button>
-          <Button variant="outline" onClick={goToNextDay} size="sm">
-            {t("calendar.nextMonth").split(' ')[0]} →
-          </Button>
-        </div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Calendar className="h-4 w-4" />
-          {format(selectedDate, "EEEE, d MMMM yyyy", { locale: dateLocale })}
-        </div>
-      </div>
-
       {isLoading ? (
         <div className="text-center py-8 text-muted-foreground">{tCommon("loading")}</div>
       ) : !tables || tables.length === 0 ? (
@@ -309,55 +331,56 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
           {t("tables.noTables")}
         </div>
       ) : (
-        <div className="border border-border/50 rounded-lg overflow-hidden bg-card">
-          <div className="overflow-x-auto relative">
-            <div className="inline-block min-w-full">
-              <div className="flex border-b border-border/50 bg-muted/50 sticky top-0 z-20">
-                <div className="w-12 px-1 py-1.5 text-[10px] font-semibold border-r border-border/50 flex-shrink-0">
-                  {tCommon("time")}
-                </div>
-                {tables.map((table) => {
-                  const numTables = tables.length;
-                  const flexClass = numTables <= 15 ? 'flex-1' : '';
-                  const minWidth = numTables > 15 ? 'min-w-[80px]' : 'min-w-[60px]';
+        <div className="border border-border/50 rounded-lg overflow-hidden bg-card relative" style={{ height: isFullscreen ? 'calc(100vh - 120px)' : '70vh' }}>
+          <div ref={scrollContainerRef} className="overflow-auto relative h-full">
+            <table className="border-collapse min-w-full" style={{ width: tables.length > 15 ? `${tables.length * 80 + 48}px` : '100%' }}>
+              <thead className="sticky top-0 z-20 bg-muted/95 backdrop-blur-sm">
+                <tr className="border-b border-border/50">
+                  <th className="w-12 px-1 py-1.5 text-[10px] font-semibold border-r border-border/50 sticky left-0 bg-muted/95 backdrop-blur-sm z-30">
+                    {tCommon("time")}
+                  </th>
+                  {tables.map((table) => {
+                    const numTables = tables.length;
+                    const minWidth = numTables > 15 ? '80px' : '60px';
 
-                  return (
-                    <div
-                      key={table.id}
-                      className={`${flexClass} ${minWidth} px-1 py-1.5 text-[10px] font-semibold text-center border-r border-border/50 flex-shrink-0`}
-                    >
-                      <div>T{table.table_number}</div>
-                      <div className="text-[9px] text-muted-foreground font-normal">
-                        {table.capacity}p
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="divide-y divide-border/50 relative">
+                    return (
+                      <th
+                        key={table.id}
+                        className="px-1 py-1.5 text-[10px] font-semibold text-center border-r border-border/50 bg-muted/95"
+                        style={{ minWidth }}
+                      >
+                        <div>T{table.table_number}</div>
+                        <div className="text-[9px] text-muted-foreground font-normal">
+                          {table.capacity}p
+                        </div>
+                      </th>
+                    );
+                  })}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/50">
                 {timeSlots.map((time, index) => (
-                  <div key={time} className="flex min-h-[20px] relative">
-                    {currentTimePosition !== null && index === Math.floor(currentTimePosition) && (
-                      <div
-                        className="absolute left-0 right-0 border-t-2 border-red-500 z-10 pointer-events-none"
-                        style={{
-                          top: `${(currentTimePosition - Math.floor(currentTimePosition)) * 20}px`
-                        }}
-                      />
-                    )}
-
-                    <div className="w-12 px-1 py-0.5 text-[9px] font-medium border-r border-border/50 flex-shrink-0 bg-muted/30 flex items-center">
+                  <tr key={time} className="h-[20px] relative">
+                    <td className="w-12 px-1 py-0.5 text-[9px] font-medium border-r border-border/50 bg-muted/30 sticky left-0 z-10 relative">
                       {time}
-                    </div>
+                      {/* Current time indicator line */}
+                      {currentTimePosition !== null && index === Math.floor(currentTimePosition) && (
+                        <div
+                          className="absolute left-0 border-t-2 border-red-500 z-40 pointer-events-none"
+                          style={{
+                            top: `${(currentTimePosition - Math.floor(currentTimePosition)) * 20}px`,
+                            width: '100vw',
+                          }}
+                        />
+                      )}
+                    </td>
                     {tables.map((table) => {
                       const tableReservations = getReservationsForTableAndTime(table.id, time);
                       const reservation = tableReservations[0];
                       const isStart = reservation && isReservationStart(reservation, time);
 
                       const numTables = tables.length;
-                      const flexClass = numTables <= 15 ? 'flex-1' : '';
-                      const minWidth = numTables > 15 ? 'min-w-[80px]' : 'min-w-[60px]';
+                      const minWidth = numTables > 15 ? '80px' : '60px';
 
                       const isMultiTable = reservation && reservation.table_ids && reservation.table_ids.length > 1;
                       const hasNotes = !!reservation?.notes;
@@ -371,10 +394,14 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
                         colorClass = getStatusColor(reservation?.status, hasNotes);
                       }
 
+                      const canClickSlot = !reservation && onSlotClick;
+
                       return (
-                        <div
+                        <td
                           key={table.id}
-                          className={`${flexClass} ${minWidth} border-r border-border/50 flex-shrink-0 relative`}
+                          className={`border-r border-border/50 relative h-[20px] ${canClickSlot ? 'cursor-pointer hover:bg-primary/10' : ''}`}
+                          style={{ minWidth }}
+                          onClick={() => canClickSlot && onSlotClick(time, table.id)}
                         >
                           {isStart && (
                             <div
@@ -382,7 +409,10 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
                               style={{
                                 height: `calc(${getReservationRowSpan(reservation)} * 20px - 4px)`,
                               }}
-                              onClick={() => handleReservationClick(reservation)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleReservationClick(reservation);
+                              }}
                             >
                               <div className="font-semibold truncate text-[9px] leading-tight">
                                 {reservation.client_name}
@@ -395,13 +425,13 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit }: DayCalendarProps) =
                               </div>
                             </div>
                           )}
-                        </div>
+                        </td>
                       );
                     })}
-                  </div>
+                  </tr>
                 ))}
-              </div>
-            </div>
+              </tbody>
+            </table>
           </div>
         </div>
       )}

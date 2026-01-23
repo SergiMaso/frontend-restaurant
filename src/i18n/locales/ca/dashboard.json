@@ -68,7 +68,8 @@
   },
   "scheduleTab": {
     "title": "Horari del Dia",
-    "description": "Gestiona les reserves per a {{date}}"
+    "description": "Gestiona les reserves per a {{date}}",
+    "fullscreenHint": "Toca en un espai buit per crear una reserva"
   },
   "tablesTab": {
     "title": "Gestió de Taules",

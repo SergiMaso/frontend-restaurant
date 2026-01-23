@@ -40,6 +40,9 @@ interface ReservationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   reservation?: any;
+  defaultTime?: string | null;
+  defaultTableId?: number | null;
+  defaultDate?: Date;
 }
 
 // Funció per generar time slots
@@ -63,7 +66,7 @@ const generateTimeSlots = (mode: string, intervalMinutes: number, fixedLunch: st
   }
 };
 
-const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialogProps) => {
+const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defaultTableId, defaultDate }: ReservationDialogProps) => {
   const { t } = useTranslation("dashboard");
   const { t: tCommon } = useTranslation("common");
   const queryClient = useQueryClient();
@@ -196,14 +199,14 @@ const ReservationDialog = ({ open, onOpenChange, reservation }: ReservationDialo
       setClientName("");
       setPhone("");
       setNumPeople("");
-      setSelectedTableId("auto");
-      setReservationDate(format(new Date(), "yyyy-MM-dd"));
-      setReservationTime("20:00");
+      setSelectedTableId(defaultTableId ? defaultTableId.toString() : "auto");
+      setReservationDate(defaultDate ? format(defaultDate, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd"));
+      setReservationTime(defaultTime || "20:00");
       setEndTime("");
       setAutoEndTime(true);
       setLanguage("ca");
     }
-  }, [reservation, open]);
+  }, [reservation, open, defaultTime, defaultTableId, defaultDate]);
 
   const updateMutation = useMutation({
     mutationFn: async (data: any) => {

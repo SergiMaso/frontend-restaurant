@@ -68,7 +68,8 @@
   },
   "scheduleTab": {
     "title": "Horario del Día",
-    "description": "Gestiona las reservas para {{date}}"
+    "description": "Gestiona las reservas para {{date}}",
+    "fullscreenHint": "Toca en un hueco vacío para crear una reserva"
   },
   "tablesTab": {
     "title": "Gestión de Mesas",

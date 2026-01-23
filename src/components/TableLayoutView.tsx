@@ -497,10 +497,10 @@ const TableLayoutView = () => {
   }
 
   return (
-    <div className={`${isFullscreen ? "fixed inset-0 z-50 bg-background p-4 flex flex-col" : "relative"}`}>
-      <div className="flex justify-between items-center mb-4 p-4">
-        <h2 className="text-2xl font-bold">{t("layout.title")}</h2>
-        <div className="flex gap-2 flex-wrap">
+    <div className={`${isFullscreen ? "fixed inset-0 z-50 bg-background p-2 md:p-4 flex flex-col overflow-hidden" : "relative"}`}>
+      <div className="flex justify-between items-center mb-2 md:mb-4 px-2 md:px-4">
+        <h2 className="text-lg md:text-2xl font-bold">{t("layout.title")}</h2>
+        <div className="flex gap-1 md:gap-2 flex-wrap">
           <Button
             variant="outline"
             size="icon"
@@ -576,50 +576,52 @@ const TableLayoutView = () => {
         </div>
       </div>
 
-      {/* Controls row: Legend and Scale */}
-      <div className="flex gap-4 px-4 mb-4 flex-wrap items-center justify-between">
-        <div className="flex gap-4 flex-wrap">
-          <div className="flex items-center gap-2 text-sm">
-            <div className="w-4 h-4 rounded-full bg-blue-500/20 border-2 border-blue-500"></div>
-            <span>1-2 pax</span>
+      {/* Controls row: Legend and Scale - hidden in fullscreen */}
+      {!isFullscreen && (
+        <div className="flex gap-2 md:gap-4 px-2 md:px-4 mb-2 md:mb-4 flex-wrap items-center justify-between">
+          <div className="flex gap-2 md:gap-4 flex-wrap">
+            <div className="flex items-center gap-1 text-xs md:text-sm">
+              <div className="w-3 h-3 md:w-4 md:h-4 rounded-full bg-blue-500/20 border-2 border-blue-500"></div>
+              <span>1-2</span>
+            </div>
+            <div className="flex items-center gap-1 text-xs md:text-sm">
+              <div className="w-3 h-3 md:w-4 md:h-4 rounded-lg bg-green-500/20 border-2 border-green-500"></div>
+              <span>3-4</span>
+            </div>
+            <div className="flex items-center gap-1 text-xs md:text-sm">
+              <div className="w-3 h-3 md:w-4 md:h-4 rounded-lg bg-amber-500/20 border-2 border-amber-500"></div>
+              <span>5-6</span>
+            </div>
+            <div className="flex items-center gap-1 text-xs md:text-sm">
+              <div className="w-4 h-2.5 md:w-5 md:h-3 rounded-lg bg-purple-500/20 border-2 border-purple-500"></div>
+              <span>7+</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2 text-sm">
-            <div className="w-4 h-4 rounded-lg bg-green-500/20 border-2 border-green-500"></div>
-            <span>3-4 pax</span>
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            <div className="w-4 h-4 rounded-lg bg-amber-500/20 border-2 border-amber-500"></div>
-            <span>5-6 pax</span>
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            <div className="w-5 h-3 rounded-lg bg-purple-500/20 border-2 border-purple-500"></div>
-            <span>7+ pax</span>
+
+          <div className="flex items-center gap-2 md:gap-3">
+            <span className="text-xs md:text-sm text-muted-foreground">{t("layout.scale")}:</span>
+            <Slider
+              value={[scale]}
+              onValueChange={handleScaleChange}
+              min={50}
+              max={150}
+              step={10}
+              className="w-20 md:w-32"
+              disabled={isLocked}
+            />
+            <span className="text-xs md:text-sm w-8 md:w-10">{scale}%</span>
           </div>
         </div>
+      )}
 
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-muted-foreground">{t("layout.scale")}:</span>
-          <Slider
-            value={[scale]}
-            onValueChange={handleScaleChange}
-            min={50}
-            max={150}
-            step={10}
-            className="w-32"
-            disabled={isLocked}
-          />
-          <span className="text-sm w-10">{scale}%</span>
-        </div>
-      </div>
-
-      {/* Drawing mode indicator */}
-      {isDrawingMode && (
-        <div className="px-4 mb-2">
-          <div className="bg-primary/10 border border-primary/30 rounded-lg px-3 py-2 flex items-center gap-2 text-sm">
-            <Pencil className="h-4 w-4" />
-            <span>{currentWall ? t("layout.clickToFinishWall") : t("layout.clickToStartWall")}</span>
+      {/* Drawing mode indicator - hidden in fullscreen */}
+      {isDrawingMode && !isFullscreen && (
+        <div className="px-2 md:px-4 mb-2">
+          <div className="bg-primary/10 border border-primary/30 rounded-lg px-2 md:px-3 py-1.5 md:py-2 flex items-center gap-2 text-xs md:text-sm">
+            <Pencil className="h-3 w-3 md:h-4 md:w-4 shrink-0" />
+            <span className="truncate">{currentWall ? t("layout.clickToFinishWall") : t("layout.clickToStartWall")}</span>
             {currentWall && (
-              <Button variant="ghost" size="sm" onClick={cancelWallDrawing} className="ml-auto h-6 px-2">
+              <Button variant="ghost" size="sm" onClick={cancelWallDrawing} className="ml-auto h-6 px-2 shrink-0">
                 <X className="h-3 w-3 mr-1" />
                 {tCommon("cancel")}
               </Button>
@@ -628,19 +630,17 @@ const TableLayoutView = () => {
         </div>
       )}
 
-      {/* Canvas container - centers and scales the canvas */}
-      <div className={`flex justify-center items-center ${isFullscreen ? "flex-1" : ""}`}>
+      {/* Canvas container */}
+      <div className={`flex justify-center items-center overflow-auto ${isFullscreen ? "flex-1 p-2" : ""}`}>
         <div
           ref={containerRef}
-          className={`relative bg-muted/20 border-2 border-dashed border-border rounded-lg select-none origin-center ${
+          className={`relative bg-muted/20 border-2 border-dashed border-border rounded-lg select-none ${
             isLocked ? "cursor-not-allowed" : isDrawingMode ? "cursor-crosshair" : ""
           }`}
           style={{
             width: `${CANVAS_WIDTH}px`,
             height: `${CANVAS_HEIGHT}px`,
             touchAction: 'none',
-            transform: isFullscreen ? 'scale(1.3)' : 'scale(1)',
-            transition: 'transform 0.2s ease-in-out',
           }}
           onClick={handleCanvasClick}
           onMouseMove={handleCanvasMouseMove}
@@ -734,10 +734,10 @@ const TableLayoutView = () => {
                   toggleTableShape(table.id);
                 }}
               >
-                <div className="text-lg font-bold" style={{ fontSize: `${Math.max(12, 16 * scale / 100)}px` }}>
+                <div className="font-bold" style={{ fontSize: `${Math.max(10, 14 * scale / 100)}px` }}>
                   T{table.table_number}
                 </div>
-                <div className="text-xs text-muted-foreground" style={{ fontSize: `${Math.max(9, 12 * scale / 100)}px` }}>
+                <div className="text-muted-foreground" style={{ fontSize: `${Math.max(8, 10 * scale / 100)}px` }}>
                   {table.capacity} pax
                 </div>
                 {/* Shape indicator */}
@@ -772,15 +772,18 @@ const TableLayoutView = () => {
         </div>
       </div>
 
-      <div className="mt-4 p-4 bg-muted/30 rounded-lg">
-        <p className="text-sm text-muted-foreground">
-          {isLocked
-            ? t("layout.unlockToEdit")
-            : isDrawingMode
-              ? t("layout.drawingHelp")
-              : t("layout.dragHelpExtended")}
-        </p>
-      </div>
+      {/* Help message - hidden in fullscreen */}
+      {!isFullscreen && (
+        <div className="mt-4 p-4 bg-muted/30 rounded-lg">
+          <p className="text-sm text-muted-foreground">
+            {isLocked
+              ? t("layout.unlockToEdit")
+              : isDrawingMode
+                ? t("layout.drawingHelp")
+                : t("layout.dragHelpExtended")}
+          </p>
+        </div>
+      )}
     </div>
   );
 };

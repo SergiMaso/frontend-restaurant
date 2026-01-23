@@ -181,32 +181,34 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
               </div>
             )}
 
-            <div className="flex gap-2 mt-3">
+            <div className="flex gap-1.5 mt-3">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => handleEdit(table)}
-                className="flex-1"
+                className="flex-1 min-w-0 px-2"
+                title={tCommon("edit")}
               >
-                <Edit className="h-4 w-4 mr-1" />
-                {tCommon("edit")}
+                <Edit className="h-4 w-4 shrink-0" />
+                <span className="ml-1 truncate hidden sm:inline">{tCommon("edit")}</span>
               </Button>
 
               <Button
                 variant={table.status === 'available' ? 'outline' : 'default'}
                 size="sm"
                 onClick={() => handleToggleStatus(table)}
-                className="flex-1"
+                className="flex-1 min-w-0 px-2"
+                title={table.status === 'available' ? tCommon("disable") : tCommon("enable")}
               >
                 {table.status === 'available' ? (
                   <>
-                    <Ban className="h-4 w-4 mr-1" />
-                    {tCommon("disable")}
+                    <Ban className="h-4 w-4 shrink-0" />
+                    <span className="ml-1 truncate hidden sm:inline">{tCommon("disable")}</span>
                   </>
                 ) : (
                   <>
-                    <Check className="h-4 w-4 mr-1" />
-                    {tCommon("enable")}
+                    <Check className="h-4 w-4 shrink-0" />
+                    <span className="ml-1 truncate hidden sm:inline">{tCommon("enable")}</span>
                   </>
                 )}
               </Button>
@@ -215,6 +217,8 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
                 variant="destructive"
                 size="sm"
                 onClick={() => handleDeleteClick(table)}
+                className="px-2 shrink-0"
+                title={tCommon("delete")}
               >
                 <Trash2 className="h-4 w-4" />
               </Button>

@@ -2,27 +2,24 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Pencil, Trash2, Users, Phone, Clock, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
+import { Pencil, Trash2, Users, Phone, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
 import { format } from "date-fns";
-import { useLanguage } from "@/contexts/LanguageContext";
 import ReservationDialog from "./ReservationDialog";
 import { getAppointments, deleteAppointment, type Appointment } from "@/services/api";
 
 interface ReservationsListProps {
   selectedDate: Date;
   onEdit?: (reservation: any) => void;
-  onDateChange?: (date: Date) => void;
 }
 
-const ReservationsList = ({ selectedDate, onEdit, onDateChange }: ReservationsListProps) => {
+const ReservationsList = ({ selectedDate, onEdit }: ReservationsListProps) => {
   const queryClient = useQueryClient();
   const [editingReservation, setEditingReservation] = useState<any>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const { t } = useTranslation("dashboard");
   const { t: tCommon } = useTranslation("common");
-  const { dateLocale } = useLanguage();
 
   const { data: reservations, isLoading } = useQuery({
     queryKey: ["appointments"],
@@ -98,54 +95,12 @@ const ReservationsList = ({ selectedDate, onEdit, onDateChange }: ReservationsLi
     }
   };
 
-  const goToPreviousDay = () => {
-    if (!onDateChange) return;
-    const newDate = new Date(selectedDate);
-    newDate.setDate(newDate.getDate() - 1);
-    onDateChange(newDate);
-  };
-
-  const goToNextDay = () => {
-    if (!onDateChange) return;
-    const newDate = new Date(selectedDate);
-    newDate.setDate(newDate.getDate() + 1);
-    onDateChange(newDate);
-  };
-
-  const goToToday = () => {
-    if (!onDateChange) return;
-    onDateChange(new Date());
-  };
-
   if (isLoading) {
     return <div className="text-center py-8 text-muted-foreground">{tCommon("loading")}</div>;
   }
 
   return (
     <>
-      {/* Botons de navegació de dates */}
-      {onDateChange && (
-        <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={goToPreviousDay} size="sm">
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              {t("calendar.previousMonth")}
-            </Button>
-            <Button variant="outline" onClick={goToToday} size="sm">
-              {t("calendar.today")}
-            </Button>
-            <Button variant="outline" onClick={goToNextDay} size="sm">
-              {t("calendar.nextMonth")}
-              <ChevronRight className="h-4 w-4 ml-1" />
-            </Button>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Calendar className="h-4 w-4" />
-            {format(selectedDate, "d MMMM yyyy", { locale: dateLocale })}
-          </div>
-        </div>
-      )}
-
       <div className="space-y-4">
         {filteredReservations?.map((reservation) => (
           <div

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { format, isSameDay } from "date-fns";
+import { format, isSameDay, addDays, subDays } from "date-fns";
 import { useTranslation } from "react-i18next";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
@@ -17,6 +17,10 @@ import {
   LogOut,
   Key,
   WifiOff,
+  ChevronLeft,
+  ChevronRight,
+  Maximize2,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -67,6 +71,9 @@ const Index = () => {
   const [editingReservation, setEditingReservation] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("horario");
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [scheduleFullscreen, setScheduleFullscreen] = useState(false);
+  const [prefilledTime, setPrefilledTime] = useState<string | null>(null);
+  const [prefilledTableId, setPrefilledTableId] = useState<number | null>(null);
 
   const isOnline = useOnlineStatus();
   const { user, logout } = useAuth();
@@ -101,16 +108,18 @@ const Index = () => {
     enabled: !!selectedRestaurant,
   });
 
-  const todayReservations =
+  const selectedDateReservations =
     allAppointments?.filter((apt: any) => {
       if (apt.status !== "confirmed" && apt.status !== "completed") return false;
       try {
         const aptDate = new Date(apt.date);
-        return isSameDay(aptDate, new Date());
+        return isSameDay(aptDate, selectedDate);
       } catch {
         return false;
       }
     }).length || 0;
+
+  const isToday = isSameDay(selectedDate, new Date());
 
   if (restaurantLoading) {
     return (
@@ -133,21 +142,18 @@ const Index = () => {
         </div>
       )}
 
-      <div className="container mx-auto p-4 md:p-8">
+      <div className="container mx-auto p-3 md:p-6">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-3">
-              <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-elegant">
-                <UtensilsCrossed className="h-6 w-6 text-primary-foreground" />
+        <div className="mb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-elegant">
+                <UtensilsCrossed className="h-5 w-5 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                   {restaurantName}
                 </h1>
-                <p className="text-muted-foreground">
-                  {t("header.subtitle")}
-                </p>
               </div>
             </div>
 
@@ -205,70 +211,10 @@ const Index = () => {
           onOpenChange={setChangePasswordOpen}
         />
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          {/* Selected Date */}
-          <Card className="border-border/50 shadow-card hover:shadow-elegant transition-all duration-300">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base font-semibold flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-primary" />
-                {t("stats.selectedDate")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold">
-                {format(selectedDate, "d MMMM yyyy", { locale: dateLocale })}
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Quick Action */}
-          <Card className="border-border/50 shadow-card hover:shadow-elegant transition-all duration-300">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base font-semibold flex items-center gap-2">
-                <Plus className="h-5 w-5 text-accent" />
-                {t("stats.quickAction")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex items-center justify-center">
-              <Button
-                onClick={() => setReservationDialogOpen(true)}
-                size="lg"
-                className="w-full max-w-xs"
-                disabled={!isOnline}
-                title={!isOnline ? t("offline.actionDisabled") : undefined}
-              >
-                <Plus className="h-5 w-5 mr-2" />
-                {t("stats.newReservation")}
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Today's Reservations */}
-          <Card className="border-border/50 shadow-card hover:shadow-elegant transition-all duration-300">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base font-semibold flex items-center gap-2">
-                <UtensilsCrossed className="h-5 w-5 text-success" />
-                {t("stats.todayReservations")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-baseline gap-2">
-                <p className="text-3xl font-bold text-primary">
-                  {todayReservations}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {todayReservations === 1 ? t("stats.reservation") : t("stats.reservations")}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
         {/* Main Content */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <div className="w-full max-w-6xl mx-auto overflow-x-auto">
-            <TabsList className="inline-flex w-full flex-nowrap">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+          <div className="w-full overflow-x-auto scrollbar-hide -mx-3 px-3">
+            <TabsList className="inline-flex w-max min-w-full">
               <TabsTrigger value="calendario">
                 <Calendar className="h-4 w-4 mr-2" />
                 {t("tabs.calendar")}
@@ -346,13 +292,70 @@ const Index = () => {
           {/* SCHEDULE TAB */}
           <TabsContent value="horario" className="space-y-4">
             <Card className="border-border/50 shadow-card">
-              <CardHeader>
-                <CardTitle>{t("scheduleTab.title")}</CardTitle>
-                <CardDescription>
-                  {t("scheduleTab.description", {
-                    date: format(selectedDate, "EEEE d MMMM", { locale: dateLocale })
-                  })}
-                </CardDescription>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  {/* Left: Date and reservations count */}
+                  <div>
+                    <h2 className="text-lg font-semibold capitalize">
+                      {format(selectedDate, "EEEE, d MMMM yyyy", { locale: dateLocale })}
+                    </h2>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedDateReservations} {selectedDateReservations === 1 ? t("stats.reservation") : t("stats.reservations")}
+                    </p>
+                  </div>
+
+                  {/* Center: New Reservation + Fullscreen buttons */}
+                  <div className="flex items-center gap-2">
+                    <Button
+                      onClick={() => {
+                        setEditingReservation(null);
+                        setPrefilledTime(null);
+                        setPrefilledTableId(null);
+                        setReservationDialogOpen(true);
+                      }}
+                      disabled={!isOnline}
+                      title={!isOnline ? t("offline.actionDisabled") : undefined}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      {t("stats.newReservation")}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setScheduleFullscreen(true)}
+                      title={t("layout.fullscreen")}
+                    >
+                      <Maximize2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  {/* Right: Date navigation */}
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSelectedDate(subDays(selectedDate, 1))}
+                    >
+                      <ChevronLeft className="h-4 w-4 mr-1" />
+                      {t("calendar.previousMonth").split(' ')[0]}
+                    </Button>
+                    <Button
+                      variant={isToday ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setSelectedDate(new Date())}
+                    >
+                      {t("calendar.today")}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSelectedDate(addDays(selectedDate, 1))}
+                    >
+                      {t("calendar.nextMonth").split(' ')[0]}
+                      <ChevronRight className="h-4 w-4 ml-1" />
+                    </Button>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 <DayCalendar
@@ -396,17 +399,22 @@ const Index = () => {
           {/* RESERVATIONS TAB */}
           <TabsContent value="reservations" className="space-y-4">
             <Card className="border-border/50 shadow-card">
-              <CardHeader>
+              <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
+                  {/* Left: Title and description */}
                   <div>
                     <CardTitle>{t("reservationsTab.title")}</CardTitle>
                     <CardDescription>
                       {t("reservationsTab.description")}
                     </CardDescription>
                   </div>
+
+                  {/* Center: New Reservation button */}
                   <Button
                     onClick={() => {
                       setEditingReservation(null);
+                      setPrefilledTime(null);
+                      setPrefilledTableId(null);
                       setReservationDialogOpen(true);
                     }}
                     disabled={!isOnline}
@@ -415,12 +423,43 @@ const Index = () => {
                     <Plus className="h-4 w-4 mr-2" />
                     {t("stats.newReservation")}
                   </Button>
+
+                  {/* Right: Date and navigation */}
+                  <div className="flex flex-col items-end gap-1">
+                    <p className="text-sm font-medium capitalize">
+                      {format(selectedDate, "EEEE, d MMMM", { locale: dateLocale })}
+                    </p>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSelectedDate(subDays(selectedDate, 1))}
+                      >
+                        <ChevronLeft className="h-4 w-4 mr-1" />
+                        {t("calendar.previousMonth").split(' ')[0]}
+                      </Button>
+                      <Button
+                        variant={isToday ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setSelectedDate(new Date())}
+                      >
+                        {t("calendar.today")}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSelectedDate(addDays(selectedDate, 1))}
+                      >
+                        {t("calendar.nextMonth").split(' ')[0]}
+                        <ChevronRight className="h-4 w-4 ml-1" />
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
                 <ReservationsList
                   selectedDate={selectedDate}
-                  onDateChange={setSelectedDate}
                   onEdit={(reservation) => {
                     setEditingReservation(reservation);
                     setReservationDialogOpen(true);
@@ -489,10 +528,88 @@ const Index = () => {
         open={reservationDialogOpen}
         onOpenChange={(open) => {
           setReservationDialogOpen(open);
-          if (!open) setEditingReservation(null);
+          if (!open) {
+            setEditingReservation(null);
+            setPrefilledTime(null);
+            setPrefilledTableId(null);
+          }
         }}
         reservation={editingReservation}
+        defaultTime={prefilledTime}
+        defaultTableId={prefilledTableId}
+        defaultDate={selectedDate}
       />
+
+      {/* Fullscreen Schedule Overlay */}
+      {scheduleFullscreen && (
+        <div className="fixed inset-0 z-50 bg-background">
+          <div className="h-full flex flex-col">
+            {/* Fullscreen Header */}
+            <div className="flex items-center justify-between p-3 border-b">
+              <div>
+                <h2 className="text-lg font-semibold capitalize">
+                  {format(selectedDate, "EEEE, d MMMM yyyy", { locale: dateLocale })}
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  {t("scheduleTab.fullscreenHint")}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedDate(subDays(selectedDate, 1))}
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  {t("calendar.previousMonth").split(' ')[0]}
+                </Button>
+                <Button
+                  variant={isToday ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedDate(new Date())}
+                >
+                  {t("calendar.today")}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedDate(addDays(selectedDate, 1))}
+                >
+                  {t("calendar.nextMonth").split(' ')[0]}
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setScheduleFullscreen(false)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+            {/* Fullscreen Grid */}
+            <div className="flex-1 overflow-auto p-3">
+              <DayCalendar
+                selectedDate={selectedDate}
+                onDateChange={setSelectedDate}
+                onEdit={(reservation) => {
+                  setEditingReservation(reservation);
+                  setReservationDialogOpen(true);
+                }}
+                isFullscreen={true}
+                onSlotClick={(time, tableId) => {
+                  if (isOnline) {
+                    setPrefilledTime(time);
+                    setPrefilledTableId(tableId);
+                    setEditingReservation(null);
+                    setReservationDialogOpen(true);
+                  }
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
