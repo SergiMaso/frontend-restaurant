@@ -333,7 +333,7 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
       ) : (
         <div className="border border-border/50 rounded-lg overflow-hidden bg-card relative" style={{ height: isFullscreen ? 'calc(100vh - 120px)' : '70vh' }}>
           <div ref={scrollContainerRef} className="overflow-auto relative h-full">
-            <table className="border-collapse min-w-full" style={{ width: tables.length > 15 ? `${tables.length * 80 + 48}px` : '100%' }}>
+            <table className="border-collapse table-fixed w-full" style={{ minWidth: tables.length > 15 ? `${tables.length * 80 + 48}px` : undefined }}>
               <thead className="sticky top-0 z-20 bg-muted/95 backdrop-blur-sm">
                 <tr className="border-b border-border/50">
                   <th className="w-12 px-1 py-1.5 text-[10px] font-semibold border-r border-border/50 sticky left-0 bg-muted/95 backdrop-blur-sm z-30">
