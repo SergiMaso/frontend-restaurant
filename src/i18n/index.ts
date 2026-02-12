@@ -20,6 +20,12 @@ import enAuth from './locales/en/auth.json';
 import enDashboard from './locales/en/dashboard.json';
 import enCustomers from './locales/en/customers.json';
 
+// Italian translations
+import itCommon from './locales/it/common.json';
+import itAuth from './locales/it/auth.json';
+import itDashboard from './locales/it/dashboard.json';
+import itCustomers from './locales/it/customers.json';
+
 const resources = {
   es: {
     common: esCommon,
@@ -39,6 +45,12 @@ const resources = {
     dashboard: enDashboard,
     customers: enCustomers,
   },
+  it: {
+    common: itCommon,
+    auth: itAuth,
+    dashboard: itDashboard,
+    customers: itCustomers,
+  },
 };
 
 i18n
@@ -47,7 +59,7 @@ i18n
   .init({
     resources,
     fallbackLng: 'es',
-    supportedLngs: ['es', 'ca', 'en'],
+    supportedLngs: ['es', 'ca', 'en', 'it'],
 
     defaultNS: 'common',
     ns: ['common', 'auth', 'dashboard', 'customers'],

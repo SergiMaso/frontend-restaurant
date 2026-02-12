@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { es as esLocale, ca as caLocale, enUS as enLocale } from 'date-fns/locale';
+import { es as esLocale, ca as caLocale, enUS as enLocale, it as itLocale } from 'date-fns/locale';
 import type { Locale } from 'date-fns';
 
 interface LanguageContextType {
@@ -14,12 +14,14 @@ const availableLanguages = [
   { code: 'es', name: 'Spanish', nativeName: 'Español' },
   { code: 'ca', name: 'Catalan', nativeName: 'Català' },
   { code: 'en', name: 'English', nativeName: 'English' },
+  { code: 'it', name: 'Italian', nativeName: 'Italiano' },
 ];
 
 const dateLocales: Record<string, Locale> = {
   es: esLocale,
   ca: caLocale,
   en: enLocale,
+  it: itLocale,
 };
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);

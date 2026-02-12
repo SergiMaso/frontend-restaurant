@@ -1,0 +1,83 @@
+{
+  "loading": "Caricamento...",
+  "save": "Salva",
+  "saving": "Salvando...",
+  "cancel": "Annulla",
+  "delete": "Elimina",
+  "deleting": "Eliminando...",
+  "edit": "Modifica",
+  "close": "Chiudi",
+  "create": "Crea",
+  "confirm": "Conferma",
+  "error": "Errore",
+  "success": "Successo",
+  "yes": "Sì",
+  "no": "No",
+  "search": "Cerca",
+  "noResults": "Nessun risultato trovato",
+  "actions": "Azioni",
+  "required": "Obbligatorio",
+  "name": "Nome",
+  "email": "Email",
+  "phone": "Telefono",
+  "date": "Data",
+  "time": "Ora",
+  "status": "Stato",
+  "notes": "Note",
+  "description": "Descrizione",
+  "active": "Attivo",
+  "inactive": "Inattivo",
+  "roles": {
+    "superadmin": "Superadmin",
+    "owner": "Proprietario",
+    "admin": "Amministratore",
+    "staff": "Personale"
+  },
+  "reservationStatus": {
+    "pending": "In attesa",
+    "confirmed": "Confermata",
+    "completed": "Completata",
+    "cancelled": "Cancellata",
+    "no_show": "Non presentato"
+  },
+  "tableStatus": {
+    "available": "Disponibile",
+    "unavailable": "Non disponibile",
+    "occupied": "Occupato",
+    "reserved": "Riservato"
+  },
+  "enable": "Abilita",
+  "disable": "Disabilita",
+  "add": "Aggiungi",
+  "table": "Tavolo",
+  "areYouSure": "Sei sicuro?",
+  "saveChanges": "Salva Modifiche",
+  "yesDelete": "Sì, elimina",
+  "days": {
+    "monday": "Lunedì",
+    "tuesday": "Martedì",
+    "wednesday": "Mercoledì",
+    "thursday": "Giovedì",
+    "friday": "Venerdì",
+    "saturday": "Sabato",
+    "sunday": "Domenica"
+  },
+  "daysShort": {
+    "mon": "Lun",
+    "tue": "Mar",
+    "wed": "Mer",
+    "thu": "Gio",
+    "fri": "Ven",
+    "sat": "Sab",
+    "sun": "Dom"
+  },
+  "daysLetter": {
+    "mon": "L",
+    "tue": "M",
+    "wed": "M",
+    "thu": "G",
+    "fri": "V",
+    "sat": "S",
+    "sun": "D"
+  }
+}
