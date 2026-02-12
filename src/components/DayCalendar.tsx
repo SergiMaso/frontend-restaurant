@@ -223,12 +223,12 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
     }
 
     if (hasNotes) {
-      return "bg-blue-500/90 hover:bg-blue-600 border-blue-400/20 text-white";
+      return "bg-blue-400/90 hover:bg-blue-500 border-blue-300/20 text-white";
     }
 
     switch (status) {
       case "confirmed":
-        return "bg-primary/90 hover:bg-primary border-primary/20 text-primary-foreground";
+        return "bg-orange-500/90 hover:bg-orange-600 border-orange-400/20 text-white";
       case "cancelled":
         return "bg-destructive/90 hover:bg-destructive border-destructive/20 text-destructive-foreground";
       default:
@@ -387,9 +387,15 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
 
                       let colorClass;
                       if (isMultiTable) {
-                        colorClass = hasNotes
-                          ? 'bg-green-500/90 hover:bg-green-600 border-green-400/20 text-white'
-                          : 'bg-yellow-500/90 hover:bg-yellow-600 border-yellow-400/20 text-white';
+                        if (reservation?.status === 'completed') {
+                          colorClass = 'bg-emerald-600/90 hover:bg-emerald-700 border-emerald-500/20 text-white';
+                        } else if (reservation?.status === 'cancelled') {
+                          colorClass = 'bg-destructive/90 hover:bg-destructive border-destructive/20 text-destructive-foreground';
+                        } else {
+                          colorClass = hasNotes
+                            ? 'bg-blue-600/90 hover:bg-blue-700 border-blue-500/20 text-white'
+                            : 'bg-yellow-500/90 hover:bg-yellow-600 border-yellow-400/20 text-white';
+                        }
                       } else {
                         colorClass = getStatusColor(reservation?.status, hasNotes);
                       }
