@@ -147,8 +147,8 @@ const Index = () => {
         <div className="mb-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-elegant">
-                <UtensilsCrossed className="h-5 w-5 text-primary-foreground" />
+              <div className="h-10 w-10 rounded-lg overflow-hidden shadow-elegant">
+                <img src="/logo.svg" alt="Logo" className="h-full w-full object-contain" />
               </div>
               <div>
                 <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
