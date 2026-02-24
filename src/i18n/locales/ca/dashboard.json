@@ -192,7 +192,20 @@
     "selectLanguage": "Selecciona idioma",
     "fillRequiredFields": "Si us plau, completa tots els camps obligatoris",
     "guestsCount": "{{count}} persona",
-    "guestsCount_other": "{{count}} persones"
+    "guestsCount_other": "{{count}} persones",
+    "areaPreference": "Preferència de Zona",
+    "areaAuto": "Automàtic",
+    "areaInside": "Interior",
+    "areaTerrace": "Terrassa",
+    "manualTablesSelected": "Taules seleccionades manualment: {{tables}}",
+    "capacityCheck": "Verificació de capacitat: {{people}} persones / {{seats}} places",
+    "overBy": "(excés de {{count}})",
+    "staffCanSelectTables": "El personal pot seleccionar una o més taules manualment, incloent taules deshabilitades. El backend només bloqueja solapaments.",
+    "disabledManual": "Deshabilitada (manual)",
+    "warningOverCapacity": "Advertència: {{people}} persones per {{seats}} places (anul·lació manual, +{{over}}).",
+    "configuredMax": "Màxim configurat: {{max}}",
+    "overrideActive": "(anul·lació activa: {{people}})",
+    "warningAboveConfiguredMax": "Advertència: {{people}} persones està per sobre del màxim configurat ({{max}}). S'aplica anul·lació manual des del frontend."
   },
   "customers": {
     "title": "Clients",

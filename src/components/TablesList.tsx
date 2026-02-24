@@ -158,6 +158,9 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
                 <Badge className={getStatusColor(table.status)}>
                   {getStatusLabel(table.status)}
                 </Badge>
+                <Badge variant="outline" className="ml-2">
+                  {table.area === "terrace" ? t("reservations.areaTerrace") : t("reservations.areaInside")}
+                </Badge>
               </div>
               <Badge variant="outline" className="flex items-center gap-1">
                 <Users className="h-3 w-3" />

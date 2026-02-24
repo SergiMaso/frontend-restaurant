@@ -23,8 +23,12 @@ export interface Appointment {
   num_people: number;
   status: string;
   table_number: number;
+  table_numbers?: string;
   table_capacity: number;
   table_id?: number;
+  table_ids?: number[];
+  area_preference?: "auto" | "inside" | "terrace";
+  manual_override?: boolean;
   notes?: string | null;
   created_at?: string;
 }
@@ -35,6 +39,7 @@ export interface Table {
   capacity: number;
   status: string;
   pairing: number[];
+  area?: "inside" | "terrace";
 }
 
 export interface CreateTableData {
@@ -42,6 +47,7 @@ export interface CreateTableData {
   capacity: number;
   status?: string;
   pairing?: number[];
+  area?: "inside" | "terrace";
 }
 
 export interface UpdateTableData {
@@ -49,6 +55,7 @@ export interface UpdateTableData {
   capacity?: number;
   status?: string;
   pairing?: number[] | null;
+  area?: "inside" | "terrace";
 }
 
 export interface CreateAppointmentData {
@@ -58,6 +65,9 @@ export interface CreateAppointmentData {
   time: string;
   num_people: number;
   duration_hours?: number;
+  area_preference?: "auto" | "inside" | "terrace";
+  table_id?: number;
+  table_ids?: number[];
 }
 
 export interface UpdateAppointmentData {
@@ -65,6 +75,8 @@ export interface UpdateAppointmentData {
   time?: string;
   num_people?: number;
   table_id?: number;
+  table_ids?: number[];
+  area_preference?: "auto" | "inside" | "terrace";
 }
 
 export interface Customer {

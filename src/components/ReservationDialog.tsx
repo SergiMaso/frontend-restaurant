@@ -103,7 +103,8 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
   const [endTime, setEndTime] = useState("");
   const [autoEndTime, setAutoEndTime] = useState(true);
   const [language, setLanguage] = useState("ca");
-  const [selectedTableId, setSelectedTableId] = useState<string>("auto");
+  const [areaPreference, setAreaPreference] = useState<"auto" | "inside" | "terrace">("auto");
+  const [selectedTableIds, setSelectedTableIds] = useState<number[]>([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const { data: tables } = useQuery({
@@ -145,17 +146,23 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
     console.log("🔍 DEBUG: reservation changed:", reservation);
 
     if (reservation) {
+      const currentTableIds =
+        Array.isArray(reservation.table_ids) && reservation.table_ids.length > 0
+          ? reservation.table_ids.map((id: number | string) => Number(id)).filter((id: number) => Number.isFinite(id))
+          : (reservation.table_id ? [Number(reservation.table_id)] : []);
+
       console.log("📝 Carregant dades de la reserva:", {
         id: reservation.id,
         client_name: reservation.client_name,
-        table_id: reservation.table_id,
-        table_number: reservation.table_number
+        table_ids: currentTableIds,
+        table_number: reservation.table_numbers || reservation.table_number
       });
 
       setClientName(reservation.client_name || "");
       setPhone(reservation.phone || "");
       setNumPeople(reservation.num_people?.toString() || "");
-      setSelectedTableId(reservation.table_id ? reservation.table_id.toString() : "auto");
+      setSelectedTableIds(currentTableIds);
+      setAreaPreference((reservation.area_preference as "auto" | "inside" | "terrace") || "auto");
       setLanguage(reservation.language || "ca");
 
       if (reservation.date) {
@@ -188,7 +195,7 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
       }
 
       console.log("✅ Valors carregats:", {
-        selectedTableId: reservation.table_id ? reservation.table_id.toString() : "auto",
+        selectedTableIds: currentTableIds,
         date: reservationDate,
         time: reservationTime,
         endTime: reservation.end_time,
@@ -199,12 +206,13 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
       setClientName("");
       setPhone("");
       setNumPeople("");
-      setSelectedTableId(defaultTableId ? defaultTableId.toString() : "auto");
+      setSelectedTableIds(defaultTableId ? [defaultTableId] : []);
       setReservationDate(defaultDate ? format(defaultDate, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd"));
       setReservationTime(defaultTime || "20:00");
       setEndTime("");
       setAutoEndTime(true);
       setLanguage("ca");
+      setAreaPreference("auto");
     }
   }, [reservation, open, defaultTime, defaultTableId, defaultDate]);
 
@@ -222,7 +230,9 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
     },
     onSuccess: (response) => {
       console.log("✅ Resposta del servidor:", response);
-      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      queryClient.invalidateQueries({
+        predicate: (query) => Array.isArray(query.queryKey) && query.queryKey[0] === "appointments",
+      });
       toast.success(reservation ? t("reservations.updateSuccess") : t("reservations.createSuccess"));
       onOpenChange(false);
     },
@@ -235,7 +245,9 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
   const deleteMutation = useMutation({
     mutationFn: deleteAppointment,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      queryClient.invalidateQueries({
+        predicate: (query) => Array.isArray(query.queryKey) && query.queryKey[0] === "appointments",
+      });
       toast.success(t("reservations.deleteSuccess"));
       setDeleteDialogOpen(false);
       onOpenChange(false);
@@ -252,14 +264,20 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
       toast.error(t("reservations.fillRequiredFields"));
       return;
     }
+    const requestedPeople = Number.parseInt(numPeople, 10);
+    if (!Number.isFinite(requestedPeople) || requestedPeople < 1) {
+      toast.error(t("reservations.fillRequiredFields"));
+      return;
+    }
 
     const dataToSend: any = {
       client_name: clientName,
       phone: phone,
       date: reservationDate,
       time: reservationTime,
-      num_people: parseInt(numPeople),
+      num_people: requestedPeople,
       language: language,
+      area_preference: areaPreference,
     };
 
     // IMPORTANT: Calcular duration_hours per al backend
@@ -296,11 +314,32 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
       console.log(`⏱️  Usant duració per defecte: ${defaultBookingDuration} hores`);
     }
 
-    if (selectedTableId && selectedTableId !== "auto") {
-      dataToSend.table_id = parseInt(selectedTableId);
-      console.log(`📍 Taula seleccionada: ${selectedTableId}`);
+    if (selectedTableIds.length === 1) {
+      dataToSend.table_id = selectedTableIds[0];
+      console.log(`📍 Taula seleccionada: ${selectedTableIds[0]}`);
+    } else if (selectedTableIds.length > 1) {
+      dataToSend.table_ids = selectedTableIds;
+      console.log(`📍 Taules seleccionades: ${selectedTableIds.join(", ")}`);
     } else {
       console.log("🔄 Assignació automàtica de taula");
+    }
+
+    if (isManualOverCapacity) {
+      toast.warning(
+        t("reservations.warningOverCapacity", { 
+          people: parsedNumPeople, 
+          seats: selectedManualCapacity, 
+          over: overCapacityBy 
+        })
+      );
+    }
+    if (requestedPeople > maxPeoplePerBooking) {
+      toast.warning(
+        t("reservations.warningAboveConfiguredMax", {
+          people: requestedPeople,
+          max: maxPeoplePerBooking,
+        })
+      );
     }
 
     console.log("📦 Dades finals a enviar:", dataToSend);
@@ -323,6 +362,26 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
       setLanguage(customer.language);
     }
   };
+
+  const toggleTableSelection = (tableId: number, checked: boolean) => {
+    setSelectedTableIds((prev) => {
+      if (checked) {
+        if (prev.includes(tableId)) return prev;
+        return [...prev, tableId].sort((a, b) => a - b);
+      }
+      return prev.filter((id) => id !== tableId);
+    });
+  };
+
+  const selectedManualCapacity = (tables || [])
+    .filter((table) => selectedTableIds.includes(table.id))
+    .reduce((sum, table) => sum + table.capacity, 0);
+  const parsedNumPeople = Number.parseInt(numPeople || "0", 10) || 0;
+  const isManualOverCapacity =
+    selectedTableIds.length > 0 &&
+    selectedManualCapacity > 0 &&
+    parsedNumPeople > selectedManualCapacity;
+  const overCapacityBy = isManualOverCapacity ? parsedNumPeople - selectedManualCapacity : 0;
 
   return (
     <>
@@ -371,12 +430,17 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
                   id="numPeople"
                   type="number"
                   min="1"
-                  max={maxPeoplePerBooking}
                   value={numPeople}
                   onChange={(e) => setNumPeople(e.target.value)}
                   placeholder="4"
                   required
                 />
+                <p className={`text-xs ${parsedNumPeople > maxPeoplePerBooking ? "text-amber-700 font-medium" : "text-muted-foreground"}`}>
+                  {t("reservations.configuredMax", { max: maxPeoplePerBooking })}
+                  {parsedNumPeople > maxPeoplePerBooking
+                    ? ` ${t("reservations.overrideActive", { people: parsedNumPeople })}`
+                    : ""}
+                </p>
               </div>
 
               <div className="space-y-2">
@@ -448,30 +512,90 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="tableId">
-                  {t("reservations.table")} {reservation && reservation.table_number && t("reservations.currentTable", { number: reservation.table_number })}
-                </Label>
-                <Select
-                  value={selectedTableId}
-                  onValueChange={(value) => {
-                    console.log("🎯 Taula seleccionada:", value);
-                    setSelectedTableId(value);
-                  }}
-                >
+                <Label htmlFor="areaPreference">{t("reservations.areaPreference")}</Label>
+                <Select value={areaPreference} onValueChange={(value: "auto" | "inside" | "terrace") => setAreaPreference(value)}>
                   <SelectTrigger>
-                    <SelectValue placeholder={t("reservations.autoAssignment")} />
+                    <SelectValue placeholder={t("reservations.areaAuto")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="auto">{t("reservations.automatic")}</SelectItem>
-                    {tables?.filter(t => t.status === 'available').map((table) => (
-                      <SelectItem key={table.id} value={table.id.toString()}>
-                        {tCommon("table")} {table.table_number} ({table.capacity} {t("tables.people")})
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="auto">{t("reservations.areaAuto")}</SelectItem>
+                    <SelectItem value="inside">{t("reservations.areaInside")}</SelectItem>
+                    <SelectItem value="terrace">{t("reservations.areaTerrace")}</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="space-y-2 md:col-span-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="tableSelection">
+                    {t("reservations.table")} {reservation && (reservation.table_numbers || reservation.table_number) && t("reservations.currentTable", { number: reservation.table_numbers || reservation.table_number })}
+                  </Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSelectedTableIds([])}
+                  >
+                    {t("reservations.automatic")}
+                  </Button>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {selectedTableIds.length > 0
+                    ? t("reservations.manualTablesSelected", { tables: selectedTableIds.join(", ") })
+                    : t("reservations.autoAssignHelp")}
+                </div>
+                {selectedTableIds.length > 0 && (
+                  <div className={`text-xs ${isManualOverCapacity ? "text-amber-700 font-medium" : "text-muted-foreground"}`}>
+                    {t("reservations.capacityCheck", { people: parsedNumPeople || 0, seats: selectedManualCapacity })}
+                    {isManualOverCapacity ? ` ${t("reservations.overBy", { count: overCapacityBy })}` : ""}
+                  </div>
+                )}
+                <div className="max-h-44 overflow-y-auto space-y-2 rounded-md border p-2">
+                  {tables
+                    ?.slice()
+                    .sort((a, b) => {
+                      if (a.status === b.status) return a.table_number - b.table_number;
+                      return a.status === "available" ? -1 : 1;
+                    })
+                    .map((table) => {
+                      const isTerrace = table.area === "terrace";
+                      const isDisabled = table.status !== "available";
+                      const isSelected = selectedTableIds.includes(table.id);
+
+                      const baseClass = isTerrace
+                        ? "border-amber-200 bg-amber-50/60"
+                        : "border-slate-200 bg-slate-50/50";
+                      const disabledClass = isTerrace
+                        ? "border-amber-300 bg-amber-100/70 text-amber-900"
+                        : "border-slate-300 bg-slate-100/70 text-slate-700";
+                      const selectedClass = isSelected
+                        ? isTerrace
+                          ? "ring-2 ring-amber-400 border-amber-400"
+                          : "ring-2 ring-sky-400 border-sky-400"
+                        : "";
+
+                      return (
+                        <label
+                          key={table.id}
+                          className={`flex items-center justify-between rounded-md border px-3 py-2 text-sm transition-colors ${isDisabled ? disabledClass : baseClass} ${selectedClass}`}
+                        >
+                          <span>
+                            {tCommon("table")} {table.table_number} ({table.capacity} {t("tables.people")}) ·{" "}
+                            <span className={isTerrace ? "text-amber-700 font-medium" : "text-slate-700 font-medium"}>
+                              {table.area === "terrace" ? t("reservations.areaTerrace") : t("reservations.areaInside")}
+                            </span>{" "}
+                            · {isDisabled ? t("reservations.disabledManual") : table.status}
+                          </span>
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={(checked) => toggleTableSelection(table.id, checked === true)}
+                          />
+                        </label>
+                      );
+                    })}
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  {t("reservations.autoAssignHelp")}
+                  {t("reservations.staffCanSelectTables")}
                 </p>
               </div>
             </div>

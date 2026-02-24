@@ -342,15 +342,20 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
                   {tables.map((table) => {
                     const numTables = tables.length;
                     const minWidth = numTables > 15 ? '80px' : '60px';
+                    const isTerrace = table.area === "terrace";
 
                     return (
                       <th
                         key={table.id}
-                        className="px-1 py-1.5 text-[10px] font-semibold text-center border-r border-border/50 bg-muted/95"
+                        className={`px-1 py-1.5 text-[10px] font-semibold text-center border-r ${
+                          isTerrace
+                            ? "border-amber-200/80 bg-amber-100/90 text-amber-900"
+                            : "border-border/50 bg-muted/95"
+                        }`}
                         style={{ minWidth }}
                       >
-                        <div>T{table.table_number}</div>
-                        <div className="text-[9px] text-muted-foreground font-normal">
+                        <div>{isTerrace ? "☀" : "T"}{table.table_number}</div>
+                        <div className={`text-[9px] font-normal ${isTerrace ? "text-amber-700" : "text-muted-foreground"}`}>
                           {table.capacity}p
                         </div>
                       </th>

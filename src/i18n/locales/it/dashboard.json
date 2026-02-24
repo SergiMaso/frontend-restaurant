@@ -192,7 +192,20 @@
     "selectLanguage": "Seleziona lingua",
     "fillRequiredFields": "Per favore, completa tutti i campi obbligatori",
     "guestsCount": "{{count}} persona",
-    "guestsCount_other": "{{count}} persone"
+    "guestsCount_other": "{{count}} persone",
+    "areaPreference": "Preferenza Zona",
+    "areaAuto": "Automatico",
+    "areaInside": "Interno",
+    "areaTerrace": "Terrazza",
+    "manualTablesSelected": "Tavoli selezionati manualmente: {{tables}}",
+    "capacityCheck": "Verifica capacità: {{people}} persone / {{seats}} posti",
+    "overBy": "(eccedenza di {{count}})",
+    "staffCanSelectTables": "Il personale può selezionare uno o più tavoli manualmente, inclusi i tavoli disabilitati. Il backend blocca solo le sovrapposizioni.",
+    "disabledManual": "Disabilitato (manuale)",
+    "warningOverCapacity": "Avviso: {{people}} persone per {{seats}} posti (override manuale, +{{over}}).",
+    "configuredMax": "Massimo configurato: {{max}}",
+    "overrideActive": "(override attivo: {{people}})",
+    "warningAboveConfiguredMax": "Avviso: {{people}} persone superano il massimo configurato ({{max}}). Viene applicato l'override manuale dal frontend."
   },
   "customers": {
     "title": "Clienti",

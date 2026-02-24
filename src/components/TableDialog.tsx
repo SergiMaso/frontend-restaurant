@@ -44,6 +44,7 @@ const TableDialog = ({
   const [tableNumber, setTableNumber] = useState("");
   const [capacity, setCapacity] = useState("");
   const [status, setStatus] = useState("available");
+  const [area, setArea] = useState<"inside" | "terrace">("inside");
   const [pairing, setPairing] = useState<number[]>([]);
 
   useEffect(() => {
@@ -51,11 +52,13 @@ const TableDialog = ({
       setTableNumber(table.table_number.toString());
       setCapacity(table.capacity.toString());
       setStatus(table.status);
+      setArea((table.area as "inside" | "terrace") || "inside");
       setPairing(table.pairing || []);
     } else {
       setTableNumber("");
       setCapacity("");
       setStatus("available");
+      setArea("inside");
       setPairing([]);
     }
   }, [table, mode, open]);
@@ -67,6 +70,7 @@ const TableDialog = ({
       table_number: parseInt(tableNumber),
       capacity: parseInt(capacity),
       status,
+      area,
       pairing: pairing.length > 0 ? pairing : null,
     };
 
@@ -137,6 +141,19 @@ const TableDialog = ({
               <SelectContent>
                 <SelectItem value="available">{tCommon("tableStatus.available")}</SelectItem>
                 <SelectItem value="unavailable">{tCommon("tableStatus.unavailable")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="area">{t("reservations.areaPreference")}</Label>
+            <Select value={area} onValueChange={(value: "inside" | "terrace") => setArea(value)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="inside">{t("reservations.areaInside")}</SelectItem>
+                <SelectItem value="terrace">{t("reservations.areaTerrace")}</SelectItem>
               </SelectContent>
             </Select>
           </div>

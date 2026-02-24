@@ -192,7 +192,20 @@
     "selectLanguage": "Select language",
     "fillRequiredFields": "Please fill in all required fields",
     "guestsCount": "{{count}} person",
-    "guestsCount_other": "{{count}} people"
+    "guestsCount_other": "{{count}} people",
+    "areaPreference": "Area Preference",
+    "areaAuto": "Auto",
+    "areaInside": "Inside",
+    "areaTerrace": "Terrace",
+    "manualTablesSelected": "Manual tables selected: {{tables}}",
+    "capacityCheck": "Capacity check: {{people}} people / {{seats}} seats",
+    "overBy": "(over by {{count}})",
+    "staffCanSelectTables": "Staff can select one or more tables manually, including disabled tables. Backend only blocks overlaps.",
+    "disabledManual": "Disabled (manual)",
+    "warningOverCapacity": "Warning: {{people}} people for {{seats}} seats (manual override, +{{over}}).",
+    "configuredMax": "Configured max: {{max}}",
+    "overrideActive": "(override active: {{people}})",
+    "warningAboveConfiguredMax": "Warning: {{people}} people is above configured max ({{max}}). Manual frontend override applied."
   },
   "customers": {
     "title": "Customers",
