@@ -35,18 +35,28 @@ const timeSlots = Array.from({ length: 49 }, (_, i) => {
   return `${hour.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
 });
 
+const MIN_ROW_HEIGHT_PX = 14;
+const DEFAULT_ROW_HEIGHT_PX = 20;
+
 const parseAsLocalTime = (timestamp: string): Date => {
   const withoutTz = timestamp.split('+')[0].split('Z')[0];
   return new Date(withoutTz);
+};
+
+const shouldShowTimeLabel = (time: string): boolean => {
+  const [, minutes] = time.split(":");
+  return minutes === "00" || minutes === "30";
 };
 
 const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false, onSlotClick }: DayCalendarProps) => {
   const [selectedReservation, setSelectedReservation] = useState<any>(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLTableSectionElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [startY, setStartY] = useState(0);
   const [scrollTop, setScrollTop] = useState(0);
+  const [rowHeightPx, setRowHeightPx] = useState(DEFAULT_ROW_HEIGHT_PX);
   const queryClient = useQueryClient();
   const { t } = useTranslation("dashboard");
   const { t: tCommon } = useTranslation("common");
@@ -101,6 +111,42 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
       container.removeEventListener('mouseleave', handleMouseLeave);
     };
   }, [isDragging, startY, scrollTop]);
+
+  // Adaptive grid density: attempt full-day fit while preserving readability.
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const recomputeRowHeight = () => {
+      const containerHeight = container.clientHeight;
+      if (!containerHeight) return;
+
+      const headerHeight = headerRef.current?.getBoundingClientRect().height ?? 36;
+      const availableHeight = containerHeight - headerHeight - 8;
+      if (availableHeight <= 0) return;
+
+      const candidateHeight = Math.floor(availableHeight / timeSlots.length);
+      setRowHeightPx(Math.max(MIN_ROW_HEIGHT_PX, candidateHeight));
+    };
+
+    recomputeRowHeight();
+
+    let resizeObserver: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== "undefined") {
+      resizeObserver = new ResizeObserver(recomputeRowHeight);
+      resizeObserver.observe(container);
+      if (headerRef.current) {
+        resizeObserver.observe(headerRef.current);
+      }
+    }
+
+    window.addEventListener("resize", recomputeRowHeight);
+
+    return () => {
+      window.removeEventListener("resize", recomputeRowHeight);
+      resizeObserver?.disconnect();
+    };
+  }, [isFullscreen, tables?.length]);
 
   const { data: tables, isLoading: tablesLoading } = useQuery({
     queryKey: ["tables"],
@@ -334,7 +380,7 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
         <div className="border border-border/50 rounded-lg overflow-hidden bg-card relative" style={{ height: isFullscreen ? 'calc(100vh - 120px)' : '70vh' }}>
           <div ref={scrollContainerRef} className="overflow-auto relative h-full">
             <table className="border-collapse table-fixed w-full" style={{ minWidth: tables.length > 15 ? `${tables.length * 80 + 48}px` : undefined }}>
-              <thead className="sticky top-0 z-20 bg-muted/95 backdrop-blur-sm">
+              <thead ref={headerRef} className="sticky top-0 z-20 bg-muted/95 backdrop-blur-sm">
                 <tr className="border-b border-border/50">
                   <th className="w-12 px-1 py-1.5 text-[10px] font-semibold border-r border-border/50 sticky left-0 bg-muted/95 backdrop-blur-sm z-30">
                     {tCommon("time")}
@@ -343,19 +389,31 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
                     const numTables = tables.length;
                     const minWidth = numTables > 15 ? '80px' : '60px';
                     const isTerrace = table.area === "terrace";
+                    const isDisabledTable = table.status === "unavailable";
+                    const tableSymbol = isDisabledTable
+                      ? (isTerrace ? "🚫☀" : "🚫T")
+                      : (isTerrace ? "☀" : "T");
 
                     return (
                       <th
                         key={table.id}
                         className={`px-1 py-1.5 text-[10px] font-semibold text-center border-r ${
-                          isTerrace
+                          isDisabledTable
+                            ? "border-rose-300/90 bg-rose-100/90 text-rose-900"
+                            : isTerrace
                             ? "border-amber-200/80 bg-amber-100/90 text-amber-900"
                             : "border-border/50 bg-muted/95"
                         }`}
                         style={{ minWidth }}
                       >
-                        <div>{isTerrace ? "☀" : "T"}{table.table_number}</div>
-                        <div className={`text-[9px] font-normal ${isTerrace ? "text-amber-700" : "text-muted-foreground"}`}>
+                        <div>{tableSymbol}{table.table_number}</div>
+                        <div className={`text-[9px] font-normal ${
+                          isDisabledTable
+                            ? "text-rose-700"
+                            : isTerrace
+                              ? "text-amber-700"
+                              : "text-muted-foreground"
+                        }`}>
                           {table.capacity}p
                         </div>
                       </th>
@@ -365,15 +423,15 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
               </thead>
               <tbody className="divide-y divide-border/50">
                 {timeSlots.map((time, index) => (
-                  <tr key={time} className="h-[20px] relative">
+                  <tr key={time} className="relative" style={{ height: `${rowHeightPx}px` }}>
                     <td className="w-12 px-1 py-0.5 text-[9px] font-medium border-r border-border/50 bg-muted/30 sticky left-0 z-10 relative">
-                      {time}
+                      {shouldShowTimeLabel(time) ? time : ""}
                       {/* Current time indicator line */}
                       {currentTimePosition !== null && index === Math.floor(currentTimePosition) && (
                         <div
                           className="absolute left-0 border-t-2 border-red-500 z-40 pointer-events-none"
                           style={{
-                            top: `${(currentTimePosition - Math.floor(currentTimePosition)) * 20}px`,
+                            top: `${(currentTimePosition - Math.floor(currentTimePosition)) * rowHeightPx}px`,
                             width: '100vw',
                           }}
                         />
@@ -386,6 +444,7 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
 
                       const numTables = tables.length;
                       const minWidth = numTables > 15 ? '80px' : '60px';
+                      const isDisabledTable = table.status === "unavailable";
 
                       const isMultiTable = reservation && reservation.table_ids && reservation.table_ids.length > 1;
                       const hasNotes = !!reservation?.notes;
@@ -405,20 +464,22 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
                         colorClass = getStatusColor(reservation?.status, hasNotes);
                       }
 
-                      const canClickSlot = !reservation && onSlotClick;
+                      const canClickSlot = !reservation && !!onSlotClick;
 
                       return (
                         <td
                           key={table.id}
-                          className={`border-r border-border/50 relative h-[20px] ${canClickSlot ? 'cursor-pointer hover:bg-primary/10' : ''}`}
-                          style={{ minWidth }}
+                          className={`border-r border-border/50 relative ${
+                            isDisabledTable ? 'bg-rose-50/60 dark:bg-rose-950/20' : ''
+                          } ${canClickSlot ? 'cursor-pointer hover:bg-primary/10' : ''}`}
+                          style={{ minWidth, height: `${rowHeightPx}px` }}
                           onClick={() => canClickSlot && onSlotClick(time, table.id)}
                         >
                           {isStart && (
                             <div
                               className={`absolute inset-0 m-0.5 px-1 py-0.5 rounded text-[9px] cursor-pointer transition-all z-10 flex flex-col justify-center ${colorClass}`}
                               style={{
-                                height: `calc(${getReservationRowSpan(reservation)} * 20px - 4px)`,
+                                height: `calc(${getReservationRowSpan(reservation)} * ${rowHeightPx}px - 4px)`,
                               }}
                               onClick={(e) => {
                                 e.stopPropagation();
