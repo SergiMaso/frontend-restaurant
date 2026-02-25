@@ -551,6 +551,11 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
                   </div>
                 )}
                 <div className="max-h-44 overflow-y-auto space-y-2 rounded-md border p-2">
+                  <div className="flex flex-wrap gap-2 px-1 pb-1 text-[11px]">
+                    <span className="rounded border border-amber-300 bg-amber-50 px-2 py-0.5 text-amber-800">☀ {t("reservations.areaTerrace")}</span>
+                    <span className="rounded border border-slate-300 bg-slate-50 px-2 py-0.5 text-slate-700">⌂ {t("reservations.areaInside")}</span>
+                    <span className="rounded border border-rose-300 bg-rose-50 px-2 py-0.5 text-rose-800">🚫 {t("reservations.disabledManual")}</span>
+                  </div>
                   {tables
                     ?.slice()
                     .sort((a, b) => {
@@ -561,13 +566,15 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
                       const isTerrace = table.area === "terrace";
                       const isDisabled = table.status !== "available";
                       const isSelected = selectedTableIds.includes(table.id);
+                      const areaSymbol = isTerrace ? "☀" : "⌂";
+                      const tablePrefix = isDisabled ? `🚫${areaSymbol}` : areaSymbol;
 
                       const baseClass = isTerrace
                         ? "border-amber-200 bg-amber-50/60"
                         : "border-slate-200 bg-slate-50/50";
                       const disabledClass = isTerrace
-                        ? "border-amber-300 bg-amber-100/70 text-amber-900"
-                        : "border-slate-300 bg-slate-100/70 text-slate-700";
+                        ? "border-rose-300 bg-gradient-to-r from-rose-50 to-amber-50 text-rose-900"
+                        : "border-rose-300 bg-rose-50/90 text-rose-900";
                       const selectedClass = isSelected
                         ? isTerrace
                           ? "ring-2 ring-amber-400 border-amber-400"
@@ -580,7 +587,7 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
                           className={`flex items-center justify-between rounded-md border px-3 py-2 text-sm transition-colors ${isDisabled ? disabledClass : baseClass} ${selectedClass}`}
                         >
                           <span>
-                            {tCommon("table")} {table.table_number} ({table.capacity} {t("tables.people")}) ·{" "}
+                            {tablePrefix} {tCommon("table")} {table.table_number} ({table.capacity} {t("tables.people")}) ·{" "}
                             <span className={isTerrace ? "text-amber-700 font-medium" : "text-slate-700 font-medium"}>
                               {table.area === "terrace" ? t("reservations.areaTerrace") : t("reservations.areaInside")}
                             </span>{" "}

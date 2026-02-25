@@ -35,8 +35,13 @@ const timeSlots = Array.from({ length: 49 }, (_, i) => {
   return `${hour.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
 });
 
-const MIN_ROW_HEIGHT_PX = 14;
-const DEFAULT_ROW_HEIGHT_PX = 20;
+const MIN_MAJOR_ROW_HEIGHT_FULLSCREEN_PX = 12;
+const MIN_MAJOR_ROW_HEIGHT_COMPACT_PX = 8;
+const MIN_MINOR_ROW_HEIGHT_PX = 6;
+const DEFAULT_MAJOR_ROW_HEIGHT_PX = 17;
+const NON_LABEL_ROW_RATIO_COMPACT = 0.65;
+const NON_FULLSCREEN_MAJOR_ROW_SCALE = 0.8;
+const NON_FULLSCREEN_TARGET_END_TIME = "22:00";
 
 const parseAsLocalTime = (timestamp: string): Date => {
   const withoutTz = timestamp.split('+')[0].split('Z')[0];
@@ -56,7 +61,7 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
   const [isDragging, setIsDragging] = useState(false);
   const [startY, setStartY] = useState(0);
   const [scrollTop, setScrollTop] = useState(0);
-  const [rowHeightPx, setRowHeightPx] = useState(DEFAULT_ROW_HEIGHT_PX);
+  const [rowHeightPx, setRowHeightPx] = useState(DEFAULT_MAJOR_ROW_HEIGHT_PX);
   const queryClient = useQueryClient();
   const { t } = useTranslation("dashboard");
   const { t: tCommon } = useTranslation("common");
@@ -125,8 +130,21 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
       const availableHeight = containerHeight - headerHeight - 8;
       if (availableHeight <= 0) return;
 
-      const candidateHeight = Math.floor(availableHeight / timeSlots.length);
-      setRowHeightPx(Math.max(MIN_ROW_HEIGHT_PX, candidateHeight));
+      const minorRatio = isFullscreen ? 1 : NON_LABEL_ROW_RATIO_COMPACT;
+      const targetEndIndex = timeSlots.indexOf(NON_FULLSCREEN_TARGET_END_TIME);
+      const targetSlots = !isFullscreen && targetEndIndex > 0
+        ? timeSlots.slice(0, targetEndIndex + 1)
+        : timeSlots;
+
+      const majorSlotsCount = targetSlots.filter(shouldShowTimeLabel).length;
+      const minorSlotsCount = targetSlots.length - majorSlotsCount;
+      const weightedUnits = majorSlotsCount + minorSlotsCount * minorRatio;
+      const candidateHeight = Math.floor(availableHeight / weightedUnits);
+      const scaledCandidateHeight = isFullscreen
+        ? candidateHeight
+        : Math.floor(candidateHeight * NON_FULLSCREEN_MAJOR_ROW_SCALE);
+      const minMajorHeight = isFullscreen ? MIN_MAJOR_ROW_HEIGHT_FULLSCREEN_PX : MIN_MAJOR_ROW_HEIGHT_COMPACT_PX;
+      setRowHeightPx(Math.max(minMajorHeight, scaledCandidateHeight));
     };
 
     recomputeRowHeight();
@@ -146,7 +164,7 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
       window.removeEventListener("resize", recomputeRowHeight);
       resizeObserver?.disconnect();
     };
-  }, [isFullscreen, tables?.length]);
+  }, [isFullscreen]);
 
   const { data: tables, isLoading: tablesLoading } = useQuery({
     queryKey: ["tables"],
@@ -348,6 +366,38 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
     }
   };
 
+  const getRowHeightPx = (time: string): number => {
+    if (shouldShowTimeLabel(time)) {
+      return rowHeightPx;
+    }
+    if (isFullscreen) {
+      return rowHeightPx;
+    }
+    return Math.max(MIN_MINOR_ROW_HEIGHT_PX, Math.floor(rowHeightPx * NON_LABEL_ROW_RATIO_COMPACT));
+  };
+
+  const getReservationHeightPx = (reservation: any): number => {
+    try {
+      const startTime = format(parseAsLocalTime(reservation.start_time), "HH:mm");
+      const startIndex = timeSlots.indexOf(startTime);
+      const rowSpan = getReservationRowSpan(reservation);
+
+      if (startIndex === -1 || rowSpan <= 0) {
+        return rowSpan * rowHeightPx;
+      }
+
+      const endIndex = Math.min(startIndex + rowSpan, timeSlots.length);
+      let totalHeight = 0;
+      for (let i = startIndex; i < endIndex; i++) {
+        totalHeight += getRowHeightPx(timeSlots[i]);
+      }
+      return totalHeight;
+    } catch (e) {
+      console.error("Error calculating reservation height:", reservation, e);
+      return getReservationRowSpan(reservation) * rowHeightPx;
+    }
+  };
+
   const getCurrentTimePosition = () => {
     const now = new Date();
     const selectedDateStr = format(selectedDate, "yyyy-MM-dd");
@@ -423,7 +473,7 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
               </thead>
               <tbody className="divide-y divide-border/50">
                 {timeSlots.map((time, index) => (
-                  <tr key={time} className="relative" style={{ height: `${rowHeightPx}px` }}>
+                  <tr key={time} className="relative" style={{ height: `${getRowHeightPx(time)}px` }}>
                     <td className="w-12 px-1 py-0.5 text-[9px] font-medium border-r border-border/50 bg-muted/30 sticky left-0 z-10 relative">
                       {shouldShowTimeLabel(time) ? time : ""}
                       {/* Current time indicator line */}
@@ -431,7 +481,7 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
                         <div
                           className="absolute left-0 border-t-2 border-red-500 z-40 pointer-events-none"
                           style={{
-                            top: `${(currentTimePosition - Math.floor(currentTimePosition)) * rowHeightPx}px`,
+                            top: `${(currentTimePosition - Math.floor(currentTimePosition)) * getRowHeightPx(time)}px`,
                             width: '100vw',
                           }}
                         />
@@ -444,7 +494,6 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
 
                       const numTables = tables.length;
                       const minWidth = numTables > 15 ? '80px' : '60px';
-                      const isDisabledTable = table.status === "unavailable";
 
                       const isMultiTable = reservation && reservation.table_ids && reservation.table_ids.length > 1;
                       const hasNotes = !!reservation?.notes;
@@ -469,17 +518,15 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
                       return (
                         <td
                           key={table.id}
-                          className={`border-r border-border/50 relative ${
-                            isDisabledTable ? 'bg-rose-50/60 dark:bg-rose-950/20' : ''
-                          } ${canClickSlot ? 'cursor-pointer hover:bg-primary/10' : ''}`}
-                          style={{ minWidth, height: `${rowHeightPx}px` }}
+                          className={`border-r border-border/50 relative ${canClickSlot ? 'cursor-pointer hover:bg-primary/10' : ''}`}
+                          style={{ minWidth, height: `${getRowHeightPx(time)}px` }}
                           onClick={() => canClickSlot && onSlotClick(time, table.id)}
                         >
                           {isStart && (
                             <div
                               className={`absolute inset-0 m-0.5 px-1 py-0.5 rounded text-[9px] cursor-pointer transition-all z-10 flex flex-col justify-center ${colorClass}`}
                               style={{
-                                height: `calc(${getReservationRowSpan(reservation)} * ${rowHeightPx}px - 4px)`,
+                                height: `${Math.max(4, getReservationHeightPx(reservation) - 4)}px`,
                               }}
                               onClick={(e) => {
                                 e.stopPropagation();
