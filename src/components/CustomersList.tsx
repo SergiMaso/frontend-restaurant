@@ -334,8 +334,7 @@ const CustomersList = () => {
                     >
                       <p className="text-sm whitespace-pre-wrap break-words">{conv.content}</p>
                       <p className="text-xs mt-1 opacity-70 flex items-center gap-1">
-                        {conv.channel === 'voice' && <PhoneCall className="h-3 w-3" />}
-                        {conv.channel === 'telegram' && <MessageCircle className="h-3 w-3" />}
+                        {conv.channel === 'voice' ? <span>📞</span> : <span>💬</span>}
                         {format(new Date(conv.created_at), "HH:mm - d MMM", { locale: dateLocale })}
                       </p>
                     </div>
