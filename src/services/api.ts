@@ -94,6 +94,7 @@ export interface Conversation {
   role: string;
   content: string;
   created_at: string;
+  channel?: string;  // 'whatsapp' | 'telegram' | 'voice'
 }
 
 // ========================================

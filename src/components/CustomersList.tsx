@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Users, Phone, Calendar, MessageCircle, X, Search, Send, Edit, UtensilsCrossed } from "lucide-react";
+import { Users, Phone, PhoneCall, Calendar, MessageCircle, X, Search, Send, Edit, UtensilsCrossed } from "lucide-react";
 import { getCustomers, getConversations, sendMessage, getAppointments, type Conversation } from "@/services/api";
 import { format, parseISO } from "date-fns";
 import { useState, useMemo, useEffect, useRef } from "react";
@@ -333,7 +333,9 @@ const CustomersList = () => {
                       }`}
                     >
                       <p className="text-sm whitespace-pre-wrap break-words">{conv.content}</p>
-                      <p className="text-xs mt-1 opacity-70">
+                      <p className="text-xs mt-1 opacity-70 flex items-center gap-1">
+                        {conv.channel === 'voice' && <PhoneCall className="h-3 w-3" />}
+                        {conv.channel === 'telegram' && <MessageCircle className="h-3 w-3" />}
                         {format(new Date(conv.created_at), "HH:mm - d MMM", { locale: dateLocale })}
                       </p>
                     </div>
