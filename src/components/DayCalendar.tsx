@@ -42,8 +42,8 @@ const DEFAULT_MAJOR_ROW_HEIGHT_PX = 17;
 const NON_LABEL_ROW_RATIO_COMPACT = 0.65;
 const NON_FULLSCREEN_MAJOR_ROW_SCALE = 0.8;
 const NON_FULLSCREEN_TARGET_END_TIME = "22:00";
-const DEFAULT_TABLE_COLUMN_MIN_WIDTH_PX = 54;
-const DENSE_TABLE_COLUMN_MIN_WIDTH_PX = 72;
+const DEFAULT_TABLE_COLUMN_MIN_WIDTH_PX = 49;
+const DENSE_TABLE_COLUMN_MIN_WIDTH_PX = 65;
 
 const parseAsLocalTime = (timestamp: string): Date => {
   const withoutTz = timestamp.split('+')[0].split('Z')[0];
