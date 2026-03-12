@@ -12,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { getTables, getAppointments, markAppointmentSeated, markAppointmentLeft, markAppointmentNoShow } from "@/services/api";
+import { getTables, getAppointments, markAppointmentSeated, markAppointmentLeft, markAppointmentNoShow, type Table } from "@/services/api";
 import { toast } from "sonner";
 
 interface DayCalendarProps {
@@ -42,6 +42,8 @@ const DEFAULT_MAJOR_ROW_HEIGHT_PX = 17;
 const NON_LABEL_ROW_RATIO_COMPACT = 0.65;
 const NON_FULLSCREEN_MAJOR_ROW_SCALE = 0.8;
 const NON_FULLSCREEN_TARGET_END_TIME = "22:00";
+const DEFAULT_TABLE_COLUMN_MIN_WIDTH_PX = 54;
+const DENSE_TABLE_COLUMN_MIN_WIDTH_PX = 72;
 
 const parseAsLocalTime = (timestamp: string): Date => {
   const withoutTz = timestamp.split('+')[0].split('Z')[0];
@@ -51,6 +53,78 @@ const parseAsLocalTime = (timestamp: string): Date => {
 const shouldShowTimeLabel = (time: string): boolean => {
   const [, minutes] = time.split(":");
   return minutes === "00" || minutes === "30";
+};
+
+const normalizeTableArea = (area?: Table["area"]): "inside" | "terrace" =>
+  area === "terrace" ? "terrace" : "inside";
+
+const getTableColumnMinWidthPx = (tableCount: number): number =>
+  tableCount > 15 ? DENSE_TABLE_COLUMN_MIN_WIDTH_PX : DEFAULT_TABLE_COLUMN_MIN_WIDTH_PX;
+
+// Keep the schedule grouped by area first, then cluster combinable tables together inside each area.
+const orderTablesForSchedule = (tables: Table[]): Table[] => {
+  const sortByTableNumber = (a: Table, b: Table) => a.table_number - b.table_number;
+  const tablesByNumber = new Map(tables.map((table) => [table.table_number, table]));
+
+  const orderAreaTables = (area: "inside" | "terrace"): Table[] => {
+    const areaTables = tables
+      .filter((table) => normalizeTableArea(table.area) === area)
+      .sort(sortByTableNumber);
+
+    const areaTableNumbers = new Set(areaTables.map((table) => table.table_number));
+    const adjacency = new Map<number, Set<number>>();
+
+    areaTables.forEach((table) => {
+      adjacency.set(table.table_number, new Set<number>());
+    });
+
+    areaTables.forEach((table) => {
+      (table.pairing || []).forEach((pairedTableNumber) => {
+        if (!areaTableNumbers.has(pairedTableNumber)) return;
+
+        adjacency.get(table.table_number)?.add(pairedTableNumber);
+        adjacency.get(pairedTableNumber)?.add(table.table_number);
+      });
+    });
+
+    const visited = new Set<number>();
+    const orderedTables: Table[] = [];
+
+    areaTables.forEach((table) => {
+      if (visited.has(table.table_number)) return;
+
+      const componentNumbers: number[] = [];
+      const queue = [table.table_number];
+      visited.add(table.table_number);
+
+      while (queue.length > 0) {
+        const currentTableNumber = queue.shift();
+        if (currentTableNumber === undefined) continue;
+
+        componentNumbers.push(currentTableNumber);
+
+        const neighbors = Array.from(adjacency.get(currentTableNumber) || []).sort((a, b) => a - b);
+        neighbors.forEach((neighborTableNumber) => {
+          if (visited.has(neighborTableNumber)) return;
+          visited.add(neighborTableNumber);
+          queue.push(neighborTableNumber);
+        });
+      }
+
+      componentNumbers
+        .sort((a, b) => a - b)
+        .forEach((tableNumber) => {
+          const groupedTable = tablesByNumber.get(tableNumber);
+          if (groupedTable) {
+            orderedTables.push(groupedTable);
+          }
+        });
+    });
+
+    return orderedTables;
+  };
+
+  return [...orderAreaTables("inside"), ...orderAreaTables("terrace")];
 };
 
 const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false, onSlotClick }: DayCalendarProps) => {
@@ -268,6 +342,11 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
   });
 
   const isLoading = tablesLoading || appointmentsLoading;
+  const orderedTables = orderTablesForSchedule(tables || []);
+  const tableColumnMinWidth = `${getTableColumnMinWidthPx(orderedTables.length)}px`;
+  const wideScheduleMinWidth = orderedTables.length > 15
+    ? `${orderedTables.length * DENSE_TABLE_COLUMN_MIN_WIDTH_PX + 48}px`
+    : undefined;
 
   const handleReservationClick = (reservation: any) => {
     setSelectedReservation(reservation);
@@ -316,7 +395,7 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
         const [slotHour, slotMin] = time.split(':').map(Number);
 
         const slotMinutes = slotHour * 60 + slotMin;
-        let startMinutes = startTime.getHours() * 60 + startTime.getMinutes();
+        const startMinutes = startTime.getHours() * 60 + startTime.getMinutes();
         let endMinutes = endTime.getHours() * 60 + endTime.getMinutes();
 
         if (endMinutes < startMinutes) {
@@ -422,22 +501,20 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
     <div className="space-y-4">
       {isLoading ? (
         <div className="text-center py-8 text-muted-foreground">{tCommon("loading")}</div>
-      ) : !tables || tables.length === 0 ? (
+      ) : orderedTables.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
           {t("tables.noTables")}
         </div>
       ) : (
         <div className="border border-border/50 rounded-lg overflow-hidden bg-card relative" style={{ height: isFullscreen ? 'calc(100vh - 120px)' : '70vh' }}>
           <div ref={scrollContainerRef} className="overflow-auto relative h-full">
-            <table className="border-collapse table-fixed w-full" style={{ minWidth: tables.length > 15 ? `${tables.length * 80 + 48}px` : undefined }}>
+            <table className="border-collapse table-fixed w-full" style={{ minWidth: wideScheduleMinWidth }}>
               <thead ref={headerRef} className="sticky top-0 z-20 bg-muted/95 backdrop-blur-sm">
                 <tr className="border-b border-border/50">
                   <th className="w-12 px-1 py-1.5 text-[10px] font-semibold border-r border-border/50 sticky left-0 bg-muted/95 backdrop-blur-sm z-30">
                     {tCommon("time")}
                   </th>
-                  {tables.map((table) => {
-                    const numTables = tables.length;
-                    const minWidth = numTables > 15 ? '80px' : '60px';
+                  {orderedTables.map((table) => {
                     const isTerrace = table.area === "terrace";
                     const isDisabledTable = table.status === "unavailable";
                     const tableSymbol = isDisabledTable
@@ -454,7 +531,7 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
                             ? "border-amber-200/80 bg-amber-100/90 text-amber-900"
                             : "border-border/50 bg-muted/95"
                         }`}
-                        style={{ minWidth }}
+                        style={{ minWidth: tableColumnMinWidth }}
                       >
                         <div>{tableSymbol}{table.table_number}</div>
                         <div className={`text-[9px] font-normal ${
@@ -487,13 +564,10 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
                         />
                       )}
                     </td>
-                    {tables.map((table) => {
+                    {orderedTables.map((table) => {
                       const tableReservations = getReservationsForTableAndTime(table.id, time);
                       const reservation = tableReservations[0];
                       const isStart = reservation && isReservationStart(reservation, time);
-
-                      const numTables = tables.length;
-                      const minWidth = numTables > 15 ? '80px' : '60px';
 
                       const isMultiTable = reservation && reservation.table_ids && reservation.table_ids.length > 1;
                       const hasNotes = !!reservation?.notes;
@@ -519,7 +593,7 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
                         <td
                           key={table.id}
                           className={`border-r border-border/50 relative ${canClickSlot ? 'cursor-pointer hover:bg-primary/10' : ''}`}
-                          style={{ minWidth, height: `${getRowHeightPx(time)}px` }}
+                          style={{ minWidth: tableColumnMinWidth, height: `${getRowHeightPx(time)}px` }}
                           onClick={() => canClickSlot && onSlotClick(time, table.id)}
                         >
                           {isStart && (
