@@ -1,7 +1,9 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { User, getCurrentUser, login as loginApi, logout as logoutApi } from '@/services/auth';
 import { useToast } from '@/hooks/use-toast';
+import { UNAUTHORIZED_EVENT } from '@/lib/auth-events';
 
 interface AuthContextType {
   user: User | null;
@@ -20,12 +22,42 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const { toast } = useToast();
   const { t } = useTranslation('auth');
+  const activeUserRef = useRef<User | null>(null);
+  const sessionToastShownRef = useRef(false);
 
   useEffect(() => {
     checkAuth();
   }, []);
+
+  useEffect(() => {
+    activeUserRef.current = user;
+    if (user) {
+      sessionToastShownRef.current = false;
+    }
+  }, [user]);
+
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      if (activeUserRef.current && !sessionToastShownRef.current) {
+        sessionToastShownRef.current = true;
+        toast({
+          variant: "destructive",
+          title: t('login.error'),
+          description: 'La sessió ha caducat. Torna a iniciar sessió.',
+        });
+      }
+
+      queryClient.clear();
+      setUser(null);
+      setLoading(false);
+    };
+
+    window.addEventListener(UNAUTHORIZED_EVENT, handleUnauthorized);
+    return () => window.removeEventListener(UNAUTHORIZED_EVENT, handleUnauthorized);
+  }, [queryClient, toast, t]);
 
   const checkAuth = async () => {
     try {

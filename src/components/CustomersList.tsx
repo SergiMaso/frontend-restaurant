@@ -5,12 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Users, Phone, PhoneCall, Calendar, MessageCircle, X, Search, Send, Edit, UtensilsCrossed } from "lucide-react";
-import { getCustomers, getConversations, sendMessage, getAppointments, type Conversation } from "@/services/api";
+import { getCustomers, getConversations, sendMessage, type Conversation } from "@/services/api";
 import { format, parseISO } from "date-fns";
 import { useState, useMemo, useEffect, useRef } from "react";
 import BroadcastManager from "@/components/BroadcastManager";
 import EditCustomerDialog from "@/components/EditCustomerDialog";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAppointmentsQuery } from "@/hooks/useAppointmentsQuery";
 
 const CustomersList = () => {
   const { t } = useTranslation("dashboard");
@@ -32,10 +33,7 @@ const CustomersList = () => {
     queryFn: getCustomers,
   });
 
-  const { data: allAppointments } = useQuery({
-    queryKey: ["appointments"],
-    queryFn: getAppointments,
-  });
+  const { data: allAppointments } = useAppointmentsQuery();
 
   // Calculate real visit counts from appointments (only past visits with actual completion)
   const realVisitCounts = useMemo(() => {

@@ -1,4 +1,4 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface ProtectedRouteProps {
@@ -9,6 +9,7 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children, requireOwner, requireAdmin }: ProtectedRouteProps) {
   const { user, loading } = useAuth();
+  const location = useLocation();
 
   // Mostrar loading mentre comprova autenticació
   if (loading) {
@@ -24,7 +25,7 @@ export function ProtectedRoute({ children, requireOwner, requireAdmin }: Protect
 
   // Si no està autenticat, redirigir a login
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   // Si requereix Owner i no ho és (superadmin també té accés)

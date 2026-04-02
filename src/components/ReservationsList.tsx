@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,7 +7,8 @@ import { toast } from "sonner";
 import { useState } from "react";
 import { format } from "date-fns";
 import ReservationDialog from "./ReservationDialog";
-import { getAppointments, deleteAppointment, type Appointment } from "@/services/api";
+import { deleteAppointment, type Appointment } from "@/services/api";
+import { useAppointmentsQuery } from "@/hooks/useAppointmentsQuery";
 
 interface ReservationsListProps {
   selectedDate: Date;
@@ -21,10 +22,8 @@ const ReservationsList = ({ selectedDate, onEdit }: ReservationsListProps) => {
   const { t } = useTranslation("dashboard");
   const { t: tCommon } = useTranslation("common");
 
-  const { data: reservations, isLoading } = useQuery({
-    queryKey: ["appointments"],
-    queryFn: getAppointments,
-    refetchInterval: 120000, // Auto-refresh every 2 minutes
+  const { data: reservations, isLoading } = useAppointmentsQuery({
+    refetchInterval: 300000,
   });
 
   // Filtrar reserves per la data seleccionada i només confirmed

@@ -36,7 +36,6 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import { useQuery } from "@tanstack/react-query";
 import DayCalendar from "@/components/DayCalendar";
 import OpeningHoursCalendar from "@/components/OpeningHoursCalendar";
 import WeeklyScheduleManager from "@/components/WeeklyScheduleManager";
@@ -52,7 +51,7 @@ import TableLayoutView from "@/components/TableLayoutView";
 import ChangePasswordDialog from "@/components/ChangePasswordDialog";
 import RestaurantSelector from "@/components/RestaurantSelector";
 import LanguageSelector from "@/components/LanguageSelector";
-import { getAppointments } from "@/services/api";
+import { useAppointmentsQuery } from "@/hooks/useAppointmentsQuery";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRestaurant } from "@/contexts/RestaurantContext";
 import {
@@ -102,11 +101,7 @@ const Index = () => {
     return tCommon(`roles.${role}`);
   };
 
-  const { data: allAppointments } = useQuery({
-    queryKey: ["appointments", selectedRestaurant?.id],
-    queryFn: getAppointments,
-    enabled: !!selectedRestaurant,
-  });
+  const { data: allAppointments } = useAppointmentsQuery();
 
   const selectedDateReservations =
     allAppointments?.filter((apt: any) => {

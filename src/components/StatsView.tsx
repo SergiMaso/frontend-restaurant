@@ -11,8 +11,9 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, isWithinInterval, parseISO } from "date-fns";
 import { Input } from "@/components/ui/input";
 import { Command, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
-import { getGlobalStats, getAppointments, getCustomers } from "@/services/api";
+import { getGlobalStats, getCustomers } from "@/services/api";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAppointmentsQuery } from "@/hooks/useAppointmentsQuery";
 
 type TimeFilter = 'all' | 'today' | 'week' | 'month' | 'year' | 'custom';
 
@@ -34,10 +35,7 @@ const StatsView = () => {
   });
 
   // Obtener todas las reservas para filtros
-  const { data: allAppointments, isLoading: appointmentsLoading } = useQuery({
-    queryKey: ["appointments"],
-    queryFn: getAppointments,
-  });
+  const { data: allAppointments, isLoading: appointmentsLoading } = useAppointmentsQuery();
 
   const { data: customers } = useQuery({
     queryKey: ["customers"],

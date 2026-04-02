@@ -6,7 +6,8 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { ChevronLeft, ChevronRight, Clock, Eye, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { getOpeningHoursRange, getAppointments } from "@/services/api";
+import { getOpeningHoursRange } from "@/services/api";
+import { useAppointmentsQuery } from "@/hooks/useAppointmentsQuery";
 import OpeningHoursDialog from "./OpeningHoursDialog";
 
 interface OpeningHoursCalendarProps {
@@ -34,10 +35,7 @@ const OpeningHoursCalendar = ({ onViewDay }: OpeningHoursCalendarProps) => {
   });
 
   // Obtenir reserves
-  const { data: allAppointments } = useQuery({
-    queryKey: ["appointments"],
-    queryFn: getAppointments,
-  });
+  const { data: allAppointments } = useAppointmentsQuery();
 
   // Crear mapa de dates amb horaris
   const hoursMap = new Map();

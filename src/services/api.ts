@@ -13,6 +13,35 @@ function getRestaurantHeaders(): HeadersInit {
   return headers;
 }
 
+async function getResponseErrorMessage(response: Response, fallback: string): Promise<string> {
+  const rawBody = await response.text();
+
+  if (!rawBody) {
+    return response.status === 401 ? 'La sessió ha caducat. Torna a iniciar sessió.' : fallback;
+  }
+
+  try {
+    const parsed = JSON.parse(rawBody);
+    if (parsed && typeof parsed === 'object') {
+      if (typeof parsed.error === 'string' && parsed.error.trim()) {
+        return parsed.error;
+      }
+      if (typeof parsed.message === 'string' && parsed.message.trim()) {
+        return parsed.message;
+      }
+    }
+  } catch {
+    // Fall back to handling plain-text or HTML responses below.
+  }
+
+  if (response.status === 401) {
+    return 'La sessió ha caducat. Torna a iniciar sessió.';
+  }
+
+  const trimmedBody = rawBody.trim();
+  return trimmedBody.startsWith('<') ? fallback : trimmedBody;
+}
+
 export interface Appointment {
   id: number;
   phone: string;
@@ -107,7 +136,7 @@ export async function getAppointments(): Promise<Appointment[]> {
     headers: getRestaurantHeaders(),
   });
   if (!response.ok) {
-    throw new Error('Error obtenint reserves');
+    throw new Error(await getResponseErrorMessage(response, 'Error obtenint reserves'));
   }
   return response.json();
 }
@@ -118,7 +147,7 @@ export async function getAppointment(id: number): Promise<Appointment> {
     headers: getRestaurantHeaders(),
   });
   if (!response.ok) {
-    throw new Error('Error obtenint reserva');
+    throw new Error(await getResponseErrorMessage(response, 'Error obtenint reserva'));
   }
   return response.json();
 }
@@ -135,8 +164,7 @@ export async function createAppointment(data: CreateAppointmentData): Promise<an
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Error creant reserva');
+    throw new Error(await getResponseErrorMessage(response, 'Error creant reserva'));
   }
 
   return response.json();
@@ -154,8 +182,7 @@ export async function updateAppointment(id: number, data: UpdateAppointmentData)
   });
   
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Error actualitzant reserva');
+    throw new Error(await getResponseErrorMessage(response, 'Error actualitzant reserva'));
   }
   
   return response.json();
@@ -169,8 +196,7 @@ export async function deleteAppointment(id: number): Promise<void> {
   });
   
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Error cancel·lant reserva');
+    throw new Error(await getResponseErrorMessage(response, 'Error cancel·lant reserva'));
   }
 }
 

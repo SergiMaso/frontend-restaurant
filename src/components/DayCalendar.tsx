@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import { useTranslation } from "react-i18next";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useRestaurant } from "@/contexts/RestaurantContext";
+import { getAppointmentsQueryKey, useAppointmentsQuery } from "@/hooks/useAppointmentsQuery";
 import { Pencil, User, UserCheck, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { getTables, getAppointments, markAppointmentSeated, markAppointmentLeft, markAppointmentNoShow, type Table } from "@/services/api";
+import { getTables, markAppointmentSeated, markAppointmentLeft, markAppointmentNoShow, type Appointment, type Table } from "@/services/api";
 import { toast } from "sonner";
 
 interface DayCalendarProps {
@@ -137,9 +139,11 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
   const [scrollTop, setScrollTop] = useState(0);
   const [rowHeightPx, setRowHeightPx] = useState(DEFAULT_MAJOR_ROW_HEIGHT_PX);
   const queryClient = useQueryClient();
+  const { selectedRestaurant } = useRestaurant();
   const { t } = useTranslation("dashboard");
   const { t: tCommon } = useTranslation("common");
   const { dateLocale } = useLanguage();
+  const appointmentsQueryKey = getAppointmentsQueryKey(selectedRestaurant?.id);
 
   // Drag-to-scroll functionality
   useEffect(() => {
@@ -245,29 +249,26 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
     queryFn: getTables,
   });
 
-  const { data: allAppointments, isLoading: appointmentsLoading } = useQuery({
-    queryKey: ["appointments"],
-    queryFn: getAppointments,
-    refetchInterval: 30000, // Auto-refresh every 30 seconds
+  const { data: allAppointments, isLoading: appointmentsLoading } = useAppointmentsQuery({
+    refetchInterval: 30000,
   });
 
   const seatedMutation = useMutation({
     mutationFn: markAppointmentSeated,
     onSuccess: async (data) => {
       await queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      await queryClient.refetchQueries({ queryKey: appointmentsQueryKey, exact: true });
 
       const delayMsg = data.delay_minutes
         ? ` (${data.delay_minutes > 0 ? '+' : ''}${data.delay_minutes} min)`
         : '';
       toast.success(`✅ ${t("calendar.seated")}${delayMsg}`);
 
-      setTimeout(async () => {
-        const appointments = await queryClient.fetchQuery({ queryKey: ["appointments"] });
-        const updated = appointments.find((apt: any) => apt.id === selectedReservation?.id);
-        if (updated) {
-          setSelectedReservation(updated);
-        }
-      }, 500);
+      const appointments = queryClient.getQueryData<Appointment[]>(appointmentsQueryKey) || [];
+      const updated = appointments.find((apt) => apt.id === selectedReservation?.id);
+      if (updated) {
+        setSelectedReservation(updated);
+      }
     },
     onError: () => {
       toast.error(`❌ ${tCommon("error")}`);
@@ -278,16 +279,15 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
     mutationFn: markAppointmentLeft,
     onSuccess: async (data) => {
       await queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      await queryClient.refetchQueries({ queryKey: appointmentsQueryKey, exact: true });
 
       toast.success(`👋 ${t("calendar.left")} ${data.duration_minutes} min`);
 
-      setTimeout(async () => {
-        const appointments = await queryClient.fetchQuery({ queryKey: ["appointments"] });
-        const updated = appointments.find((apt: any) => apt.id === selectedReservation?.id);
-        if (updated) {
-          setSelectedReservation(updated);
-        }
-      }, 500);
+      const appointments = queryClient.getQueryData<Appointment[]>(appointmentsQueryKey) || [];
+      const updated = appointments.find((apt) => apt.id === selectedReservation?.id);
+      if (updated) {
+        setSelectedReservation(updated);
+      }
     },
     onError: () => {
       toast.error(`❌ ${tCommon("error")}`);

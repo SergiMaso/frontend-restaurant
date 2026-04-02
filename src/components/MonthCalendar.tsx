@@ -1,12 +1,11 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, parseISO, addMonths, subMonths } from "date-fns";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { getAppointments } from "@/services/api";
+import { useAppointmentsQuery } from "@/hooks/useAppointmentsQuery";
 
 interface MonthCalendarProps {
   selectedDate: Date;
@@ -19,10 +18,7 @@ const MonthCalendar = ({ selectedDate, onDateChange, onDateClick }: MonthCalenda
   const { t } = useTranslation("dashboard");
   const { dateLocale, language } = useLanguage();
 
-  const { data: allAppointments } = useQuery({
-    queryKey: ["appointments"],
-    queryFn: getAppointments,
-  });
+  const { data: allAppointments } = useAppointmentsQuery();
 
   // Obtenir tots els dies del mes
   const monthStart = startOfMonth(currentMonth);
