@@ -381,9 +381,13 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
     }
   };
 
-  const getStatusColor = (status: string, hasNotes: boolean = false) => {
+  const getStatusColor = (status: string, hasNotes: boolean = false, isSeated: boolean = false) => {
     if (status === "completed") {
       return "bg-green-500/90 hover:bg-green-600 border-green-400/20 text-white";
+    }
+
+    if (isSeated) {
+      return "bg-red-500/90 hover:bg-red-600 border-red-400/20 text-white";
     }
 
     if (hasNotes) {
@@ -594,11 +598,14 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
 
                       const isMultiTable = reservation && reservation.table_ids && reservation.table_ids.length > 1;
                       const hasNotes = !!reservation?.notes;
+                      const isSeated = !!reservation?.seated_at;
 
                       let colorClass;
                       if (isMultiTable) {
                         if (reservation?.status === 'completed') {
                           colorClass = 'bg-emerald-600/90 hover:bg-emerald-700 border-emerald-500/20 text-white';
+                        } else if (isSeated) {
+                          colorClass = 'bg-red-700/90 hover:bg-red-800 border-red-600/20 text-white';
                         } else if (reservation?.status === 'cancelled') {
                           colorClass = 'bg-destructive/90 hover:bg-destructive border-destructive/20 text-destructive-foreground';
                         } else {
@@ -607,7 +614,7 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
                             : 'bg-yellow-500/90 hover:bg-yellow-600 border-yellow-400/20 text-white';
                         }
                       } else {
-                        colorClass = getStatusColor(reservation?.status, hasNotes);
+                        colorClass = getStatusColor(reservation?.status, hasNotes, isSeated);
                       }
 
                       const canClickSlot = !reservation && !!onSlotClick;
