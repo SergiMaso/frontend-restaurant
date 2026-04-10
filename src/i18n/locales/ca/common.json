@@ -38,7 +38,8 @@
     "confirmed": "Confirmada",
     "completed": "Completada",
     "cancelled": "Cancel·lada",
-    "no_show": "No presentat"
+    "no_show": "No presentat",
+    "pending_payment": "Pagament pendent"
   },
   "tableStatus": {
     "available": "Disponible",

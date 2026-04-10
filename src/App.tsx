@@ -54,6 +54,14 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/config"
+                element={
+                  <ProtectedRoute>
+                    <Index />
+                  </ProtectedRoute>
+                }
+              />
 
               {/* Catch-all */}
               <Route path="*" element={<NotFound />} />

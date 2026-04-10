@@ -38,7 +38,8 @@
     "confirmed": "Confirmed",
     "completed": "Completed",
     "cancelled": "Cancelled",
-    "no_show": "No Show"
+    "no_show": "No Show",
+    "pending_payment": "Pending Payment"
   },
   "tableStatus": {
     "available": "Available",

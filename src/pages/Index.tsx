@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { format, isSameDay, addDays, subDays } from "date-fns";
 import { useTranslation } from "react-i18next";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -21,6 +23,7 @@ import {
   ChevronRight,
   Maximize2,
   X,
+  CreditCard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -46,12 +49,14 @@ import MediaManager from "@/components/MediaManager";
 import StatsView from "@/components/StatsView";
 import UserManagement from "@/components/UserManagement";
 import ClientConfigManager from "@/components/ClientConfigManager";
+import PaymentsPage from "@/components/PaymentsPage";
 import ReservationDialog from "@/components/ReservationDialog";
 import TableLayoutView from "@/components/TableLayoutView";
 import ChangePasswordDialog from "@/components/ChangePasswordDialog";
 import RestaurantSelector from "@/components/RestaurantSelector";
 import LanguageSelector from "@/components/LanguageSelector";
 import { useAppointmentsQuery } from "@/hooks/useAppointmentsQuery";
+import { useRestaurantConfig } from "@/hooks/useRestaurantConfig";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRestaurant } from "@/contexts/RestaurantContext";
 import {
@@ -73,6 +78,9 @@ const Index = () => {
   const [scheduleFullscreen, setScheduleFullscreen] = useState(false);
   const [prefilledTime, setPrefilledTime] = useState<string | null>(null);
   const [prefilledTableId, setPrefilledTableId] = useState<number | null>(null);
+
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
 
   const isOnline = useOnlineStatus();
   const { user, logout } = useAuth();
@@ -101,7 +109,27 @@ const Index = () => {
     return tCommon(`roles.${role}`);
   };
 
+  const { paymentEnabled } = useRestaurantConfig();
   const { data: allAppointments } = useAppointmentsQuery();
+
+  // Handle Stripe Connect onboarding redirect
+  useEffect(() => {
+    const stripe = searchParams.get("stripe");
+    if (!stripe) return;
+    if (stripe === "success") {
+      setActiveTab("config");
+      toast.success(t("payments.stripeConnect.connected"), {
+        description: t("payments.stripeConnect.connectSuccess"),
+      });
+    } else if (stripe === "refresh") {
+      setActiveTab("config");
+      toast.info(t("payments.stripeConnect.onboardingIncomplete"), {
+        description: t("payments.stripeConnect.continueOnboarding"),
+      });
+    }
+    // Clean the query param from the URL
+    navigate("/", { replace: true });
+  }, []);
 
   const selectedDateReservations =
     allAppointments?.filter((apt: any) => {
@@ -239,6 +267,12 @@ const Index = () => {
 
               {(user?.role === "owner" || user?.role === "superadmin") && (
                 <>
+                  {paymentEnabled && (
+                    <TabsTrigger value="payments">
+                      <CreditCard className="h-4 w-4 mr-2" />
+                      {t("tabs.payments")}
+                    </TabsTrigger>
+                  )}
                   <TabsTrigger value="users">
                     <UserCog className="h-4 w-4 mr-2" />
                     {t("tabs.users")}
@@ -506,6 +540,20 @@ const Index = () => {
           {/* OWNER / SUPERADMIN ONLY */}
           {(user?.role === "owner" || user?.role === "superadmin") && (
             <>
+              {paymentEnabled && (
+                <TabsContent value="payments" className="space-y-4">
+                  <Card className="border-border/50 shadow-card">
+                    <CardHeader>
+                      <CardTitle>{t("paymentsTab.title")}</CardTitle>
+                      <CardDescription>{t("paymentsTab.description")}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <PaymentsPage />
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              )}
+
               <TabsContent value="users" className="space-y-4">
                 <UserManagement />
               </TabsContent>

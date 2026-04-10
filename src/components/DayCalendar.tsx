@@ -14,7 +14,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { getTables, markAppointmentSeated, markAppointmentLeft, markAppointmentNoShow, type Appointment, type Table } from "@/services/api";
+import { getTables, markAppointmentSeated, markAppointmentLeft, markAppointmentNoShow, markAppointmentPaid, getAppointmentPayment, type Appointment, type Table } from "@/services/api";
+import { useRestaurantConfig } from "@/hooks/useRestaurantConfig";
 import { toast } from "sonner";
 
 interface DayCalendarProps {
@@ -326,8 +327,28 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
     }
   };
 
+  const { paymentEnabled } = useRestaurantConfig();
+
+  const { data: selectedPayment } = useQuery({
+    queryKey: ['appointment-payment', selectedReservation?.id],
+    queryFn: () => getAppointmentPayment(selectedReservation!.id),
+    enabled: detailsDialogOpen && !!selectedReservation && paymentEnabled,
+  });
+
+  const markPaidMutation = useMutation({
+    mutationFn: markAppointmentPaid,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      toast.success(`✅ ${t("payments.markedAsPaid")}`);
+      setDetailsDialogOpen(false);
+    },
+    onError: () => {
+      toast.error(`❌ ${tCommon("error")}`);
+    },
+  });
+
   const reservations = allAppointments?.filter((r) => {
-    if (r.status !== 'confirmed' && r.status !== 'completed') return false;
+    if (r.status !== 'confirmed' && r.status !== 'completed' && r.status !== 'pending_payment') return false;
 
     try {
       const reservationDate = parseISO(r.date);
@@ -372,6 +393,8 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
     switch (status) {
       case "confirmed":
         return "bg-orange-500/90 hover:bg-orange-600 border-orange-400/20 text-white";
+      case "pending_payment":
+        return "bg-yellow-400/90 hover:bg-yellow-500 border-yellow-300/20 text-white";
       case "cancelled":
         return "bg-destructive/90 hover:bg-destructive border-destructive/20 text-destructive-foreground";
       default:
@@ -664,6 +687,21 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
                     ❌ {tCommon("reservationStatus.no_show")}
                   </Badge>
                 )}
+                {paymentEnabled && selectedReservation.status === 'pending_payment' && (
+                  <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">
+                    💳 {tCommon("reservationStatus.pending_payment")}
+                  </Badge>
+                )}
+                {paymentEnabled && selectedPayment?.status === 'completed' && (
+                  <Badge className="bg-green-100 text-green-800 border-green-300">
+                    💳 {t("payments.status.completed")} · {selectedPayment.amount} {selectedPayment.currency}
+                  </Badge>
+                )}
+                {paymentEnabled && selectedPayment?.status === 'refunded' && (
+                  <Badge className="bg-blue-100 text-blue-800 border-blue-300">
+                    💳 {t("payments.status.refunded")}
+                  </Badge>
+                )}
               </div>
 
               <div className="space-y-3 text-sm">
@@ -709,6 +747,19 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
                   </div>
                 )}
               </div>
+
+              {paymentEnabled && selectedReservation.status === 'pending_payment' && (
+                <div className="flex gap-2 pt-2 border-t">
+                  <Button
+                    size="sm"
+                    className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                    onClick={() => markPaidMutation.mutate(selectedReservation.id)}
+                    disabled={markPaidMutation.isPending}
+                  >
+                    💳 {t("payments.markAsPaid")}
+                  </Button>
+                </div>
+              )}
 
               {!selectedReservation.no_show && (
                 <div className="flex gap-2 flex-wrap pt-2 border-t">

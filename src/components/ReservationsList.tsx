@@ -7,8 +7,10 @@ import { toast } from "sonner";
 import { useState } from "react";
 import { format } from "date-fns";
 import ReservationDialog from "./ReservationDialog";
+import DeleteReservationDialog from "./DeleteReservationDialog";
 import { deleteAppointment, type Appointment } from "@/services/api";
 import { useAppointmentsQuery } from "@/hooks/useAppointmentsQuery";
+import { useRestaurantConfig } from "@/hooks/useRestaurantConfig";
 
 interface ReservationsListProps {
   selectedDate: Date;
@@ -19,8 +21,12 @@ const ReservationsList = ({ selectedDate, onEdit }: ReservationsListProps) => {
   const queryClient = useQueryClient();
   const [editingReservation, setEditingReservation] = useState<any>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [deletingName, setDeletingName] = useState<string | undefined>(undefined);
   const { t } = useTranslation("dashboard");
   const { t: tCommon } = useTranslation("common");
+  const { paymentEnabled } = useRestaurantConfig();
 
   const { data: reservations, isLoading } = useAppointmentsQuery({
     refetchInterval: 300000,
@@ -30,16 +36,19 @@ const ReservationsList = ({ selectedDate, onEdit }: ReservationsListProps) => {
   const filteredReservations = reservations?.filter((r) => {
     const reservationDate = new Date(r.date);
     return (
-      r.status === 'confirmed' &&
+      (r.status === 'confirmed' || r.status === 'pending_payment') &&
       format(reservationDate, "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd")
     );
   });
 
   const deleteMutation = useMutation({
-    mutationFn: deleteAppointment,
+    mutationFn: ({ id, refund }: { id: number; refund: boolean }) =>
+      deleteAppointment(id, refund),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
       toast.success(t("reservations.deleteSuccess"));
+      setDeleteDialogOpen(false);
+      setDeletingId(null);
     },
     onError: (error: Error) => {
       toast.error(t("reservations.deleteError") + ": " + error.message);
@@ -55,9 +64,22 @@ const ReservationsList = ({ selectedDate, onEdit }: ReservationsListProps) => {
     }
   };
 
-  const handleDelete = (id: number) => {
-    if (confirm(t("reservations.confirmDelete"))) {
-      deleteMutation.mutate(id);
+  const handleDelete = (reservation: Appointment) => {
+    if (!paymentEnabled) {
+      // Payments off — original simple confirm flow
+      if (confirm(t("reservations.confirmDelete"))) {
+        deleteMutation.mutate({ id: reservation.id, refund: false });
+      }
+      return;
+    }
+    setDeletingId(reservation.id);
+    setDeletingName(reservation.client_name);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = (refund: boolean) => {
+    if (deletingId !== null) {
+      deleteMutation.mutate({ id: deletingId, refund });
     }
   };
 
@@ -120,9 +142,16 @@ const ReservationsList = ({ selectedDate, onEdit }: ReservationsListProps) => {
                   </span>
                 </div>
               </div>
-              <Badge className={getStatusColor(reservation.status)}>
-                {getStatusLabel(reservation.status)}
-              </Badge>
+              <div className="flex flex-col items-end gap-1">
+                <Badge className={getStatusColor(reservation.status)}>
+                  {getStatusLabel(reservation.status)}
+                </Badge>
+                {paymentEnabled && reservation.status === 'pending_payment' && (
+                  <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300 text-xs">
+                    💳 {tCommon("reservationStatus.pending_payment")}
+                  </Badge>
+                )}
+              </div>
             </div>
 
             <div className="space-y-2 mb-3 text-sm">
@@ -166,7 +195,7 @@ const ReservationsList = ({ selectedDate, onEdit }: ReservationsListProps) => {
               <Button
                 variant="destructive"
                 size="sm"
-                onClick={() => handleDelete(reservation.id)}
+                onClick={() => handleDelete(reservation)}
                 className="flex-1"
               >
                 <Trash2 className="h-4 w-4 mr-1" />
@@ -190,6 +219,19 @@ const ReservationsList = ({ selectedDate, onEdit }: ReservationsListProps) => {
           reservation={editingReservation}
         />
       )}
+
+      <DeleteReservationDialog
+        open={deleteDialogOpen}
+        appointmentId={deletingId}
+        appointmentName={deletingName}
+        paymentEnabled={paymentEnabled}
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => {
+          setDeleteDialogOpen(false);
+          setDeletingId(null);
+        }}
+        isDeleting={deleteMutation.isPending}
+      />
     </>
   );
 };

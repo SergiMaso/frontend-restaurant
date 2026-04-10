@@ -58,7 +58,8 @@
     "media": "Media",
     "stats": "Statistiche",
     "users": "Utenti",
-    "config": "Config"
+    "config": "Config",
+    "payments": "Pagamenti"
   },
   "calendarTab": {
     "weeklyConfig": "Configurazione Settimanale",
@@ -416,7 +417,8 @@
       "features": "Funzionalità",
       "twilio": "Twilio",
       "api_keys": "API Keys",
-      "ai": "Intelligenza Artificiale"
+      "ai": "Intelligenza Artificiale",
+      "payment": "Pagamenti"
     },
     "info": "Informazioni",
     "infoInstant": "Le modifiche si applicano istantaneamente",
@@ -457,7 +459,15 @@
       "ai_max_tokens": "Massimo token risposta IA",
       "ai_system_prompt": "Prompt del sistema per IA",
       "whatsapp_enabled": "WhatsApp abilitato",
-      "voice_enabled": "Chiamate vocali abilitate"
+      "voice_enabled": "Chiamate vocali abilitate",
+      "payment_enabled": "Depositi di pagamento abilitati",
+      "payment_deposit_amount": "Importo del deposito",
+      "payment_currency": "Valuta di pagamento (es. EUR)",
+      "payment_expiry_minutes": "Scadenza link di pagamento (minuti)",
+      "refund_advance_hours": "Finestra di rimborso: ore prima della prenotazione",
+      "refund_grace_minutes": "Finestra di rimborso: minuti dopo la prenotazione",
+      "stripe_account_id": "ID account Stripe Connect",
+      "stripe_onboarding_complete": "Onboarding Stripe completato"
     }
   },
   "calendar": {
@@ -543,5 +553,50 @@
     "deleteError": "Errore nell'eliminazione del ristorante",
     "confirmDelete": "Sei sicuro di voler eliminare questo ristorante?",
     "noRestaurants": "Nessun ristorante disponibile"
+  },
+  "paymentsTab": {
+    "title": "Transazioni di pagamento",
+    "description": "Visualizza e gestisci i depositi delle prenotazioni"
+  },
+  "payments": {
+    "customer": "Cliente",
+    "reservation": "Prenotazione",
+    "amount": "Importo",
+    "paidOn": "Pagato il",
+    "refund": "Rimborsa",
+    "filterAll": "Tutti gli stati",
+    "totalRecords": "registrazioni",
+    "noPayments": "Nessun record di pagamento trovato",
+    "refundSuccess": "Rimborso emesso con successo",
+    "refundError": "Errore nell'emissione del rimborso",
+    "refundConfirmTitle": "Conferma rimborso",
+    "refundConfirmDesc": "Emettere un rimborso di {{amount}} {{currency}} a {{name}}? Questa azione non può essere annullata.",
+    "confirmRefund": "Sì, emetti rimborso",
+    "depositWarning": "Questa prenotazione ha un deposito pagato",
+    "cancelAndRefund": "Annulla e rimborsa {{amount}} {{currency}}",
+    "cancelKeepDeposit": "Annulla (mantieni deposito)",
+    "refundWindowExpired": "Il periodo di rimborso di 89 giorni è scaduto. Stripe non consente più rimborsi per questo pagamento.",
+    "markAsPaid": "Segna come pagato",
+    "markedAsPaid": "Segnato come pagato",
+    "stripeConnect": {
+      "title": "Stripe Connect",
+      "description": "Collega il tuo account Stripe per accettare pagamenti con carta",
+      "connected": "Collegato",
+      "accountId": "ID account",
+      "connecting": "Connessione in corso...",
+      "connectButton": "Collega con Stripe",
+      "continueOnboarding": "Continua configurazione",
+      "onboardingIncomplete": "Configurazione incompleta",
+      "connectSuccess": "Account Stripe creato. Reindirizzamento alla configurazione...",
+      "connectError": "Errore nella connessione dell'account Stripe"
+    },
+    "status": {
+      "label": "Stato",
+      "pending": "In attesa",
+      "completed": "Pagato",
+      "refunded": "Rimborsato",
+      "failed": "Fallito",
+      "expired": "Scaduto"
+    }
   }
 }

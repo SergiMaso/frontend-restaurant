@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getClientConfigs, updateClientConfig } from "@/services/api";
+import { getClientConfigs, updateClientConfig, createStripeConnectAccount, getStripeConnectStatus } from "@/services/api";
 import {
   Card,
   CardContent,
@@ -20,22 +20,34 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Settings, Save, Pencil } from "lucide-react";
+import { Settings, Save, Pencil, ExternalLink, CheckCircle, AlertCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRestaurantConfig } from "@/hooks/useRestaurantConfig";
 
 const ClientConfigManager = () => {
   const { t } = useTranslation("dashboard");
   const { t: tCommon } = useTranslation("common");
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { paymentEnabled, restaurantName } = useRestaurantConfig();
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
+  const [connectingStripe, setConnectingStripe] = useState(false);
 
   const { data: configs = [], isLoading, refetch } = useQuery({
     queryKey: ["client-configs"],
     queryFn: getClientConfigs,
     staleTime: 0,  // Always consider data stale
     refetchOnMount: 'always',  // Always refetch when component mounts
+  });
+
+  const { data: stripeStatus } = useQuery({
+    queryKey: ["stripe-connect-status"],
+    queryFn: getStripeConnectStatus,
+    enabled: paymentEnabled,
+    staleTime: 30000,
   });
 
   const updateMutation = useMutation({
@@ -73,6 +85,26 @@ const ClientConfigManager = () => {
     setEditValue("");
   };
 
+  const handleStripeConnect = async () => {
+    if (!user?.email) return;
+    setConnectingStripe(true);
+    try {
+      const result = await createStripeConnectAccount({
+        restaurant_name: restaurantName,
+        email: user.email,
+      });
+      toast({ title: t("payments.stripeConnect.connectSuccess") });
+      window.location.href = result.onboarding_url;
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: t("payments.stripeConnect.connectError"),
+        description: error.message,
+      });
+      setConnectingStripe(false);
+    }
+  };
+
   // Agrupar configuracions per categoria
   const groupedConfigs = configs.reduce((acc, config) => {
     if (!acc[config.category]) {
@@ -91,6 +123,7 @@ const ClientConfigManager = () => {
     twilio: `📱 ${t("config.categoryTwilio")}`,
     api_keys: `🔑 ${t("config.categoryApiKeys")}`,
     ai: `🤖 ${t("config.categoryAi")}`,
+    payment: `💳 ${t("config.categories.payment")}`,
   };
 
   // Get translated description, fall back to DB description if not found
@@ -229,6 +262,64 @@ const ClientConfigManager = () => {
                       ))}
                     </TableBody>
                   </Table>
+
+                  {category === "payment" && paymentEnabled && (
+                    <div className="mt-4 p-4 rounded-lg border border-border bg-muted/30 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">
+                          {t("payments.stripeConnect.title")}
+                        </span>
+                        <span className="text-xs text-muted-foreground">—</span>
+                        <span className="text-xs text-muted-foreground">
+                          {t("payments.stripeConnect.description")}
+                        </span>
+                      </div>
+
+                      {stripeStatus?.connected && stripeStatus?.details_submitted ? (
+                        <div className="flex items-center gap-3">
+                          <CheckCircle className="h-4 w-4 text-green-600" />
+                          <Badge className="bg-green-100 text-green-800 border-green-300">
+                            {t("payments.stripeConnect.connected")}
+                          </Badge>
+                          {stripeStatus.account_id && (
+                            <span className="text-xs text-muted-foreground font-mono">
+                              {t("payments.stripeConnect.accountId")}: {stripeStatus.account_id}
+                            </span>
+                          )}
+                        </div>
+                      ) : stripeStatus?.connected && !stripeStatus?.details_submitted ? (
+                        <div className="flex items-center gap-3">
+                          <AlertCircle className="h-4 w-4 text-yellow-600" />
+                          <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">
+                            {t("payments.stripeConnect.onboardingIncomplete")}
+                          </Badge>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={handleStripeConnect}
+                            disabled={connectingStripe}
+                          >
+                            <ExternalLink className="h-4 w-4 mr-1" />
+                            {connectingStripe
+                              ? t("payments.stripeConnect.connecting")
+                              : t("payments.stripeConnect.continueOnboarding")}
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button
+                          size="sm"
+                          onClick={handleStripeConnect}
+                          disabled={connectingStripe}
+                          className="bg-[#635BFF] hover:bg-[#5851E5] text-white"
+                        >
+                          <ExternalLink className="h-4 w-4 mr-1" />
+                          {connectingStripe
+                            ? t("payments.stripeConnect.connecting")
+                            : t("payments.stripeConnect.connectButton")}
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </div>
               )
             )}

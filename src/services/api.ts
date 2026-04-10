@@ -188,13 +188,17 @@ export async function updateAppointment(id: number, data: UpdateAppointmentData)
   return response.json();
 }
 
-export async function deleteAppointment(id: number): Promise<void> {
+export async function deleteAppointment(id: number, refund = false): Promise<void> {
   const response = await fetch(`${API_URL}/api/appointments/${id}`, {
     method: 'DELETE',
     credentials: 'include',
-    headers: getRestaurantHeaders(),
+    headers: {
+      'Content-Type': 'application/json',
+      ...getRestaurantHeaders(),
+    },
+    body: JSON.stringify({ refund }),
   });
-  
+
   if (!response.ok) {
     throw new Error(await getResponseErrorMessage(response, 'Error cancel·lant reserva'));
   }
@@ -759,6 +763,124 @@ export async function deleteMedia(mediaId: number): Promise<void> {
     const error = await response.json();
     throw new Error(error.error || 'Error eliminant media');
   }
+}
+
+// ==========================================
+// PAYMENTS
+// ==========================================
+
+export interface PaymentRecord {
+  id: number;
+  appointment_id: number;
+  amount: number;
+  currency: string;
+  status: 'pending' | 'completed' | 'refunded' | 'failed' | 'expired';
+  refund_id: string | null;
+  refund_eligible: boolean;
+  created_at: string;
+  updated_at: string;
+  appointment: {
+    date: string;
+    start_time: string;
+    num_people: number;
+    status: string;
+    phone: string;
+    customer_name: string | null;
+  };
+}
+
+export interface PaymentsResponse {
+  payments: PaymentRecord[];
+  total: number;
+  page: number;
+  per_page: number;
+  pages: number;
+}
+
+export async function getPayments(page = 1, status?: string): Promise<PaymentsResponse> {
+  const params = new URLSearchParams({ page: String(page), per_page: '25' });
+  if (status) params.set('status', status);
+  const response = await fetch(`${API_URL}/api/payments?${params}`, {
+    credentials: 'include',
+    headers: getRestaurantHeaders(),
+  });
+  if (!response.ok) {
+    throw new Error(await getResponseErrorMessage(response, 'Error loading payments'));
+  }
+  return response.json();
+}
+
+export async function markAppointmentPaid(appointmentId: number): Promise<any> {
+  const response = await fetch(`${API_URL}/api/appointments/${appointmentId}/mark-paid`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getRestaurantHeaders(),
+    },
+  });
+  if (!response.ok) {
+    throw new Error(await getResponseErrorMessage(response, 'Error marking as paid'));
+  }
+  return response.json();
+}
+
+export async function refundAppointmentPayment(appointmentId: number): Promise<{ refund_id: string }> {
+  const response = await fetch(`${API_URL}/api/appointments/${appointmentId}/refund`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getRestaurantHeaders(),
+    },
+  });
+  if (!response.ok) {
+    throw new Error(await getResponseErrorMessage(response, 'Error issuing refund'));
+  }
+  return response.json();
+}
+
+export async function getAppointmentPayment(appointmentId: number): Promise<PaymentRecord | null> {
+  const response = await fetch(`${API_URL}/api/appointments/${appointmentId}/payment`, {
+    credentials: 'include',
+    headers: getRestaurantHeaders(),
+  });
+  if (response.status === 404) return null;
+  if (!response.ok) {
+    throw new Error(await getResponseErrorMessage(response, 'Error loading payment'));
+  }
+  return response.json();
+}
+
+// ==========================================
+// STRIPE CONNECT
+// ==========================================
+
+export async function createStripeConnectAccount(data: { restaurant_name: string; email: string }): Promise<{ onboarding_url: string }> {
+  const response = await fetch(`${API_URL}/api/stripe/connect`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getRestaurantHeaders(),
+    },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    throw new Error(await getResponseErrorMessage(response, 'Error creating Stripe account'));
+  }
+  return response.json();
+}
+
+export async function getStripeConnectStatus(): Promise<{ connected: boolean; details_submitted: boolean; account_id: string | null }> {
+  const response = await fetch(`${API_URL}/api/stripe/connect/status`, {
+    credentials: 'include',
+    headers: getRestaurantHeaders(),
+  });
+  if (!response.ok) {
+    throw new Error(await getResponseErrorMessage(response, 'Error checking Stripe status'));
+  }
+  return response.json();
 }
 
 export async function toggleMediaActive(mediaId: number, active: boolean): Promise<any> {

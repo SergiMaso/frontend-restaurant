@@ -42,6 +42,7 @@ export const useRestaurantConfig = () => {
     return value === "true" || value === "1";
   };
 
+  const paymentEnabled = getConfigBoolean("payment_enabled", false);
   const restaurantName = getConfigValue("restaurant_name", "Restaurant");
   const maxPeoplePerBooking = getConfigNumber("max_people_per_booking", 8);
   // Config stores minutes, convert to hours for the frontend
@@ -73,6 +74,7 @@ export const useRestaurantConfig = () => {
     getConfigNumber,
     getConfigBoolean,
     // Configuracions específiques
+    paymentEnabled,
     restaurantName,
     maxPeoplePerBooking,
     defaultBookingDuration,

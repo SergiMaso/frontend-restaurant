@@ -58,7 +58,8 @@
     "media": "Media",
     "stats": "Statistics",
     "users": "Users",
-    "config": "Config"
+    "config": "Config",
+    "payments": "Payments"
   },
   "calendarTab": {
     "weeklyConfig": "Weekly Configuration",
@@ -415,7 +416,8 @@
       "features": "Features",
       "twilio": "Twilio",
       "api_keys": "API Keys",
-      "ai": "Artificial Intelligence"
+      "ai": "Artificial Intelligence",
+      "payment": "Payments"
     },
     "info": "Information",
     "infoInstant": "Changes apply instantly",
@@ -456,7 +458,15 @@
       "ai_max_tokens": "Maximum AI response tokens",
       "ai_system_prompt": "AI system prompt",
       "whatsapp_enabled": "WhatsApp enabled",
-      "voice_enabled": "Voice calls enabled"
+      "voice_enabled": "Voice calls enabled",
+      "payment_enabled": "Payment deposits enabled",
+      "payment_deposit_amount": "Deposit amount",
+      "payment_currency": "Payment currency (e.g. EUR)",
+      "payment_expiry_minutes": "Payment link expiry (minutes)",
+      "refund_advance_hours": "Refund window: hours before reservation",
+      "refund_grace_minutes": "Refund window: minutes after booking",
+      "stripe_account_id": "Stripe Connect account ID",
+      "stripe_onboarding_complete": "Stripe onboarding complete"
     }
   },
   "calendar": {
@@ -542,5 +552,50 @@
     "deleteError": "Error deleting restaurant",
     "confirmDelete": "Are you sure you want to delete this restaurant?",
     "noRestaurants": "No restaurants available"
+  },
+  "paymentsTab": {
+    "title": "Payment Transactions",
+    "description": "View and manage deposit payments from reservations"
+  },
+  "payments": {
+    "customer": "Customer",
+    "reservation": "Reservation",
+    "amount": "Amount",
+    "paidOn": "Paid on",
+    "refund": "Refund",
+    "filterAll": "All statuses",
+    "totalRecords": "records",
+    "noPayments": "No payment records found",
+    "refundSuccess": "Refund issued successfully",
+    "refundError": "Error issuing refund",
+    "refundConfirmTitle": "Confirm refund",
+    "refundConfirmDesc": "Issue a refund of {{amount}} {{currency}} to {{name}}? This action cannot be undone.",
+    "confirmRefund": "Yes, issue refund",
+    "depositWarning": "This reservation has a paid deposit",
+    "cancelAndRefund": "Cancel and refund {{amount}} {{currency}}",
+    "cancelKeepDeposit": "Cancel (keep deposit)",
+    "refundWindowExpired": "The 89-day refund window has expired. Stripe no longer allows refunds for this payment.",
+    "markAsPaid": "Mark as paid",
+    "markedAsPaid": "Marked as paid",
+    "stripeConnect": {
+      "title": "Stripe Connect",
+      "description": "Connect your Stripe account to accept card payments",
+      "connected": "Connected",
+      "accountId": "Account ID",
+      "connecting": "Connecting...",
+      "connectButton": "Connect with Stripe",
+      "continueOnboarding": "Continue onboarding",
+      "onboardingIncomplete": "Onboarding incomplete",
+      "connectSuccess": "Stripe account created. Redirecting to onboarding...",
+      "connectError": "Error connecting Stripe account"
+    },
+    "status": {
+      "label": "Status",
+      "pending": "Pending",
+      "completed": "Paid",
+      "refunded": "Refunded",
+      "failed": "Failed",
+      "expired": "Expired"
+    }
   }
 }

@@ -58,7 +58,8 @@
     "media": "Mèdia",
     "stats": "Estadístiques",
     "users": "Usuaris",
-    "config": "Configuració"
+    "config": "Configuració",
+    "payments": "Pagaments"
   },
   "calendarTab": {
     "weeklyConfig": "Configuració Setmanal",
@@ -415,7 +416,8 @@
       "features": "Funcionalitats",
       "twilio": "Twilio",
       "api_keys": "API Keys",
-      "ai": "Intel·ligència Artificial"
+      "ai": "Intel·ligència Artificial",
+      "payment": "Pagaments"
     },
     "info": "Informació",
     "infoInstant": "Els canvis s'apliquen instantàniament",
@@ -456,7 +458,15 @@
       "ai_max_tokens": "Màxim tokens de resposta IA",
       "ai_system_prompt": "Prompt del sistema per a IA",
       "whatsapp_enabled": "WhatsApp habilitat",
-      "voice_enabled": "Trucades de veu habilitades"
+      "voice_enabled": "Trucades de veu habilitades",
+      "payment_enabled": "Dipòsits de pagament habilitats",
+      "payment_deposit_amount": "Import del dipòsit",
+      "payment_currency": "Moneda de pagament (ex. EUR)",
+      "payment_expiry_minutes": "Expiració de l'enllaç de pagament (minuts)",
+      "refund_advance_hours": "Finestra de reemborsament: hores abans de la reserva",
+      "refund_grace_minutes": "Finestra de reemborsament: minuts després de la reserva",
+      "stripe_account_id": "ID de compte Stripe Connect",
+      "stripe_onboarding_complete": "Onboarding de Stripe completat"
     }
   },
   "calendar": {
@@ -542,5 +552,50 @@
     "deleteError": "Error eliminant restaurant",
     "confirmDelete": "Estàs segur que vols eliminar aquest restaurant?",
     "noRestaurants": "No hi ha restaurants disponibles"
+  },
+  "paymentsTab": {
+    "title": "Transaccions de pagament",
+    "description": "Consulta i gestiona els dipòsits de les reserves"
+  },
+  "payments": {
+    "customer": "Client",
+    "reservation": "Reserva",
+    "amount": "Import",
+    "paidOn": "Data de pagament",
+    "refund": "Reemborsar",
+    "filterAll": "Tots els estats",
+    "totalRecords": "registres",
+    "noPayments": "No s'han trobat registres de pagament",
+    "refundSuccess": "Reemborsament emès correctament",
+    "refundError": "Error en emetre el reemborsament",
+    "refundConfirmTitle": "Confirmar reemborsament",
+    "refundConfirmDesc": "Emetre un reemborsament de {{amount}} {{currency}} a {{name}}? Aquesta acció no es pot desfer.",
+    "confirmRefund": "Sí, emetre reemborsament",
+    "depositWarning": "Aquesta reserva té un dipòsit pagat",
+    "cancelAndRefund": "Cancel·lar i reemborsar {{amount}} {{currency}}",
+    "cancelKeepDeposit": "Cancel·lar (conservar dipòsit)",
+    "refundWindowExpired": "El període de reemborsament de 89 dies ha expirat. Stripe ja no permet reemborsaments per a aquest pagament.",
+    "markAsPaid": "Marcar com a pagat",
+    "markedAsPaid": "Marcat com a pagat",
+    "stripeConnect": {
+      "title": "Stripe Connect",
+      "description": "Connecta el teu compte de Stripe per acceptar pagaments amb targeta",
+      "connected": "Connectat",
+      "accountId": "ID de compte",
+      "connecting": "Connectant...",
+      "connectButton": "Connectar amb Stripe",
+      "continueOnboarding": "Continuar configuració",
+      "onboardingIncomplete": "Configuració incompleta",
+      "connectSuccess": "Compte de Stripe creat. Redirigint a la configuració...",
+      "connectError": "Error en connectar el compte de Stripe"
+    },
+    "status": {
+      "label": "Estat",
+      "pending": "Pendent",
+      "completed": "Pagat",
+      "refunded": "Reemborsat",
+      "failed": "Fallit",
+      "expired": "Expirat"
+    }
   }
 }
