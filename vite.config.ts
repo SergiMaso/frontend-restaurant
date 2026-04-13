@@ -5,7 +5,7 @@ import { componentTagger } from "lovable-tagger";
 import { VitePWA } from "vite-plugin-pwa";
 
 const vendorChunkGroups: Record<string, string[]> = {
-  react: ["react", "react-dom", "react-router-dom"],
+  react: ["react", "react-dom", "react-router", "react-router-dom", "@remix-run/router", "scheduler"],
   query: ["@tanstack/react-query"],
   ui: [
     "@radix-ui",
