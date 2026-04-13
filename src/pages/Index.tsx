@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { format, isSameDay, addDays, subDays } from "date-fns";
@@ -39,19 +39,6 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import DayCalendar from "@/components/DayCalendar";
-import OpeningHoursCalendar from "@/components/OpeningHoursCalendar";
-import WeeklyScheduleManager from "@/components/WeeklyScheduleManager";
-import TablesList from "@/components/TablesList";
-import ReservationsList from "@/components/ReservationsList";
-import CustomersList from "@/components/CustomersList";
-import MediaManager from "@/components/MediaManager";
-import StatsView from "@/components/StatsView";
-import UserManagement from "@/components/UserManagement";
-import ClientConfigManager from "@/components/ClientConfigManager";
-import PaymentsPage from "@/components/PaymentsPage";
-import ReservationDialog from "@/components/ReservationDialog";
-import TableLayoutView from "@/components/TableLayoutView";
 import ChangePasswordDialog from "@/components/ChangePasswordDialog";
 import RestaurantSelector from "@/components/RestaurantSelector";
 import LanguageSelector from "@/components/LanguageSelector";
@@ -68,6 +55,20 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+
+const DayCalendar = lazy(() => import("@/components/DayCalendar"));
+const OpeningHoursCalendar = lazy(() => import("@/components/OpeningHoursCalendar"));
+const WeeklyScheduleManager = lazy(() => import("@/components/WeeklyScheduleManager"));
+const TablesList = lazy(() => import("@/components/TablesList"));
+const ReservationsList = lazy(() => import("@/components/ReservationsList"));
+const CustomersList = lazy(() => import("@/components/CustomersList"));
+const MediaManager = lazy(() => import("@/components/MediaManager"));
+const StatsView = lazy(() => import("@/components/StatsView"));
+const UserManagement = lazy(() => import("@/components/UserManagement"));
+const ClientConfigManager = lazy(() => import("@/components/ClientConfigManager"));
+const PaymentsPage = lazy(() => import("@/components/PaymentsPage"));
+const ReservationDialog = lazy(() => import("@/components/ReservationDialog"));
+const TableLayoutView = lazy(() => import("@/components/TableLayoutView"));
 
 const Index = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -90,6 +91,9 @@ const Index = () => {
   const { dateLocale } = useLanguage();
 
   const restaurantName = selectedRestaurant?.name || tCommon("loading");
+  const lazyContentFallback = (
+    <div className="py-8 text-center text-muted-foreground">{tCommon("loading")}</div>
+  );
 
   const handleLogout = async () => {
     await logout();
@@ -288,34 +292,36 @@ const Index = () => {
 
           {/* CALENDAR TAB */}
           <TabsContent value="calendario" className="space-y-6">
-            <Card className="border-border/50 shadow-card">
-              <CardHeader>
-                <CardTitle>{t("calendarTab.weeklyConfig")}</CardTitle>
-                <CardDescription>
-                  {t("calendarTab.weeklyConfigDesc")}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <WeeklyScheduleManager />
-              </CardContent>
-            </Card>
+            <Suspense fallback={lazyContentFallback}>
+              <Card className="border-border/50 shadow-card">
+                <CardHeader>
+                  <CardTitle>{t("calendarTab.weeklyConfig")}</CardTitle>
+                  <CardDescription>
+                    {t("calendarTab.weeklyConfigDesc")}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <WeeklyScheduleManager />
+                </CardContent>
+              </Card>
 
-            <Card className="border-border/50 shadow-card">
-              <CardHeader>
-                <CardTitle>{t("calendarTab.calendarExceptions")}</CardTitle>
-                <CardDescription>
-                  {t("calendarTab.calendarExceptionsDesc")}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <OpeningHoursCalendar
-                  onViewDay={(date) => {
-                    setSelectedDate(date);
-                    setActiveTab("horario");
-                  }}
-                />
-              </CardContent>
-            </Card>
+              <Card className="border-border/50 shadow-card">
+                <CardHeader>
+                  <CardTitle>{t("calendarTab.calendarExceptions")}</CardTitle>
+                  <CardDescription>
+                    {t("calendarTab.calendarExceptionsDesc")}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <OpeningHoursCalendar
+                    onViewDay={(date) => {
+                      setSelectedDate(date);
+                      setActiveTab("horario");
+                    }}
+                  />
+                </CardContent>
+              </Card>
+            </Suspense>
           </TabsContent>
 
           {/* SCHEDULE TAB */}
@@ -387,14 +393,16 @@ const Index = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <DayCalendar
-                  selectedDate={selectedDate}
-                  onDateChange={setSelectedDate}
-                  onEdit={(reservation) => {
-                    setEditingReservation(reservation);
-                    setReservationDialogOpen(true);
-                  }}
-                />
+                <Suspense fallback={lazyContentFallback}>
+                  <DayCalendar
+                    selectedDate={selectedDate}
+                    onDateChange={setSelectedDate}
+                    onEdit={(reservation) => {
+                      setEditingReservation(reservation);
+                      setReservationDialogOpen(true);
+                    }}
+                  />
+                </Suspense>
               </CardContent>
             </Card>
           </TabsContent>
@@ -403,7 +411,9 @@ const Index = () => {
           <TabsContent value="layout" className="space-y-4">
             <Card className="border-border/50 shadow-card">
               <CardContent className="pt-6">
-                <TableLayoutView />
+                <Suspense fallback={lazyContentFallback}>
+                  <TableLayoutView />
+                </Suspense>
               </CardContent>
             </Card>
           </TabsContent>
@@ -420,7 +430,9 @@ const Index = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <TablesList />
+                <Suspense fallback={lazyContentFallback}>
+                  <TablesList />
+                </Suspense>
               </CardContent>
             </Card>
           </TabsContent>
@@ -487,13 +499,15 @@ const Index = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <ReservationsList
-                  selectedDate={selectedDate}
-                  onEdit={(reservation) => {
-                    setEditingReservation(reservation);
-                    setReservationDialogOpen(true);
-                  }}
-                />
+                <Suspense fallback={lazyContentFallback}>
+                  <ReservationsList
+                    selectedDate={selectedDate}
+                    onEdit={(reservation) => {
+                      setEditingReservation(reservation);
+                      setReservationDialogOpen(true);
+                    }}
+                  />
+                </Suspense>
               </CardContent>
             </Card>
           </TabsContent>
@@ -508,7 +522,9 @@ const Index = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <CustomersList />
+                <Suspense fallback={lazyContentFallback}>
+                  <CustomersList />
+                </Suspense>
               </CardContent>
             </Card>
           </TabsContent>
@@ -517,7 +533,9 @@ const Index = () => {
           <TabsContent value="media" className="space-y-4">
             <Card className="border-border/50 shadow-card">
               <CardContent className="pt-6">
-                <MediaManager />
+                <Suspense fallback={lazyContentFallback}>
+                  <MediaManager />
+                </Suspense>
               </CardContent>
             </Card>
           </TabsContent>
@@ -532,7 +550,9 @@ const Index = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <StatsView />
+                <Suspense fallback={lazyContentFallback}>
+                  <StatsView />
+                </Suspense>
               </CardContent>
             </Card>
           </TabsContent>
@@ -555,11 +575,15 @@ const Index = () => {
               )}
 
               <TabsContent value="users" className="space-y-4">
-                <UserManagement />
+                <Suspense fallback={lazyContentFallback}>
+                  <UserManagement />
+                </Suspense>
               </TabsContent>
 
               <TabsContent value="config" className="space-y-4">
-                <ClientConfigManager />
+                <Suspense fallback={lazyContentFallback}>
+                  <ClientConfigManager />
+                </Suspense>
               </TabsContent>
             </>
           )}
@@ -567,21 +591,25 @@ const Index = () => {
       </div>
 
       {/* DIALOGS */}
-      <ReservationDialog
-        open={reservationDialogOpen}
-        onOpenChange={(open) => {
-          setReservationDialogOpen(open);
-          if (!open) {
-            setEditingReservation(null);
-            setPrefilledTime(null);
-            setPrefilledTableId(null);
-          }
-        }}
-        reservation={editingReservation}
-        defaultTime={prefilledTime}
-        defaultTableId={prefilledTableId}
-        defaultDate={selectedDate}
-      />
+      {reservationDialogOpen && (
+        <Suspense fallback={lazyContentFallback}>
+          <ReservationDialog
+            open={reservationDialogOpen}
+            onOpenChange={(open) => {
+              setReservationDialogOpen(open);
+              if (!open) {
+                setEditingReservation(null);
+                setPrefilledTime(null);
+                setPrefilledTableId(null);
+              }
+            }}
+            reservation={editingReservation}
+            defaultTime={prefilledTime}
+            defaultTableId={prefilledTableId}
+            defaultDate={selectedDate}
+          />
+        </Suspense>
+      )}
 
       {/* Fullscreen Schedule Overlay */}
       {scheduleFullscreen && (
@@ -632,23 +660,25 @@ const Index = () => {
             </div>
             {/* Fullscreen Grid */}
             <div className="flex-1 overflow-auto p-3">
-              <DayCalendar
-                selectedDate={selectedDate}
-                onDateChange={setSelectedDate}
-                onEdit={(reservation) => {
-                  setEditingReservation(reservation);
-                  setReservationDialogOpen(true);
-                }}
-                isFullscreen={true}
-                onSlotClick={(time, tableId) => {
-                  if (isOnline) {
-                    setPrefilledTime(time);
-                    setPrefilledTableId(tableId);
-                    setEditingReservation(null);
+              <Suspense fallback={lazyContentFallback}>
+                <DayCalendar
+                  selectedDate={selectedDate}
+                  onDateChange={setSelectedDate}
+                  onEdit={(reservation) => {
+                    setEditingReservation(reservation);
                     setReservationDialogOpen(true);
-                  }
-                }}
-              />
+                  }}
+                  isFullscreen={true}
+                  onSlotClick={(time, tableId) => {
+                    if (isOnline) {
+                      setPrefilledTime(time);
+                      setPrefilledTableId(tableId);
+                      setEditingReservation(null);
+                      setReservationDialogOpen(true);
+                    }
+                  }}
+                />
+              </Suspense>
             </div>
           </div>
         </div>

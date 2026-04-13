@@ -8,6 +8,7 @@ import { Users, Phone, PhoneCall, Calendar, MessageCircle, X, Search, Send, Edit
 import { getCustomers, getConversations, sendMessage, type Conversation } from "@/services/api";
 import { format, parseISO } from "date-fns";
 import { useState, useMemo, useEffect, useRef } from "react";
+import { toast } from "sonner";
 import BroadcastManager from "@/components/BroadcastManager";
 import EditCustomerDialog from "@/components/EditCustomerDialog";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -122,12 +123,9 @@ const CustomersList = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
       }, 100);
 
-      // Toast success
-      const toastModule = (await import("sonner")).toast;
-      toastModule.success(t("customers.messageSent"));
+      toast.success(t("customers.messageSent"));
     } catch (error) {
-      const toastModule = (await import("sonner")).toast;
-      toastModule.error(t("customers.messageError"));
+      toast.error(t("customers.messageError"));
       console.error("Error sending message:", error);
     } finally {
       setSendingMessage(false);
