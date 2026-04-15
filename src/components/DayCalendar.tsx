@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useRestaurant } from "@/contexts/RestaurantContext";
 import { getAppointmentsQueryKey, useAppointmentsQuery } from "@/hooks/useAppointmentsQuery";
-import { Pencil, User, UserCheck, XCircle } from "lucide-react";
+import { Pencil, Trash2, User, UserCheck, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -14,9 +14,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { getTables, markAppointmentSeated, markAppointmentLeft, markAppointmentNoShow, markAppointmentPaid, getAppointmentPayment, type Appointment, type Table } from "@/services/api";
+import { deleteAppointment, getTables, markAppointmentSeated, markAppointmentLeft, markAppointmentNoShow, markAppointmentPaid, getAppointmentPayment, type Appointment, type Table } from "@/services/api";
 import { useRestaurantConfig } from "@/hooks/useRestaurantConfig";
 import { toast } from "sonner";
+import DeleteReservationDialog from "@/components/DeleteReservationDialog";
 
 interface DayCalendarProps {
   selectedDate: Date;
@@ -133,6 +134,8 @@ const orderTablesForSchedule = (tables: Table[]): Table[] => {
 const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false, onSlotClick }: DayCalendarProps) => {
   const [selectedReservation, setSelectedReservation] = useState<any>(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [reopenDetailsAfterDeleteCancel, setReopenDetailsAfterDeleteCancel] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLTableSectionElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -195,55 +198,6 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
       container.removeEventListener('mouseleave', handleMouseLeave);
     };
   }, [isDragging, startY, scrollTop]);
-
-  // Adaptive grid density: attempt full-day fit while preserving readability.
-  useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-
-    const recomputeRowHeight = () => {
-      const containerHeight = container.clientHeight;
-      if (!containerHeight) return;
-
-      const headerHeight = headerRef.current?.getBoundingClientRect().height ?? 36;
-      const availableHeight = containerHeight - headerHeight - 8;
-      if (availableHeight <= 0) return;
-
-      const minorRatio = isFullscreen ? 1 : NON_LABEL_ROW_RATIO_COMPACT;
-      const targetEndIndex = timeSlots.indexOf(NON_FULLSCREEN_TARGET_END_TIME);
-      const targetSlots = !isFullscreen && targetEndIndex > 0
-        ? timeSlots.slice(0, targetEndIndex + 1)
-        : timeSlots;
-
-      const majorSlotsCount = targetSlots.filter(shouldShowTimeLabel).length;
-      const minorSlotsCount = targetSlots.length - majorSlotsCount;
-      const weightedUnits = majorSlotsCount + minorSlotsCount * minorRatio;
-      const candidateHeight = Math.floor(availableHeight / weightedUnits);
-      const scaledCandidateHeight = isFullscreen
-        ? candidateHeight
-        : Math.floor(candidateHeight * NON_FULLSCREEN_MAJOR_ROW_SCALE);
-      const minMajorHeight = isFullscreen ? MIN_MAJOR_ROW_HEIGHT_FULLSCREEN_PX : MIN_MAJOR_ROW_HEIGHT_COMPACT_PX;
-      setRowHeightPx(Math.max(minMajorHeight, scaledCandidateHeight));
-    };
-
-    recomputeRowHeight();
-
-    let resizeObserver: ResizeObserver | null = null;
-    if (typeof ResizeObserver !== "undefined") {
-      resizeObserver = new ResizeObserver(recomputeRowHeight);
-      resizeObserver.observe(container);
-      if (headerRef.current) {
-        resizeObserver.observe(headerRef.current);
-      }
-    }
-
-    window.addEventListener("resize", recomputeRowHeight);
-
-    return () => {
-      window.removeEventListener("resize", recomputeRowHeight);
-      resizeObserver?.disconnect();
-    };
-  }, [isFullscreen]);
 
   const { data: tables, isLoading: tablesLoading } = useQuery({
     queryKey: ["tables"],
@@ -309,6 +263,24 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: ({ id, refund }: { id: number; refund: boolean }) => deleteAppointment(id, refund),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      await queryClient.refetchQueries({ queryKey: appointmentsQueryKey, exact: true });
+      await queryClient.invalidateQueries({ queryKey: ["customers"] });
+      await queryClient.invalidateQueries({ queryKey: ["globalStats"] });
+      toast.success(t("reservations.deleteSuccess"));
+      setDeleteDialogOpen(false);
+      setDetailsDialogOpen(false);
+      setReopenDetailsAfterDeleteCancel(false);
+      setSelectedReservation(null);
+    },
+    onError: (error: Error) => {
+      toast.error(t("reservations.deleteError") + ": " + error.message);
+    },
+  });
+
   const handleSeated = () => {
     if (selectedReservation) {
       seatedMutation.mutate(selectedReservation.id);
@@ -369,6 +341,55 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
     ? `${orderedTables.length * DENSE_TABLE_COLUMN_MIN_WIDTH_PX + 48}px`
     : undefined;
 
+  // Adaptive grid density: attempt full-day fit while preserving readability.
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const recomputeRowHeight = () => {
+      const containerHeight = container.clientHeight;
+      if (!containerHeight) return;
+
+      const headerHeight = headerRef.current?.getBoundingClientRect().height ?? 36;
+      const availableHeight = containerHeight - headerHeight - 8;
+      if (availableHeight <= 0) return;
+
+      const minorRatio = isFullscreen ? 1 : NON_LABEL_ROW_RATIO_COMPACT;
+      const targetEndIndex = timeSlots.indexOf(NON_FULLSCREEN_TARGET_END_TIME);
+      const targetSlots = !isFullscreen && targetEndIndex > 0
+        ? timeSlots.slice(0, targetEndIndex + 1)
+        : timeSlots;
+
+      const majorSlotsCount = targetSlots.filter(shouldShowTimeLabel).length;
+      const minorSlotsCount = targetSlots.length - majorSlotsCount;
+      const weightedUnits = majorSlotsCount + minorSlotsCount * minorRatio;
+      const candidateHeight = Math.floor(availableHeight / weightedUnits);
+      const scaledCandidateHeight = isFullscreen
+        ? candidateHeight
+        : Math.floor(candidateHeight * NON_FULLSCREEN_MAJOR_ROW_SCALE);
+      const minMajorHeight = isFullscreen ? MIN_MAJOR_ROW_HEIGHT_FULLSCREEN_PX : MIN_MAJOR_ROW_HEIGHT_COMPACT_PX;
+      setRowHeightPx(Math.max(minMajorHeight, scaledCandidateHeight));
+    };
+
+    recomputeRowHeight();
+
+    let resizeObserver: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== "undefined") {
+      resizeObserver = new ResizeObserver(recomputeRowHeight);
+      resizeObserver.observe(container);
+      if (headerRef.current) {
+        resizeObserver.observe(headerRef.current);
+      }
+    }
+
+    window.addEventListener("resize", recomputeRowHeight);
+
+    return () => {
+      window.removeEventListener("resize", recomputeRowHeight);
+      resizeObserver?.disconnect();
+    };
+  }, [isFullscreen]);
+
   const handleReservationClick = (reservation: any) => {
     setSelectedReservation(reservation);
     setDetailsDialogOpen(true);
@@ -379,6 +400,28 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
     if (onEdit && selectedReservation) {
       onEdit(selectedReservation);
     }
+  };
+
+  const handleDeleteClick = () => {
+    if (!selectedReservation) return;
+    setReopenDetailsAfterDeleteCancel(true);
+    setDetailsDialogOpen(false);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = (refund: boolean) => {
+    if (!selectedReservation) return;
+    deleteMutation.mutate({ id: selectedReservation.id, refund });
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+
+    if (reopenDetailsAfterDeleteCancel && selectedReservation) {
+      setDetailsDialogOpen(true);
+    }
+
+    setReopenDetailsAfterDeleteCancel(false);
   };
 
   const getStatusColor = (status: string, hasNotes: boolean = false, isSeated: boolean = false) => {
@@ -398,7 +441,7 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
       case "confirmed":
         return "bg-orange-500/90 hover:bg-orange-600 border-orange-400/20 text-white";
       case "pending_payment":
-        return "bg-yellow-400/90 hover:bg-yellow-500 border-yellow-300/20 text-white";
+        return "bg-gray-300/90 hover:bg-gray-400 border-gray-200/20 text-gray-700";
       case "cancelled":
         return "bg-destructive/90 hover:bg-destructive border-destructive/20 text-destructive-foreground";
       default:
@@ -608,6 +651,8 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
                           colorClass = 'bg-red-700/90 hover:bg-red-800 border-red-600/20 text-white';
                         } else if (reservation?.status === 'cancelled') {
                           colorClass = 'bg-destructive/90 hover:bg-destructive border-destructive/20 text-destructive-foreground';
+                        } else if (reservation?.status === 'pending_payment') {
+                          colorClass = 'bg-gray-400/90 hover:bg-gray-500 border-gray-300/20 text-white';
                         } else {
                           colorClass = hasNotes
                             ? 'bg-blue-600/90 hover:bg-blue-700 border-blue-500/20 text-white'
@@ -695,7 +740,7 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
                   </Badge>
                 )}
                 {paymentEnabled && selectedReservation.status === 'pending_payment' && (
-                  <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">
+                  <Badge className="bg-gray-100 text-gray-600 border-gray-300">
                     💳 {tCommon("reservationStatus.pending_payment")}
                   </Badge>
                 )}
@@ -808,19 +853,37 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
                 </div>
               )}
 
-              <div className="flex gap-2 justify-end pt-4 border-t">
-                <Button variant="outline" onClick={() => setDetailsDialogOpen(false)}>
-                  {tCommon("close")}
+              <div className="flex gap-2 justify-between pt-4 border-t">
+                <Button variant="destructive" onClick={handleDeleteClick}>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  {tCommon("delete")}
                 </Button>
-                <Button onClick={handleEdit}>
-                  <Pencil className="h-4 w-4 mr-2" />
-                  {tCommon("edit")}
-                </Button>
+                <div className="flex gap-2 ml-auto">
+                  <Button variant="outline" onClick={() => setDetailsDialogOpen(false)}>
+                    {tCommon("close")}
+                  </Button>
+                  <Button onClick={handleEdit}>
+                    <Pencil className="h-4 w-4 mr-2" />
+                    {tCommon("edit")}
+                  </Button>
+                </div>
               </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
+
+      <DeleteReservationDialog
+        open={deleteDialogOpen}
+        appointmentId={selectedReservation?.id ?? null}
+        appointmentName={selectedReservation?.client_name}
+        appointmentDate={selectedReservation?.date}
+        appointmentTime={selectedReservation?.start_time}
+        paymentEnabled={paymentEnabled}
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
+        isDeleting={deleteMutation.isPending}
+      />
     </div>
   );
 };

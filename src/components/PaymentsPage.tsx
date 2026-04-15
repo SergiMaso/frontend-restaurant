@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -27,7 +28,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Loader2, RotateCcw, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, RotateCcw, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { getPayments, refundAppointmentPayment, type PaymentRecord } from "@/services/api";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -45,11 +46,24 @@ const PaymentsPage = () => {
 
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [searchInput, setSearchInput] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [refundingPayment, setRefundingPayment] = useState<PaymentRecord | null>(null);
 
+  // Debounce search: apply after 400ms of no typing
+  const debounceRef = useState<ReturnType<typeof setTimeout> | null>(null);
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchInput(value);
+    if (debounceRef[0]) clearTimeout(debounceRef[0]);
+    debounceRef[0] = setTimeout(() => {
+      setSearchQuery(value);
+      setPage(1);
+    }, 400);
+  }, []);
+
   const { data, isLoading } = useQuery({
-    queryKey: ["payments", page, statusFilter],
-    queryFn: () => getPayments(page, statusFilter === "all" ? undefined : statusFilter),
+    queryKey: ["payments", page, statusFilter, searchQuery],
+    queryFn: () => getPayments(page, statusFilter === "all" ? undefined : statusFilter, searchQuery || undefined),
   });
 
   const refundMutation = useMutation({
@@ -84,7 +98,7 @@ const PaymentsPage = () => {
   return (
     <div className="space-y-4">
       {/* Filters */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-wrap">
         <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
           <SelectTrigger className="w-44">
             <SelectValue />
@@ -98,6 +112,15 @@ const PaymentsPage = () => {
             <SelectItem value="failed">{t("payments.status.failed")}</SelectItem>
           </SelectContent>
         </Select>
+        <div className="relative">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            className="pl-8 w-52"
+            placeholder={t("payments.searchPlaceholder")}
+            value={searchInput}
+            onChange={(e) => handleSearchChange(e.target.value)}
+          />
+        </div>
         {data && (
           <span className="text-sm text-muted-foreground">
             {data.total} {t("payments.totalRecords")}
@@ -119,6 +142,7 @@ const PaymentsPage = () => {
                 <TableHead>{t("payments.reservation")}</TableHead>
                 <TableHead>{t("payments.amount")}</TableHead>
                 <TableHead>{t("payments.status.label")}</TableHead>
+                <TableHead>{t("payments.reservationStatus")}</TableHead>
                 <TableHead>{t("payments.paidOn")}</TableHead>
                 <TableHead></TableHead>
               </TableRow>
@@ -126,7 +150,7 @@ const PaymentsPage = () => {
             <TableBody>
               {data?.payments.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">
                     {t("payments.noPayments")}
                   </TableCell>
                 </TableRow>
@@ -154,6 +178,11 @@ const PaymentsPage = () => {
                     <Badge className={STATUS_COLORS[payment.status] || ""}>
                       {t(`payments.status.${payment.status}`)}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-sm text-muted-foreground">
+                      {tCommon(`reservationStatus.${payment.appointment.status}`, payment.appointment.status)}
+                    </span>
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {formatDate(payment.created_at)}

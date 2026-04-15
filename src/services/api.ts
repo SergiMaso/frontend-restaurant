@@ -797,9 +797,10 @@ export interface PaymentsResponse {
   pages: number;
 }
 
-export async function getPayments(page = 1, status?: string): Promise<PaymentsResponse> {
+export async function getPayments(page = 1, status?: string, search?: string): Promise<PaymentsResponse> {
   const params = new URLSearchParams({ page: String(page), per_page: '25' });
   if (status) params.set('status', status);
+  if (search) params.set('search', search);
   const response = await fetch(`${API_URL}/api/payments?${params}`, {
     credentials: 'include',
     headers: getRestaurantHeaders(),

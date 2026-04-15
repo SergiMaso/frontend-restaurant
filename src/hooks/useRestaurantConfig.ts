@@ -12,20 +12,10 @@ export const useRestaurantConfig = () => {
     refetchOnWindowFocus: false,
   });
 
-  // DEBUG: Mostrar configuració carregada
-  console.log("🔍 [useRestaurantConfig] Configuració carregada:", {
-    configs,
-    isLoading,
-    error,
-    totalConfigs: configs?.length || 0
-  });
-
   // Helper per obtenir un valor de configuració
   const getConfigValue = (key: string, defaultValue: string = ""): string => {
     const config = configs?.find((c) => c.key === key);
-    const value = config?.value || defaultValue;
-    console.log(`🔍 [getConfigValue] key="${key}", value="${value}", default="${defaultValue}"`);
-    return value;
+    return config?.value || defaultValue;
   };
 
   // Helper per obtenir un valor numèric
@@ -39,7 +29,7 @@ export const useRestaurantConfig = () => {
   // Helper per obtenir un valor booleà
   const getConfigBoolean = (key: string, defaultValue: boolean = false): boolean => {
     const value = getConfigValue(key, defaultValue.toString());
-    return value === "true" || value === "1";
+    return value.toLowerCase() === "true" || value === "1";
   };
 
   const paymentEnabled = getConfigBoolean("payment_enabled", false);
@@ -54,17 +44,6 @@ export const useRestaurantConfig = () => {
   const timeSlotIntervalMinutes = getConfigNumber("time_slot_interval_minutes", 30);
   const fixedTimeSlotsLunch = getConfigValue("fixed_time_slots_lunch", "13:00,15:00");
   const fixedTimeSlotsDinner = getConfigValue("fixed_time_slots_dinner", "20:00,21:30");
-
-  // DEBUG: Mostrar valors finals
-  console.log("🎯 [useRestaurantConfig] Valors finals:", {
-    restaurantName,
-    maxPeoplePerBooking,
-    defaultBookingDuration,
-    timeSlotsMode,
-    timeSlotIntervalMinutes,
-    fixedTimeSlotsLunch,
-    fixedTimeSlotsDinner
-  });
 
   return {
     configs,

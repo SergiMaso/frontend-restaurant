@@ -8,16 +8,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,6 +22,7 @@ import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
 import { format, addHours, parse } from "date-fns";
 import { getTables, createAppointment, updateAppointment, deleteAppointment } from "@/services/api";
+import DeleteReservationDialog from "@/components/DeleteReservationDialog";
 import CustomerAutocomplete from "@/components/CustomerAutocomplete";
 import { useRestaurantConfig } from "@/hooks/useRestaurantConfig";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -76,7 +67,8 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
     timeSlotsMode,
     timeSlotIntervalMinutes,
     fixedTimeSlotsLunch,
-    fixedTimeSlotsDinner
+    fixedTimeSlotsDinner,
+    paymentEnabled,
   } = useRestaurantConfig();
 
   // Generar time slots disponibles
@@ -243,7 +235,7 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
   });
 
   const deleteMutation = useMutation({
-    mutationFn: deleteAppointment,
+    mutationFn: ({ id, refund }: { id: number; refund: boolean }) => deleteAppointment(id, refund),
     onSuccess: () => {
       queryClient.invalidateQueries({
         predicate: (query) => Array.isArray(query.queryKey) && query.queryKey[0] === "appointments",
@@ -346,9 +338,9 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
     updateMutation.mutate(dataToSend);
   };
 
-  const handleDelete = () => {
+  const handleDelete = (refund: boolean) => {
     if (reservation) {
-      deleteMutation.mutate(reservation.id);
+      deleteMutation.mutate({ id: reservation.id, refund });
     }
   };
 
@@ -636,25 +628,17 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
       </Dialog>
 
       {/* Diàleg de confirmació per eliminar */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{tCommon("areYouSure")}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t("reservations.confirmDeleteDetail", { name: clientName, date: reservationDate, time: reservationTime })}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{tCommon("cancel")}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {deleteMutation.isPending ? tCommon("deleting") : tCommon("delete")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DeleteReservationDialog
+        open={deleteDialogOpen}
+        appointmentId={reservation?.id ?? null}
+        appointmentName={clientName}
+        appointmentDate={reservationDate}
+        appointmentTime={reservationTime}
+        paymentEnabled={paymentEnabled}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteDialogOpen(false)}
+        isDeleting={deleteMutation.isPending}
+      />
     </>
   );
 };

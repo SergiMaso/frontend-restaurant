@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { format, parseISO } from "date-fns";
 import {
   Dialog,
   DialogContent,
@@ -16,6 +17,8 @@ interface DeleteReservationDialogProps {
   open: boolean;
   appointmentId: number | null;
   appointmentName?: string;
+  appointmentDate?: string | Date | null;
+  appointmentTime?: string | null;
   paymentEnabled?: boolean;
   onConfirm: (refund: boolean) => void;
   onCancel: () => void;
@@ -26,6 +29,8 @@ const DeleteReservationDialog = ({
   open,
   appointmentId,
   appointmentName,
+  appointmentDate,
+  appointmentTime,
   paymentEnabled = false,
   onConfirm,
   onCancel,
@@ -33,9 +38,47 @@ const DeleteReservationDialog = ({
 }: DeleteReservationDialogProps) => {
   const { t } = useTranslation("dashboard");
   const { t: tCommon } = useTranslation("common");
-
   const [payment, setPayment] = useState<PaymentRecord | null>(null);
   const [loadingPayment, setLoadingPayment] = useState(false);
+
+  const parseAsLocalTime = (timestamp: string): Date => {
+    const withoutTz = timestamp.split("+")[0].split("Z")[0];
+    return new Date(withoutTz);
+  };
+
+  const formattedAppointmentDate = (() => {
+    if (!appointmentDate) return "";
+
+    try {
+      const date = appointmentDate instanceof Date ? appointmentDate : parseISO(appointmentDate);
+      return format(date, "dd/MM/yyyy");
+    } catch {
+      return typeof appointmentDate === "string" ? appointmentDate : "";
+    }
+  })();
+
+  const formattedAppointmentTime = (() => {
+    if (!appointmentTime) return "";
+
+    try {
+      if (/^\d{2}:\d{2}$/.test(appointmentTime)) {
+        return appointmentTime;
+      }
+
+      return format(parseAsLocalTime(appointmentTime), "HH:mm");
+    } catch {
+      return appointmentTime;
+    }
+  })();
+
+  const deleteDescription =
+    appointmentName && formattedAppointmentDate && formattedAppointmentTime
+      ? t("reservations.confirmDeleteDetail", {
+          name: appointmentName,
+          date: formattedAppointmentDate,
+          time: formattedAppointmentTime,
+        })
+      : t("reservations.confirmDelete");
 
   useEffect(() => {
     if (!open || !appointmentId || !paymentEnabled) {
@@ -57,15 +100,7 @@ const DeleteReservationDialog = ({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{t("reservations.delete")}</DialogTitle>
-          <DialogDescription>
-            {appointmentName
-              ? t("reservations.confirmDeleteDetail", {
-                  name: appointmentName,
-                  date: "",
-                  time: "",
-                }).trim()
-              : t("reservations.confirmDelete")}
-          </DialogDescription>
+          <DialogDescription>{deleteDescription}</DialogDescription>
         </DialogHeader>
 
         {loadingPayment ? (

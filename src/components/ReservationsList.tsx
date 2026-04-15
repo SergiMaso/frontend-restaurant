@@ -22,8 +22,7 @@ const ReservationsList = ({ selectedDate, onEdit }: ReservationsListProps) => {
   const [editingReservation, setEditingReservation] = useState<any>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [deletingId, setDeletingId] = useState<number | null>(null);
-  const [deletingName, setDeletingName] = useState<string | undefined>(undefined);
+  const [deletingReservation, setDeletingReservation] = useState<Appointment | null>(null);
   const { t } = useTranslation("dashboard");
   const { t: tCommon } = useTranslation("common");
   const { paymentEnabled } = useRestaurantConfig();
@@ -48,7 +47,7 @@ const ReservationsList = ({ selectedDate, onEdit }: ReservationsListProps) => {
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
       toast.success(t("reservations.deleteSuccess"));
       setDeleteDialogOpen(false);
-      setDeletingId(null);
+      setDeletingReservation(null);
     },
     onError: (error: Error) => {
       toast.error(t("reservations.deleteError") + ": " + error.message);
@@ -72,14 +71,13 @@ const ReservationsList = ({ selectedDate, onEdit }: ReservationsListProps) => {
       }
       return;
     }
-    setDeletingId(reservation.id);
-    setDeletingName(reservation.client_name);
+    setDeletingReservation(reservation);
     setDeleteDialogOpen(true);
   };
 
   const handleDeleteConfirm = (refund: boolean) => {
-    if (deletingId !== null) {
-      deleteMutation.mutate({ id: deletingId, refund });
+    if (deletingReservation) {
+      deleteMutation.mutate({ id: deletingReservation.id, refund });
     }
   };
 
@@ -222,13 +220,15 @@ const ReservationsList = ({ selectedDate, onEdit }: ReservationsListProps) => {
 
       <DeleteReservationDialog
         open={deleteDialogOpen}
-        appointmentId={deletingId}
-        appointmentName={deletingName}
+        appointmentId={deletingReservation?.id ?? null}
+        appointmentName={deletingReservation?.client_name}
+        appointmentDate={deletingReservation?.date}
+        appointmentTime={deletingReservation?.start_time}
         paymentEnabled={paymentEnabled}
         onConfirm={handleDeleteConfirm}
         onCancel={() => {
           setDeleteDialogOpen(false);
-          setDeletingId(null);
+          setDeletingReservation(null);
         }}
         isDeleting={deleteMutation.isPending}
       />

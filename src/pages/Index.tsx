@@ -568,7 +568,9 @@ const Index = () => {
                       <CardDescription>{t("paymentsTab.description")}</CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <PaymentsPage />
+                      <Suspense fallback={lazyContentFallback}>
+                        <PaymentsPage />
+                      </Suspense>
                     </CardContent>
                   </Card>
                 </TabsContent>

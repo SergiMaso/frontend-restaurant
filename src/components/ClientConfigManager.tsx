@@ -217,6 +217,7 @@ const ClientConfigManager = () => {
                                 onChange={(e) => setEditValue(e.target.value)}
                                 className="max-w-[150px]"
                                 autoFocus
+                                {...(config.key === 'payment_expiry_minutes' ? { type: 'number', min: 30 } : {})}
                               />
                             ) : (
                               <span className="font-medium">{config.value}</span>
@@ -245,6 +246,8 @@ const ClientConfigManager = () => {
                                   {tCommon("cancel")}
                                 </Button>
                               </div>
+                            ) : ['stripe_account_id', 'stripe_onboarding_complete'].includes(config.key) ? (
+                              <span className="text-xs text-muted-foreground">—</span>
                             ) : (
                               <Button
                                 size="sm"
