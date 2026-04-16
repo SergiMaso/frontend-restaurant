@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { UtensilsCrossed, Loader2, AlertCircle, CheckCircle2, ArrowLeft } from "lucide-react";
+import AuthBrandLogo from "@/components/AuthBrandLogo";
+import { Loader2, AlertCircle, CheckCircle2, ArrowLeft } from "lucide-react";
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
@@ -36,11 +37,7 @@ const ForgotPassword = () => {
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <div className="flex items-center justify-center mb-4">
-            <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-elegant">
-              <UtensilsCrossed className="h-8 w-8 text-primary-foreground" />
-            </div>
-          </div>
+          <AuthBrandLogo />
           <CardTitle className="text-2xl text-center">{t("forgotPassword.title")}</CardTitle>
           <CardDescription className="text-center">
             {t("forgotPassword.subtitle")}
