@@ -109,7 +109,7 @@ const TableLayoutView = () => {
   };
 
   // Get table size based on capacity and scale
-  const getTableSize = (capacity: number) => {
+  const getTableSize = useCallback((capacity: number) => {
     const scaleFactor = scale / 100;
     let base;
     if (capacity <= 2) base = { width: 70, height: 70 };
@@ -121,7 +121,7 @@ const TableLayoutView = () => {
       width: Math.round(base.width * scaleFactor),
       height: Math.round(base.height * scaleFactor),
     };
-  };
+  }, [scale]);
 
   const getTableColor = (capacity: number) => {
     if (capacity <= 2) return "bg-blue-500/20 border-blue-500";
@@ -271,7 +271,7 @@ const TableLayoutView = () => {
         p.id === draggingId ? { ...p, x: newX, y: newY } : p
       )
     );
-  }, [draggingId, dragOffset, tables, scale]);
+  }, [draggingId, dragOffset, tables, getTableSize]);
 
   // Handle drag move for walls
   const handleWallDragMove = useCallback((e: MouseEvent | TouchEvent) => {

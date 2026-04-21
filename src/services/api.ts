@@ -1,7 +1,7 @@
 // API Service per connectar amb el backend
 // Includes X-Restaurant-ID header for multi-tenant support
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
 // Helper to get restaurant ID header
 function getRestaurantHeaders(): HeadersInit {
@@ -60,6 +60,12 @@ export interface Appointment {
   manual_override?: boolean;
   notes?: string | null;
   created_at?: string;
+  language?: string;
+  no_show?: boolean;
+  seated_at?: string | null;
+  left_at?: string | null;
+  delay_minutes?: number | null;
+  duration_minutes?: number | null;
 }
 
 export interface Table {
@@ -97,6 +103,8 @@ export interface CreateAppointmentData {
   area_preference?: "auto" | "inside" | "terrace";
   table_id?: number;
   table_ids?: number[];
+  language?: string;
+  notes?: string | null;
 }
 
 export interface UpdateAppointmentData {
@@ -106,6 +114,14 @@ export interface UpdateAppointmentData {
   table_id?: number;
   table_ids?: number[];
   area_preference?: "auto" | "inside" | "terrace";
+}
+
+/** Summary payload returned by POST/PUT /api/appointments (not a full Appointment record). */
+export interface AppointmentMutationResult {
+  appointment_id: number;
+  table_ids: number[];
+  manual_override: boolean;
+  message?: string;
 }
 
 export interface Customer {
@@ -152,7 +168,7 @@ export async function getAppointment(id: number): Promise<Appointment> {
   return response.json();
 }
 
-export async function createAppointment(data: CreateAppointmentData): Promise<any> {
+export async function createAppointment(data: CreateAppointmentData): Promise<AppointmentMutationResult> {
   const response = await fetch(`${API_URL}/api/appointments`, {
     method: 'POST',
     headers: {
@@ -170,7 +186,7 @@ export async function createAppointment(data: CreateAppointmentData): Promise<an
   return response.json();
 }
 
-export async function updateAppointment(id: number, data: UpdateAppointmentData): Promise<any> {
+export async function updateAppointment(id: number, data: UpdateAppointmentData): Promise<AppointmentMutationResult> {
   const response = await fetch(`${API_URL}/api/appointments/${id}`, {
     method: 'PUT',
     headers: {
@@ -219,7 +235,7 @@ export async function getTables(): Promise<Table[]> {
   return response.json();
 }
 
-export async function createTable(data: CreateTableData): Promise<any> {
+export async function createTable(data: CreateTableData): Promise<Table> {
   const response = await fetch(`${API_URL}/api/tables`, {
     method: 'POST',
     headers: {
@@ -238,7 +254,7 @@ export async function createTable(data: CreateTableData): Promise<any> {
   return response.json();
 }
 
-export async function updateTable(tableId: number, data: UpdateTableData): Promise<any> {
+export async function updateTable(tableId: number, data: UpdateTableData): Promise<Table> {
   const response = await fetch(`${API_URL}/api/tables/${tableId}`, {
     method: 'PUT',
     headers: {
@@ -359,7 +375,7 @@ export async function getOpeningHoursRange(fromDate: string, toDate: string): Pr
   return response.json();
 }
 
-export async function setOpeningHours(data: SetOpeningHoursData): Promise<any> {
+export async function setOpeningHours(data: SetOpeningHoursData): Promise<OpeningHours> {
   const response = await fetch(`${API_URL}/api/opening-hours`, {
     method: 'POST',
     headers: {
@@ -378,7 +394,7 @@ export async function setOpeningHours(data: SetOpeningHoursData): Promise<any> {
   return response.json();
 }
 
-export async function updateOpeningHours(date: string, data: Partial<SetOpeningHoursData>): Promise<any> {
+export async function updateOpeningHours(date: string, data: Partial<SetOpeningHoursData>): Promise<OpeningHours> {
   const response = await fetch(`${API_URL}/api/opening-hours/${date}`, {
     method: 'PUT',
     headers: {
@@ -430,7 +446,7 @@ export async function getWeeklyDefaults(): Promise<WeeklyDefault[]> {
   return response.json();
 }
 
-export async function updateWeeklyDefault(dayOfWeek: number, data: UpdateWeeklyDefaultData): Promise<any> {
+export async function updateWeeklyDefault(dayOfWeek: number, data: UpdateWeeklyDefaultData): Promise<WeeklyDefault> {
   const response = await fetch(`${API_URL}/api/weekly-defaults/${dayOfWeek}`, {
     method: 'PUT',
     headers: {
@@ -476,7 +492,7 @@ export async function getClientConfigs(): Promise<ClientConfig[]> {
   return response.json();
 }
 
-export async function updateClientConfig(key: string, value: string): Promise<any> {
+export async function updateClientConfig(key: string, value: string): Promise<ClientConfig> {
   const response = await fetch(`${API_URL}/api/config/${key}`, {
     method: 'PUT',
     headers: {
@@ -531,7 +547,7 @@ export interface UpdateCustomerData {
   language?: string;
 }
 
-export async function updateCustomer(phone: string, data: UpdateCustomerData): Promise<any> {
+export async function updateCustomer(phone: string, data: UpdateCustomerData): Promise<Customer> {
   const response = await fetch(`${API_URL}/api/customers/${encodeURIComponent(phone)}`, {
     method: 'PUT',
     headers: {
@@ -567,7 +583,7 @@ export async function deleteCustomer(phone: string): Promise<void> {
 // APPOINTMENT ACTIONS
 // ==========================================
 
-export async function markAppointmentSeated(appointmentId: number): Promise<any> {
+export async function markAppointmentSeated(appointmentId: number): Promise<{ message: string; appointment_id: number; delay_minutes: number }> {
   const response = await fetch(`${API_URL}/api/appointments/${appointmentId}/seated`, {
     method: 'POST',
     headers: {
@@ -585,7 +601,7 @@ export async function markAppointmentSeated(appointmentId: number): Promise<any>
   return response.json();
 }
 
-export async function markAppointmentLeft(appointmentId: number): Promise<any> {
+export async function markAppointmentLeft(appointmentId: number): Promise<{ message: string; appointment_id: number; duration_minutes: number }> {
   const response = await fetch(`${API_URL}/api/appointments/${appointmentId}/left`, {
     method: 'POST',
     headers: {
@@ -603,7 +619,7 @@ export async function markAppointmentLeft(appointmentId: number): Promise<any> {
   return response.json();
 }
 
-export async function markAppointmentNoShow(appointmentId: number): Promise<any> {
+export async function markAppointmentNoShow(appointmentId: number): Promise<{ message: string; appointment_id: number }> {
   const response = await fetch(`${API_URL}/api/appointments/${appointmentId}/no-show`, {
     method: 'POST',
     headers: {
@@ -630,7 +646,7 @@ export interface SendMessageData {
   message: string;
 }
 
-export async function sendMessage(data: SendMessageData): Promise<any> {
+export async function sendMessage(data: SendMessageData): Promise<{ message: string }> {
   const response = await fetch(`${API_URL}/api/send-message`, {
     method: 'POST',
     headers: {
@@ -811,7 +827,7 @@ export async function getPayments(page = 1, status?: string, search?: string): P
   return response.json();
 }
 
-export async function markAppointmentPaid(appointmentId: number): Promise<any> {
+export async function markAppointmentPaid(appointmentId: number): Promise<{ message: string; appointment_id: number }> {
   const response = await fetch(`${API_URL}/api/appointments/${appointmentId}/mark-paid`, {
     method: 'POST',
     credentials: 'include',
@@ -884,7 +900,7 @@ export async function getStripeConnectStatus(): Promise<{ connected: boolean; de
   return response.json();
 }
 
-export async function toggleMediaActive(mediaId: number, active: boolean): Promise<any> {
+export async function toggleMediaActive(mediaId: number, active: boolean): Promise<Media> {
   const response = await fetch(`${API_URL}/api/media/${mediaId}`, {
     method: 'PUT',
     headers: {

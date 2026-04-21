@@ -141,7 +141,7 @@ export async function setup(data: SetupData): Promise<{ message: string; user_id
   return response.json();
 }
 
-export async function sendInvitation(data: InviteData): Promise<any> {
+export async function sendInvitation(data: InviteData): Promise<{ message: string }> {
   const response = await fetch(`${API_URL}/auth/invite`, {
     method: 'POST',
     headers: {
@@ -178,7 +178,7 @@ export async function changePassword(data: ChangePasswordData): Promise<{ messag
   return response.json();
 }
 
-export async function forgotPassword(data: ForgotPasswordData): Promise<any> {
+export async function forgotPassword(data: ForgotPasswordData): Promise<{ message: string }> {
   const response = await fetch(`${API_URL}/auth/forgot-password`, {
     method: 'POST',
     headers: {
@@ -216,7 +216,7 @@ export async function resetPassword(data: ResetPasswordData): Promise<{ message:
 // USER MANAGEMENT
 // ========================================
 
-export async function listUsers(): Promise<any[]> {
+export async function listUsers(): Promise<User[]> {
   const response = await fetch(`${API_URL}/auth/users`, {
     credentials: 'include',
     headers: getRestaurantHeaders(),

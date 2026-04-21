@@ -64,7 +64,7 @@ const Register = () => {
       });
 
       navigate("/login");
-    } catch (error: any) {
+    } catch (error) {
       setError(error.message || t("register.error"));
     } finally {
       setLoading(false);

@@ -62,7 +62,7 @@ const ResetPassword = () => {
       });
 
       navigate("/login");
-    } catch (error: any) {
+    } catch (error) {
       setError(error.message || t("resetPassword.invalidToken"));
     } finally {
       setLoading(false);

@@ -79,7 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         title: t('login.success'),
         description: t('login.welcome', { name: response.user.full_name }),
       });
-    } catch (error: any) {
+    } catch (error) {
       toast({
         variant: "destructive",
         title: t('login.error'),
@@ -98,7 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         title: t('logout.success'),
         description: t('logout.successMessage'),
       });
-    } catch (error: any) {
+    } catch (error) {
       toast({
         variant: "destructive",
         title: t('logout.error'),

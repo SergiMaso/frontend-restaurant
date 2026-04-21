@@ -60,7 +60,7 @@ const ChangePasswordDialog = ({ open, onOpenChange }: ChangePasswordDialogProps)
       setOldPassword("");
       setNewPassword("");
       setConfirmPassword("");
-    } catch (error: any) {
+    } catch (error) {
       toast({
         variant: "destructive",
         title: t("common:error"),

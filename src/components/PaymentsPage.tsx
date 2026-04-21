@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
@@ -51,11 +51,11 @@ const PaymentsPage = () => {
   const [refundingPayment, setRefundingPayment] = useState<PaymentRecord | null>(null);
 
   // Debounce search: apply after 400ms of no typing
-  const debounceRef = useState<ReturnType<typeof setTimeout> | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleSearchChange = useCallback((value: string) => {
     setSearchInput(value);
-    if (debounceRef[0]) clearTimeout(debounceRef[0]);
-    debounceRef[0] = setTimeout(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
       setSearchQuery(value);
       setPage(1);
     }, 400);

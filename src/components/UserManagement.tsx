@@ -69,7 +69,7 @@ const UserManagement = () => {
 
       queryClient.invalidateQueries({ queryKey: ['users'] });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         variant: "destructive",
         title: tCommon("error"),
@@ -88,7 +88,7 @@ const UserManagement = () => {
       });
       queryClient.invalidateQueries({ queryKey: ['users'] });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         variant: "destructive",
         title: tCommon("error"),
@@ -107,7 +107,7 @@ const UserManagement = () => {
       });
       queryClient.invalidateQueries({ queryKey: ['users'] });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         variant: "destructive",
         title: tCommon("error"),
@@ -126,7 +126,7 @@ const UserManagement = () => {
       });
       queryClient.invalidateQueries({ queryKey: ['users'] });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         variant: "destructive",
         title: tCommon("error"),

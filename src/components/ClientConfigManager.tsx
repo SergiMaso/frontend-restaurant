@@ -62,7 +62,7 @@ const ClientConfigManager = () => {
       refetch();
       setEditingKey(null);
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         variant: "destructive",
         title: tCommon("error"),

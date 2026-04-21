@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Clock, Users, XCircle, TrendingUp, Award, AlertCircle, Calendar as CalendarIcon, User, Phone } from "lucide-react";
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, isWithinInterval, parseISO } from "date-fns";
 import { Input } from "@/components/ui/input";
 import { Command, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
@@ -87,15 +87,16 @@ const StatsView = () => {
   }, []);
 
   // Calcular rango de fechas según filtro
-  const getDateRange = () => {
+  const getDateRange = useCallback(() => {
     const now = new Date();
     switch (timeFilter) {
-      case 'today':
+      case 'today': {
         const startToday = new Date(now);
         startToday.setHours(0, 0, 0, 0);
         const endToday = new Date(now);
         endToday.setHours(23, 59, 59, 999);
         return { start: startToday, end: endToday };
+      }
       case 'week':
         return { start: startOfWeek(now, { locale: dateLocale }), end: endOfWeek(now, { locale: dateLocale }) };
       case 'month':
@@ -110,7 +111,7 @@ const StatsView = () => {
       default:
         return null;
     }
-  };
+  }, [timeFilter, dateRange, dateLocale]);
 
   // Filtrar appointments
   const filteredAppointments = useMemo(() => {
@@ -146,7 +147,7 @@ const StatsView = () => {
     }
 
     return filtered;
-  }, [allAppointments, timeFilter, selectedCustomerPhone, customerFilter, dateRange]);
+  }, [allAppointments, getDateRange, selectedCustomerPhone, customerFilter]);
 
   // Calcular estadísticas filtradas
   const stats = useMemo(() => {
@@ -246,7 +247,7 @@ const StatsView = () => {
       total_with_delay: delays.length,
       top_customers: topCustomers,
     };
-  }, [filteredAppointments, globalStats, timeFilter, selectedCustomerPhone]);
+  }, [filteredAppointments]);
 
   const getFilterLabel = () => {
     switch (timeFilter) {

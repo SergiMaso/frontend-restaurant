@@ -26,7 +26,7 @@ const ForgotPassword = () => {
     try {
       await forgotPassword({ email });
       setSuccess(true);
-    } catch (error: any) {
+    } catch (error) {
       setError(error.message || t("forgotPassword.error"));
     } finally {
       setLoading(false);

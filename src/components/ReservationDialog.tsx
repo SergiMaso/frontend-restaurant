@@ -188,8 +188,8 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
 
       console.log("✅ Valors carregats:", {
         selectedTableIds: currentTableIds,
-        date: reservationDate,
-        time: reservationTime,
+        date: reservation.date,
+        time: reservation.start_time,
         endTime: reservation.end_time,
         language: reservation.language
       });

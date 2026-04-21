@@ -103,7 +103,7 @@ const RestaurantSelector = () => {
       setCreateDialogOpen(false);
       setNewRestaurantName('');
       setNewRestaurantSlug('');
-    } catch (error: any) {
+    } catch (error) {
       toast({
         variant: 'destructive',
         title: tCommon('error'),
@@ -145,7 +145,7 @@ const RestaurantSelector = () => {
       setRestaurantToDelete(null);
 
       window.location.reload();
-    } catch (error: any) {
+    } catch (error) {
       toast({
         variant: 'destructive',
         title: tCommon('error'),

@@ -133,7 +133,7 @@ const Index = () => {
     }
     // Clean the query param from the URL
     navigate("/", { replace: true });
-  }, []);
+  }, [navigate, searchParams, t]);
 
   const selectedDateReservations =
     allAppointments?.filter((apt: any) => {
