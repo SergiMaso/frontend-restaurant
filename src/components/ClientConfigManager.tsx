@@ -20,21 +20,25 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Settings, Save, Pencil, ExternalLink, CheckCircle, AlertCircle } from "lucide-react";
+import { Settings, Save, Pencil, ExternalLink, CheckCircle, AlertCircle, Copy, Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRestaurantConfig } from "@/hooks/useRestaurantConfig";
+import { useRestaurant } from "@/contexts/RestaurantContext";
 
 const ClientConfigManager = () => {
   const { t } = useTranslation("dashboard");
   const { t: tCommon } = useTranslation("common");
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user, isSuperadmin } = useAuth();
   const { paymentEnabled, restaurantName } = useRestaurantConfig();
+  const { selectedRestaurant } = useRestaurant();
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [connectingStripe, setConnectingStripe] = useState(false);
+  const [snippetCopied, setSnippetCopied] = useState<'js'|'iframe'|null>(null);
+  const [snippetTab, setSnippetTab] = useState<'js'|'iframe'>('js');
 
   const { data: configs = [], isLoading, refetch } = useQuery({
     queryKey: ["client-configs"],
@@ -105,8 +109,9 @@ const ClientConfigManager = () => {
     }
   };
 
-  // Agrupar configuracions per categoria
-  const groupedConfigs = configs.reduce((acc, config) => {
+  // Agrupar configuracions per categoria (widget only visible to superadmins)
+  const visibleConfigs = isSuperadmin ? configs : configs.filter(c => c.category !== 'widget');
+  const groupedConfigs = visibleConfigs.reduce((acc, config) => {
     if (!acc[config.category]) {
       acc[config.category] = [];
     }
@@ -124,6 +129,7 @@ const ClientConfigManager = () => {
     api_keys: `🔑 ${t("config.categoryApiKeys")}`,
     ai: `🤖 ${t("config.categoryAi")}`,
     payment: `💳 ${t("config.categories.payment")}`,
+    widget: `🌐 ${t("config.categories.widget", "Widget de reservas")}`,
   };
 
   // Get translated description, fall back to DB description if not found
@@ -265,6 +271,83 @@ const ClientConfigManager = () => {
                       ))}
                     </TableBody>
                   </Table>
+
+                  {category === "widget" && isSuperadmin && (() => {
+                    const widgetEnabled = categoryConfigs.find(c => c.key === "widget_enabled")?.value === "true";
+                    const apiUrl = (import.meta.env.VITE_API_URL || "https://api.ndxai.eu").replace(/\/$/, "");
+                    const widgetUrl = `${apiUrl}/widget/${selectedRestaurant?.id}`;
+                    const jsSnippet = `<script src="${apiUrl}/widget/${selectedRestaurant?.id}/embed.js"></script>`;
+                    const iframeSnippet = `<iframe\n  src="${widgetUrl}"\n  style="width:100%;height:720px;border:none;border-radius:12px;"\n  allow="payment"\n  loading="lazy">\n</iframe>`;
+                    const activeSnippet = snippetTab === 'js' ? jsSnippet : iframeSnippet;
+                    const handleCopy = (type: 'js'|'iframe') => {
+                      navigator.clipboard.writeText(type === 'js' ? jsSnippet : iframeSnippet);
+                      setSnippetCopied(type);
+                      setTimeout(() => setSnippetCopied(null), 2000);
+                    };
+                    return (
+                      <div className="mt-4 p-4 rounded-lg border border-border bg-muted/30 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium">🌐 {t("config.widget.embedTitle", "Código de inserción")}</span>
+                            {!widgetEnabled && (
+                              <span className="text-xs text-yellow-600 bg-yellow-100 px-2 py-0.5 rounded-full">
+                                {t("config.widget.disabled", "Widget desactivado")}
+                              </span>
+                            )}
+                          </div>
+                          <a
+                            href={widgetUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-primary flex items-center gap-1 hover:underline"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                            {t("config.widget.preview", "Vista previa")}
+                          </a>
+                        </div>
+
+                        {/* Tab selector */}
+                        <div className="flex gap-1 bg-muted rounded-md p-1 w-fit">
+                          <button
+                            onClick={() => setSnippetTab('js')}
+                            className={`text-xs px-3 py-1 rounded transition-colors ${snippetTab === 'js' ? 'bg-background shadow-sm font-medium' : 'text-muted-foreground hover:text-foreground'}`}
+                          >
+                            JS <span className="text-green-600 font-semibold">✓</span> recomendado
+                          </button>
+                          <button
+                            onClick={() => setSnippetTab('iframe')}
+                            className={`text-xs px-3 py-1 rounded transition-colors ${snippetTab === 'iframe' ? 'bg-background shadow-sm font-medium' : 'text-muted-foreground hover:text-foreground'}`}
+                          >
+                            iframe
+                          </button>
+                        </div>
+
+                        <p className="text-xs text-muted-foreground">
+                          {snippetTab === 'js'
+                            ? t("config.widget.jsDescription", "Una línea. Se inserta automáticamente y se redimensiona al contenido. Compatible con WordPress, Webflow y cualquier HTML.")
+                            : t("config.widget.iframeDescription", "Alternativa si tu CMS no permite scripts. Altura fija — ajústala según necesites.")}
+                        </p>
+
+                        <div className="relative">
+                          <pre className="text-xs bg-background border border-border rounded-md p-3 pr-24 overflow-x-auto font-mono text-foreground whitespace-pre">
+                            {activeSnippet}
+                          </pre>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="absolute top-1/2 -translate-y-1/2 right-2"
+                            onClick={() => handleCopy(snippetTab)}
+                          >
+                            {snippetCopied === snippetTab ? (
+                              <><Check className="h-3 w-3 mr-1 text-green-600" />{t("config.widget.copied", "Copiado")}</>
+                            ) : (
+                              <><Copy className="h-3 w-3 mr-1" />{t("config.widget.copy", "Copiar")}</>
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   {category === "payment" && paymentEnabled && (
                     <div className="mt-4 p-4 rounded-lg border border-border bg-muted/30 space-y-3">

@@ -418,7 +418,8 @@
       "twilio": "Twilio",
       "api_keys": "API Keys",
       "ai": "Intelligenza Artificiale",
-      "payment": "Pagamenti"
+      "payment": "Pagamenti",
+      "widget": "Widget prenotazioni"
     },
     "info": "Informazioni",
     "infoInstant": "Le modifiche si applicano istantaneamente",
@@ -468,7 +469,11 @@
       "refund_advance_hours": "Finestra di rimborso: ore prima della prenotazione",
       "refund_grace_minutes": "Finestra di rimborso: minuti dopo la prenotazione",
       "stripe_account_id": "ID account Stripe Connect",
-      "stripe_onboarding_complete": "Onboarding Stripe completato"
+      "stripe_onboarding_complete": "Onboarding Stripe completato",
+      "widget_enabled": "Widget prenotazioni abilitato",
+      "widget_website_url": "URL del tuo sito (per CORS, es: https://tuoristorante.com)",
+      "widget_primary_color": "Colore principale del widget (hex, es: #2563eb)",
+      "widget_title": "Titolo del widget (default: nome del ristorante)"
     }
   },
   "calendar": {
@@ -599,7 +604,8 @@
       "completed": "Pagato",
       "refunded": "Rimborsato",
       "failed": "Fallito",
-      "expired": "Scaduto"
+      "expired": "Scaduto",
+      "bypassed": "Bypassato"
     }
   }
 }

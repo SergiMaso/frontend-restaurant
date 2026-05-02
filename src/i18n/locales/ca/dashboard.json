@@ -417,7 +417,8 @@
       "twilio": "Twilio",
       "api_keys": "API Keys",
       "ai": "Intel·ligència Artificial",
-      "payment": "Pagaments"
+      "payment": "Pagaments",
+      "widget": "Widget de reserves"
     },
     "info": "Informació",
     "infoInstant": "Els canvis s'apliquen instantàniament",
@@ -467,7 +468,11 @@
       "refund_advance_hours": "Finestra de reemborsament: hores abans de la reserva",
       "refund_grace_minutes": "Finestra de reemborsament: minuts després de la reserva",
       "stripe_account_id": "ID de compte Stripe Connect",
-      "stripe_onboarding_complete": "Onboarding de Stripe completat"
+      "stripe_onboarding_complete": "Onboarding de Stripe completat",
+      "widget_enabled": "Widget de reserves habilitat",
+      "widget_website_url": "URL del teu web (per CORS, ex: https://elteuestaurant.com)",
+      "widget_primary_color": "Color principal del widget (hex, ex: #2563eb)",
+      "widget_title": "Títol del widget (per defecte: nom del restaurant)"
     }
   },
   "calendar": {
@@ -598,7 +603,8 @@
       "completed": "Pagat",
       "refunded": "Reemborsat",
       "failed": "Fallit",
-      "expired": "Expirat"
+      "expired": "Expirat",
+      "bypassed": "Omès"
     }
   }
 }

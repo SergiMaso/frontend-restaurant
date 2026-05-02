@@ -110,6 +110,7 @@ const PaymentsPage = () => {
             <SelectItem value="pending">{t("payments.status.pending")}</SelectItem>
             <SelectItem value="expired">{t("payments.status.expired")}</SelectItem>
             <SelectItem value="failed">{t("payments.status.failed")}</SelectItem>
+            <SelectItem value="bypassed">{t("payments.status.bypassed")}</SelectItem>
           </SelectContent>
         </Select>
         <div className="relative">

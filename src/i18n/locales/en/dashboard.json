@@ -417,7 +417,8 @@
       "twilio": "Twilio",
       "api_keys": "API Keys",
       "ai": "Artificial Intelligence",
-      "payment": "Payments"
+      "payment": "Payments",
+      "widget": "Booking widget"
     },
     "info": "Information",
     "infoInstant": "Changes apply instantly",
@@ -467,7 +468,11 @@
       "refund_advance_hours": "Refund window: hours before reservation",
       "refund_grace_minutes": "Refund window: minutes after booking",
       "stripe_account_id": "Stripe Connect account ID",
-      "stripe_onboarding_complete": "Stripe onboarding complete"
+      "stripe_onboarding_complete": "Stripe onboarding complete",
+      "widget_enabled": "Booking widget enabled",
+      "widget_website_url": "Your website URL (for CORS, e.g. https://yourrestaurant.com)",
+      "widget_primary_color": "Widget primary colour (hex, e.g. #2563eb)",
+      "widget_title": "Widget title (default: restaurant name)"
     }
   },
   "calendar": {
@@ -598,7 +603,8 @@
       "completed": "Paid",
       "refunded": "Refunded",
       "failed": "Failed",
-      "expired": "Expired"
+      "expired": "Expired",
+      "bypassed": "Bypassed"
     }
   }
 }
