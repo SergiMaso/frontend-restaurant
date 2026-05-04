@@ -238,6 +238,7 @@
     "deleteSuccess": "Client eliminat correctament",
     "nameRequired": "El nom és obligatori",
     "phoneRequired": "El telèfon és obligatori",
+    "phoneAlreadyExists": "Aquest telèfon ja pertany a un altre client.",
     "phoneChangeWarning": "Canviar el telèfon crearà un nou client",
     "confirmDelete": "Estàs segur?",
     "confirmDeleteDetail": "Aquesta acció no es pot desfer. S'eliminarà permanentment el client {{name}} ({{phone}}).",

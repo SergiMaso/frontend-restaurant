@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from "react";
+import { type CountryCode } from "libphonenumber-js";
 import { Input } from "@/components/ui/input";
+import { PhoneInput } from "@/components/ui/phone-input";
 import { Label } from "@/components/ui/label";
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
 import { User, Phone } from "lucide-react";
@@ -20,6 +22,7 @@ interface CustomerAutocompleteProps {
   type?: "name" | "phone";
   disabled?: boolean;
   required?: boolean;
+  defaultCountry?: CountryCode;
 }
 
 const CustomerAutocomplete = ({
@@ -32,6 +35,7 @@ const CustomerAutocomplete = ({
   type = "name",
   disabled = false,
   required = false,
+  defaultCountry,
 }: CustomerAutocompleteProps) => {
   const [open, setOpen] = useState(false);
   const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
@@ -99,22 +103,39 @@ const CustomerAutocomplete = ({
       <Label htmlFor={`autocomplete-${type}`}>
         {label} {required && <span className="text-destructive">*</span>}
       </Label>
-      <Input
-        id={`autocomplete-${type}`}
-        value={value}
-        onChange={(e) => {
-          onChange(e.target.value);
-        }}
-        onFocus={() => {
-          if (value.length >= 2 && filteredCustomers.length > 0) {
-            setOpen(true);
-          }
-        }}
-        placeholder={placeholder}
-        required={required}
-        disabled={disabled}
-        autoComplete="off"
-      />
+      {type === "phone" ? (
+        <PhoneInput
+          id={`autocomplete-${type}`}
+          value={value}
+          onChange={onChange}
+          defaultCountry={defaultCountry}
+          onFocus={() => {
+            if (value.length >= 2 && filteredCustomers.length > 0) {
+              setOpen(true);
+            }
+          }}
+          placeholder={placeholder}
+          required={required}
+          disabled={disabled}
+        />
+      ) : (
+        <Input
+          id={`autocomplete-${type}`}
+          value={value}
+          onChange={(e) => {
+            onChange(e.target.value);
+          }}
+          onFocus={() => {
+            if (value.length >= 2 && filteredCustomers.length > 0) {
+              setOpen(true);
+            }
+          }}
+          placeholder={placeholder}
+          required={required}
+          disabled={disabled}
+          autoComplete="off"
+        />
+      )}
       
       {/* Dropdown de resultats */}
       {open && filteredCustomers.length > 0 && (

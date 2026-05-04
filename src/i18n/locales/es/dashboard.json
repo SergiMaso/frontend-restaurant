@@ -238,6 +238,7 @@
     "deleteSuccess": "Cliente eliminado correctamente",
     "nameRequired": "El nombre es obligatorio",
     "phoneRequired": "El teléfono es obligatorio",
+    "phoneAlreadyExists": "Ese teléfono ya pertenece a otro cliente.",
     "phoneChangeWarning": "Cambiar el teléfono creará un nuevo cliente",
     "confirmDelete": "¿Estás seguro?",
     "confirmDeleteDetail": "Esta acción no se puede deshacer. Se eliminará permanentemente el cliente {{name}} ({{phone}}).",

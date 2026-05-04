@@ -560,7 +560,9 @@ export async function updateCustomer(phone: string, data: UpdateCustomerData): P
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.error || 'Error actualitzant client');
+    const err = new Error(error.error || 'Error actualitzant client') as Error & { status?: number };
+    err.status = response.status;
+    throw err;
   }
 
   return response.json();

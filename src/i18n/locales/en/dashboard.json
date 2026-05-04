@@ -238,6 +238,7 @@
     "deleteSuccess": "Customer deleted successfully",
     "nameRequired": "Name is required",
     "phoneRequired": "Phone is required",
+    "phoneAlreadyExists": "That phone number already belongs to another customer.",
     "phoneChangeWarning": "Changing the phone will create a new customer",
     "confirmDelete": "Are you sure?",
     "confirmDeleteDetail": "This action cannot be undone. Customer {{name}} ({{phone}}) will be permanently deleted.",

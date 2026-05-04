@@ -21,10 +21,11 @@ import {
 import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
 import { format, addHours, parse } from "date-fns";
-import { getTables, createAppointment, updateAppointment, deleteAppointment } from "@/services/api";
+import { getTables, createAppointment, updateAppointment, deleteAppointment, updateCustomer } from "@/services/api";
 import DeleteReservationDialog from "@/components/DeleteReservationDialog";
 import CustomerAutocomplete from "@/components/CustomerAutocomplete";
 import { useRestaurantConfig } from "@/hooks/useRestaurantConfig";
+import { useDefaultPhoneCountry } from "@/hooks/useDefaultPhoneCountry";
 import { Checkbox } from "@/components/ui/checkbox";
 
 interface ReservationDialogProps {
@@ -70,6 +71,7 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
     fixedTimeSlotsDinner,
     paymentEnabled,
   } = useRestaurantConfig();
+  const defaultCountry = useDefaultPhoneCountry();
 
   // Generar time slots disponibles
   const availableTimeSlots = generateTimeSlots(
@@ -213,6 +215,21 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
       console.log("🚀 Enviant petició:", data);
 
       if (reservation) {
+        // If staff changed the phone (or the name) on an existing reservation,
+        // cascade the change at the customer level FIRST. The customer endpoint
+        // updates appointments.phone + conversations.phone in the same transaction,
+        // keeping everything consistent. Then we update the rest of the
+        // appointment fields (date/time/people/etc).
+        const originalPhone: string | undefined = reservation.phone;
+        const originalName: string | undefined = reservation.client_name;
+        const phoneChanged = originalPhone && data.phone && data.phone !== originalPhone;
+        const nameChanged = originalName !== data.client_name;
+        if (phoneChanged || (nameChanged && originalPhone)) {
+          await updateCustomer(originalPhone!, {
+            ...(phoneChanged ? { phone: data.phone } : {}),
+            ...(nameChanged ? { name: data.client_name } : {}),
+          } as any);
+        }
         console.log(`📤 PUT /api/appointments/${reservation.id}`, data);
         return updateAppointment(reservation.id, data);
       } else {
@@ -225,11 +242,16 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
       queryClient.invalidateQueries({
         predicate: (query) => Array.isArray(query.queryKey) && query.queryKey[0] === "appointments",
       });
+      queryClient.invalidateQueries({ queryKey: ["customers"] });
       toast.success(reservation ? t("reservations.updateSuccess") : t("reservations.createSuccess"));
       onOpenChange(false);
     },
-    onError: (error: Error) => {
+    onError: (error: Error & { status?: number }) => {
       console.error("❌ Error:", error);
+      if (error.status === 409) {
+        toast.error(t("customers.phoneAlreadyExists"));
+        return;
+      }
       toast.error(tCommon("error") + ": " + error.message);
     },
   });
@@ -397,7 +419,6 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
                 label={t("reservations.customerName")}
                 placeholder="Joan García"
                 type="name"
-                disabled={!!reservation}
                 required
               />
 
@@ -408,10 +429,10 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
                 onChange={setPhone}
                 onSelectCustomer={handleSelectCustomer}
                 label={t("reservations.customerPhone")}
-                placeholder="+34 600 000 000"
+                placeholder="600 000 000"
                 type="phone"
-                disabled={!!reservation}
                 required
+                defaultCountry={defaultCountry}
               />
 
               <div className="space-y-2">

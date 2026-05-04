@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PhoneInput } from "@/components/ui/phone-input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -31,6 +32,7 @@ import {
 import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
 import { updateCustomer, deleteCustomer } from "@/services/api";
+import { useDefaultPhoneCountry } from "@/hooks/useDefaultPhoneCountry";
 
 interface EditCustomerDialogProps {
   open: boolean;
@@ -46,6 +48,7 @@ const EditCustomerDialog = ({ open, onOpenChange, customer }: EditCustomerDialog
   const [phone, setPhone] = useState("");
   const [language, setLanguage] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const defaultCountry = useDefaultPhoneCountry();
 
   useEffect(() => {
     if (customer) {
@@ -62,7 +65,11 @@ const EditCustomerDialog = ({ open, onOpenChange, customer }: EditCustomerDialog
       toast.success(t("customers.updateSuccess"));
       onOpenChange(false);
     },
-    onError: (error: Error) => {
+    onError: (error: Error & { status?: number }) => {
+      if (error.status === 409) {
+        toast.error(t("customers.phoneAlreadyExists"));
+        return;
+      }
       toast.error(tCommon("error") + ": " + error.message);
     },
   });
@@ -136,12 +143,12 @@ const EditCustomerDialog = ({ open, onOpenChange, customer }: EditCustomerDialog
               <Label htmlFor="phone">
                 {t("customers.phone")} <span className="text-destructive">*</span>
               </Label>
-              <Input
+              <PhoneInput
                 id="phone"
-                type="tel"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+34 600 000 000"
+                onChange={setPhone}
+                defaultCountry={defaultCountry}
+                placeholder="600 000 000"
                 required
               />
               <p className="text-xs text-muted-foreground">
