@@ -572,8 +572,13 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
                   {tables
                     ?.slice()
                     .sort((a, b) => {
-                      if (a.status === b.status) return a.table_number - b.table_number;
-                      return a.status === "available" ? -1 : 1;
+                      // 1. available before unavailable
+                      if (a.status !== b.status) return a.status === "available" ? -1 : 1;
+                      // 2. inside before terrace
+                      const areaOrder = (area: string) => area === "terrace" ? 1 : 0;
+                      if (a.area !== b.area) return areaOrder(a.area) - areaOrder(b.area);
+                      // 3. table number ascending
+                      return a.table_number - b.table_number;
                     })
                     .map((table) => {
                       const isTerrace = table.area === "terrace";

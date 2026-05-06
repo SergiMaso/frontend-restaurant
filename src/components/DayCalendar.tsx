@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import { useTranslation } from "react-i18next";
@@ -41,11 +41,7 @@ const timeSlots = Array.from({ length: 49 }, (_, i) => {
 
 const MIN_MAJOR_ROW_HEIGHT_FULLSCREEN_PX = 12;
 const MIN_MAJOR_ROW_HEIGHT_COMPACT_PX = 8;
-const MIN_MINOR_ROW_HEIGHT_PX = 6;
 const DEFAULT_MAJOR_ROW_HEIGHT_PX = 17;
-const NON_LABEL_ROW_RATIO_COMPACT = 0.65;
-const NON_FULLSCREEN_MAJOR_ROW_SCALE = 0.8;
-const NON_FULLSCREEN_TARGET_END_TIME = "22:00";
 const DEFAULT_TABLE_COLUMN_MIN_WIDTH_PX = 44.1;
 const DENSE_TABLE_COLUMN_MIN_WIDTH_PX = 58.5;
 
@@ -137,11 +133,14 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [reopenDetailsAfterDeleteCancel, setReopenDetailsAfterDeleteCancel] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const headerRef = useRef<HTMLTableSectionElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
+  const hasAutoScrolledRef = useRef(false);
   const [isDragging, setIsDragging] = useState(false);
   const [startY, setStartY] = useState(0);
   const [scrollTop, setScrollTop] = useState(0);
-  const [rowHeightPx, setRowHeightPx] = useState(DEFAULT_MAJOR_ROW_HEIGHT_PX);
+  // Total body height. Rows are derived from this so the body fills the
+  // visible area exactly — no leftover pixels at the bottom.
+  const [bodyHeight, setBodyHeight] = useState(DEFAULT_MAJOR_ROW_HEIGHT_PX * 49);
   const queryClient = useQueryClient();
   const { selectedRestaurant } = useRestaurant();
   const { t } = useTranslation("dashboard");
@@ -347,28 +346,21 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
     if (!container) return;
 
     const recomputeRowHeight = () => {
+      // Skip recompute while the tab is hidden — clientHeight can be 0 or stale.
+      if (typeof document !== "undefined" && document.hidden) return;
       const containerHeight = container.clientHeight;
-      if (!containerHeight) return;
+      if (!containerHeight || containerHeight < 200) return;
 
       const headerHeight = headerRef.current?.getBoundingClientRect().height ?? 36;
       const availableHeight = containerHeight - headerHeight - 8;
       if (availableHeight <= 0) return;
 
-      const minorRatio = isFullscreen ? 1 : NON_LABEL_ROW_RATIO_COMPACT;
-      const targetEndIndex = timeSlots.indexOf(NON_FULLSCREEN_TARGET_END_TIME);
-      const targetSlots = !isFullscreen && targetEndIndex > 0
-        ? timeSlots.slice(0, targetEndIndex + 1)
-        : timeSlots;
-
-      const majorSlotsCount = targetSlots.filter(shouldShowTimeLabel).length;
-      const minorSlotsCount = targetSlots.length - majorSlotsCount;
-      const weightedUnits = majorSlotsCount + minorSlotsCount * minorRatio;
-      const candidateHeight = Math.floor(availableHeight / weightedUnits);
-      const scaledCandidateHeight = isFullscreen
-        ? candidateHeight
-        : Math.floor(candidateHeight * NON_FULLSCREEN_MAJOR_ROW_SCALE);
-      const minMajorHeight = isFullscreen ? MIN_MAJOR_ROW_HEIGHT_FULLSCREEN_PX : MIN_MAJOR_ROW_HEIGHT_COMPACT_PX;
-      setRowHeightPx(Math.max(minMajorHeight, scaledCandidateHeight));
+      // Body fills the visible area exactly. No floor-based row size — slot
+      // offsets are computed by distributing pixels evenly across all 49 slots,
+      // so the body height matches the container down to the pixel.
+      const minPerRow = isFullscreen ? MIN_MAJOR_ROW_HEIGHT_FULLSCREEN_PX : MIN_MAJOR_ROW_HEIGHT_COMPACT_PX;
+      const minBody = timeSlots.length * minPerRow;
+      setBodyHeight(Math.max(minBody, availableHeight));
     };
 
     recomputeRowHeight();
@@ -383,12 +375,19 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
     }
 
     window.addEventListener("resize", recomputeRowHeight);
+    document.addEventListener("visibilitychange", recomputeRowHeight);
 
     return () => {
       window.removeEventListener("resize", recomputeRowHeight);
+      document.removeEventListener("visibilitychange", recomputeRowHeight);
       resizeObserver?.disconnect();
     };
   }, [isFullscreen]);
+
+  // Reset auto-scroll latch whenever the user picks a different date.
+  useEffect(() => {
+    hasAutoScrolledRef.current = false;
+  }, [selectedDate]);
 
   const handleReservationClick = (reservation: any) => {
     setSelectedReservation(reservation);
@@ -449,59 +448,6 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
     }
   };
 
-  const roundToNearestSlot = (minutes: number): number => {
-    return Math.round(minutes / 15) * 15;
-  };
-
-  const getReservationsForTableAndTime = (tableId: number, time: string) => {
-    const result = reservations?.filter((r) => {
-      if (!r.table_ids || !Array.isArray(r.table_ids)) return false;
-      if (!r.table_ids.includes(tableId)) return false;
-
-      try {
-        const startTime = parseAsLocalTime(r.start_time);
-        const endTime = parseAsLocalTime(r.end_time);
-
-        const [slotHour, slotMin] = time.split(':').map(Number);
-
-        const slotMinutes = slotHour * 60 + slotMin;
-        const startMinutes = startTime.getHours() * 60 + startTime.getMinutes();
-        let endMinutes = endTime.getHours() * 60 + endTime.getMinutes();
-
-        if (endMinutes < startMinutes) {
-          endMinutes += 24 * 60;
-        }
-
-        const roundedStartMinutes = roundToNearestSlot(startMinutes);
-
-        const matches = slotMinutes >= roundedStartMinutes && slotMinutes < endMinutes;
-
-        return matches;
-      } catch (e) {
-        console.error("Error parsing time:", r.start_time, r.end_time, e);
-        return false;
-      }
-    }) || [];
-
-    return result;
-  };
-
-  const isReservationStart = (reservation: any, time: string) => {
-    try {
-      const startTime = parseAsLocalTime(reservation.start_time);
-      const [slotHour, slotMin] = time.split(':').map(Number);
-      const slotMinutes = slotHour * 60 + slotMin;
-      const startMinutes = startTime.getHours() * 60 + startTime.getMinutes();
-
-      const roundedStartMinutes = roundToNearestSlot(startMinutes);
-
-      return roundedStartMinutes === slotMinutes;
-    } catch (e) {
-      console.error("Error checking reservation start:", reservation.start_time, e);
-      return false;
-    }
-  };
-
   const getReservationRowSpan = (reservation: any) => {
     try {
       const start = parseAsLocalTime(reservation.start_time);
@@ -515,36 +461,66 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
     }
   };
 
-  const getRowHeightPx = (time: string): number => {
-    if (shouldShowTimeLabel(time)) {
-      return rowHeightPx;
+  // Single source of truth: slotOffsets[i] is the cumulative top px of slot i.
+  // Pixels are distributed evenly across all 49 slots so slotOffsets[49] === bodyHeight,
+  // i.e. the body fills the visible area exactly with no leftover white space.
+  const slotOffsets = useMemo(() => {
+    const offsets: number[] = [];
+    for (let i = 0; i <= timeSlots.length; i++) {
+      offsets.push(Math.round((bodyHeight * i) / timeSlots.length));
     }
-    if (isFullscreen) {
-      return rowHeightPx;
+    return offsets;
+  }, [bodyHeight]);
+
+  const totalBodyHeight = slotOffsets[timeSlots.length];
+
+  // Scroll to current time once the schedule is laid out (today only).
+  useEffect(() => {
+    if (hasAutoScrolledRef.current) return;
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    const now = new Date();
+    const todayStr = format(now, "yyyy-MM-dd");
+    const selectedDateStr = format(selectedDate, "yyyy-MM-dd");
+    if (todayStr !== selectedDateStr) return;
+    const hour = now.getHours();
+    if (hour < 12 || hour >= 24) return;
+    const slotIndex = (hour - 12) * 4 + Math.floor(now.getMinutes() / 15);
+    if (slotIndex < 0 || slotIndex >= slotOffsets.length) return;
+    const targetTop = Math.max(0, slotOffsets[slotIndex] - 100);
+    container.scrollTo({ top: targetTop, behavior: "auto" });
+    hasAutoScrolledRef.current = true;
+  }, [selectedDate, slotOffsets]);
+
+  const getReservationSlotRange = (reservation: any): { startIndex: number; endIndex: number } | null => {
+    try {
+      // Round start time to the nearest 15-min slot (matches the previous
+      // isReservationStart behavior — a reservation at 19:07 still shows at 19:00).
+      const start = parseAsLocalTime(reservation.start_time);
+      const startMinutesFromNoon = (start.getHours() - 12) * 60 + start.getMinutes();
+      const startIndex = Math.round(startMinutesFromNoon / 15);
+      const rowSpan = getReservationRowSpan(reservation);
+      if (startIndex < 0 || startIndex >= timeSlots.length || rowSpan <= 0) return null;
+      const endIndex = Math.min(startIndex + rowSpan, timeSlots.length);
+      return { startIndex, endIndex };
+    } catch (e) {
+      console.error("Error computing reservation slot range:", reservation, e);
+      return null;
     }
-    return Math.max(MIN_MINOR_ROW_HEIGHT_PX, Math.floor(rowHeightPx * NON_LABEL_ROW_RATIO_COMPACT));
+  };
+
+  const getReservationTopPx = (reservation: any): number => {
+    const range = getReservationSlotRange(reservation);
+    return range ? slotOffsets[range.startIndex] : 0;
   };
 
   const getReservationHeightPx = (reservation: any): number => {
-    try {
-      const startTime = format(parseAsLocalTime(reservation.start_time), "HH:mm");
-      const startIndex = timeSlots.indexOf(startTime);
-      const rowSpan = getReservationRowSpan(reservation);
-
-      if (startIndex === -1 || rowSpan <= 0) {
-        return rowSpan * rowHeightPx;
-      }
-
-      const endIndex = Math.min(startIndex + rowSpan, timeSlots.length);
-      let totalHeight = 0;
-      for (let i = startIndex; i < endIndex; i++) {
-        totalHeight += getRowHeightPx(timeSlots[i]);
-      }
-      return totalHeight;
-    } catch (e) {
-      console.error("Error calculating reservation height:", reservation, e);
-      return getReservationRowSpan(reservation) * rowHeightPx;
+    const range = getReservationSlotRange(reservation);
+    if (!range) {
+      const perRow = bodyHeight / timeSlots.length;
+      return getReservationRowSpan(reservation) * perRow;
     }
+    return slotOffsets[range.endIndex] - slotOffsets[range.startIndex];
   };
 
   const getCurrentTimePosition = () => {
@@ -567,6 +543,33 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
 
   const currentTimePosition = getCurrentTimePosition();
 
+  const currentTimeTopPx = (() => {
+    if (currentTimePosition === null) return null;
+    const baseIndex = Math.floor(currentTimePosition);
+    if (baseIndex < 0 || baseIndex >= timeSlots.length) return null;
+    const fraction = currentTimePosition - baseIndex;
+    const slotHeight = slotOffsets[baseIndex + 1] - slotOffsets[baseIndex];
+    return slotOffsets[baseIndex] + fraction * slotHeight;
+  })();
+
+  const getReservationColorClass = (reservation: any) => {
+    const isMultiTable = !!(reservation.table_ids && reservation.table_ids.length > 1);
+    const hasNotes = !!reservation.notes;
+    const isSeated = !!reservation.seated_at;
+    if (isMultiTable) {
+      if (reservation.status === 'completed') return 'bg-emerald-600/90 hover:bg-emerald-700 border-emerald-500/20 text-white';
+      if (isSeated) return 'bg-red-700/90 hover:bg-red-800 border-red-600/20 text-white';
+      if (reservation.status === 'cancelled') return 'bg-destructive/90 hover:bg-destructive border-destructive/20 text-destructive-foreground';
+      if (reservation.status === 'pending_payment') return 'bg-gray-400/90 hover:bg-gray-500 border-gray-300/20 text-white';
+      return hasNotes
+        ? 'bg-blue-600/90 hover:bg-blue-700 border-blue-500/20 text-white'
+        : 'bg-yellow-500/90 hover:bg-yellow-600 border-yellow-400/20 text-white';
+    }
+    return getStatusColor(reservation.status, hasNotes, isSeated);
+  };
+
+  const gridTemplateColumns = `48px repeat(${orderedTables.length}, minmax(${tableColumnMinWidth}, 1fr))`;
+
   return (
     <div className="space-y-4">
       {isLoading ? (
@@ -578,128 +581,174 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
       ) : (
         <div className="border border-border/50 rounded-lg overflow-hidden bg-card relative" style={{ height: isFullscreen ? 'calc(100vh - 120px)' : '70vh' }}>
           <div ref={scrollContainerRef} className="overflow-auto relative h-full">
-            <table className="border-collapse table-fixed w-full" style={{ minWidth: wideScheduleMinWidth }}>
-              <thead ref={headerRef} className="sticky top-0 z-20 bg-muted/95 backdrop-blur-sm">
-                <tr className="border-b border-border/50">
-                  <th className="w-12 px-1 py-1.5 text-[10px] font-semibold border-r border-border/50 sticky left-0 bg-muted/95 backdrop-blur-sm z-30">
-                    {tCommon("time")}
-                  </th>
-                  {orderedTables.map((table) => {
-                    const isTerrace = table.area === "terrace";
-                    const isDisabledTable = table.status === "unavailable";
-                    const tableSymbol = isDisabledTable
-                      ? (isTerrace ? "🚫☀" : "🚫T")
-                      : (isTerrace ? "☀" : "T");
+            <div style={{ minWidth: wideScheduleMinWidth }}>
+              {/* Header */}
+              <div
+                ref={headerRef}
+                className="sticky top-0 z-20 bg-muted/95 backdrop-blur-sm grid border-b border-border/50"
+                style={{ gridTemplateColumns }}
+              >
+                <div className="px-1 py-1.5 text-[10px] font-semibold border-r border-border/50 sticky left-0 bg-muted/95 backdrop-blur-sm z-30 text-center">
+                  {tCommon("time")}
+                </div>
+                {orderedTables.map((table) => {
+                  const isTerrace = table.area === "terrace";
+                  const isDisabledTable = table.status === "unavailable";
+                  const tableSymbol = isDisabledTable
+                    ? (isTerrace ? "🚫☀" : "🚫T")
+                    : (isTerrace ? "☀" : "T");
 
-                    return (
-                      <th
-                        key={table.id}
-                        className={`px-1 py-1.5 text-[10px] font-semibold text-center border-r ${
-                          isDisabledTable
-                            ? "border-rose-300/90 bg-rose-100/90 text-rose-900"
-                            : isTerrace
-                            ? "border-amber-200/80 bg-amber-100/90 text-amber-900"
-                            : "border-border/50 bg-muted/95"
-                        }`}
-                        style={{ minWidth: tableColumnMinWidth }}
+                  return (
+                    <div
+                      key={table.id}
+                      className={`px-1 py-1.5 text-[10px] font-semibold text-center border-r ${
+                        isDisabledTable
+                          ? "border-rose-300/90 bg-rose-100/90 text-rose-900"
+                          : isTerrace
+                          ? "border-amber-200/80 bg-amber-100/90 text-amber-900"
+                          : "border-border/50 bg-muted/95"
+                      }`}
+                    >
+                      <div>{tableSymbol}{table.table_number}</div>
+                      <div className={`text-[9px] font-normal ${
+                        isDisabledTable
+                          ? "text-rose-700"
+                          : isTerrace
+                            ? "text-amber-700"
+                            : "text-muted-foreground"
+                      }`}>
+                        {table.capacity}p
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Body — single source of truth: slotOffsets drives both grid lines and reservation cards */}
+              <div
+                className="grid relative"
+                style={{ gridTemplateColumns, height: `${totalBodyHeight}px` }}
+              >
+                {/* Time column (sticky-left). Major slot labels centered vertically inside their row. */}
+                <div
+                  className="sticky left-0 z-[15] bg-muted/95 backdrop-blur-sm border-r border-border/50 relative"
+                  style={{ height: `${totalBodyHeight}px` }}
+                >
+                  {timeSlots.map((time, i) =>
+                    shouldShowTimeLabel(time) ? (
+                      <div
+                        key={time}
+                        className="absolute left-0 right-0 px-1 text-[9px] font-medium flex items-center justify-center"
+                        style={{ top: `${slotOffsets[i]}px`, height: `${slotOffsets[i + 1] - slotOffsets[i]}px` }}
                       >
-                        <div>{tableSymbol}{table.table_number}</div>
-                        <div className={`text-[9px] font-normal ${
-                          isDisabledTable
-                            ? "text-rose-700"
-                            : isTerrace
-                              ? "text-amber-700"
-                              : "text-muted-foreground"
-                        }`}>
-                          {table.capacity}p
-                        </div>
-                      </th>
-                    );
-                  })}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/50">
-                {timeSlots.map((time, index) => (
-                  <tr key={time} className="relative" style={{ height: `${getRowHeightPx(time)}px` }}>
-                    <td className="w-12 px-1 py-0.5 text-[9px] font-medium border-r border-border/50 bg-muted/30 sticky left-0 z-10 relative">
-                      {shouldShowTimeLabel(time) ? time : ""}
-                      {/* Current time indicator line */}
-                      {currentTimePosition !== null && index === Math.floor(currentTimePosition) && (
-                        <div
-                          className="absolute left-0 border-t-2 border-red-500 z-40 pointer-events-none"
-                          style={{
-                            top: `${(currentTimePosition - Math.floor(currentTimePosition)) * getRowHeightPx(time)}px`,
-                            width: '100vw',
-                          }}
-                        />
-                      )}
-                    </td>
-                    {orderedTables.map((table) => {
-                      const tableReservations = getReservationsForTableAndTime(table.id, time);
-                      const reservation = tableReservations[0];
-                      const isStart = reservation && isReservationStart(reservation, time);
+                        {time}
+                      </div>
+                    ) : null
+                  )}
+                </div>
 
-                      const isMultiTable = reservation && reservation.table_ids && reservation.table_ids.length > 1;
-                      const hasNotes = !!reservation?.notes;
-                      const isSeated = !!reservation?.seated_at;
+                {/* Per-table columns */}
+                {orderedTables.map((table) => {
+                  const tableReservations = (reservations || []).filter(
+                    (r) => r.table_ids && Array.isArray(r.table_ids) && r.table_ids.includes(table.id)
+                  );
 
-                      let colorClass;
-                      if (isMultiTable) {
-                        if (reservation?.status === 'completed') {
-                          colorClass = 'bg-emerald-600/90 hover:bg-emerald-700 border-emerald-500/20 text-white';
-                        } else if (isSeated) {
-                          colorClass = 'bg-red-700/90 hover:bg-red-800 border-red-600/20 text-white';
-                        } else if (reservation?.status === 'cancelled') {
-                          colorClass = 'bg-destructive/90 hover:bg-destructive border-destructive/20 text-destructive-foreground';
-                        } else if (reservation?.status === 'pending_payment') {
-                          colorClass = 'bg-gray-400/90 hover:bg-gray-500 border-gray-300/20 text-white';
-                        } else {
-                          colorClass = hasNotes
-                            ? 'bg-blue-600/90 hover:bg-blue-700 border-blue-500/20 text-white'
-                            : 'bg-yellow-500/90 hover:bg-yellow-600 border-yellow-400/20 text-white';
-                        }
-                      } else {
-                        colorClass = getStatusColor(reservation?.status, hasNotes, isSeated);
-                      }
+                  const coveredSlots = new Set<number>();
+                  tableReservations.forEach((r) => {
+                    const range = getReservationSlotRange(r);
+                    if (!range) return;
+                    for (let i = range.startIndex; i < range.endIndex; i++) {
+                      coveredSlots.add(i);
+                    }
+                  });
 
-                      const canClickSlot = !reservation && !!onSlotClick;
+                  return (
+                    <div
+                      key={table.id}
+                      className="relative border-r border-border/50"
+                      style={{ height: `${totalBodyHeight}px` }}
+                    >
+                      {/* Empty-slot click targets */}
+                      {onSlotClick && timeSlots.map((time, i) => {
+                        if (coveredSlots.has(i)) return null;
+                        return (
+                          <div
+                            key={time}
+                            className="absolute left-0 right-0 cursor-pointer hover:bg-primary/10"
+                            style={{
+                              top: `${slotOffsets[i]}px`,
+                              height: `${slotOffsets[i + 1] - slotOffsets[i]}px`,
+                            }}
+                            onClick={() => onSlotClick(time, table.id)}
+                          />
+                        );
+                      })}
 
-                      return (
-                        <td
-                          key={table.id}
-                          className={`border-r border-border/50 relative ${canClickSlot ? 'cursor-pointer hover:bg-primary/10' : ''}`}
-                          style={{ minWidth: tableColumnMinWidth, height: `${getRowHeightPx(time)}px` }}
-                          onClick={() => canClickSlot && onSlotClick(time, table.id)}
-                        >
-                          {isStart && (
-                            <div
-                              className={`absolute inset-0 m-0.5 px-1 py-0.5 rounded text-[9px] cursor-pointer transition-all z-10 flex flex-col justify-center ${colorClass}`}
-                              style={{
-                                height: `${Math.max(4, getReservationHeightPx(reservation) - 4)}px`,
-                              }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleReservationClick(reservation);
-                              }}
-                            >
-                              <div className="font-semibold truncate text-[9px] leading-tight">
-                                {reservation.client_name}
-                              </div>
-                              <div className="text-[8px] opacity-90">
-                                {reservation.num_people}p
-                                {isMultiTable && (
-                                  <span className="ml-1">📍{reservation.table_ids.length}T</span>
-                                )}
-                              </div>
+                      {/* Reservations */}
+                      {tableReservations.map((reservation) => {
+                        const range = getReservationSlotRange(reservation);
+                        if (!range) return null;
+                        const top = slotOffsets[range.startIndex];
+                        const height = slotOffsets[range.endIndex] - slotOffsets[range.startIndex];
+                        const colorClass = getReservationColorClass(reservation);
+                        const isMultiTable = reservation.table_ids && reservation.table_ids.length > 1;
+
+                        return (
+                          <div
+                            key={reservation.id}
+                            className={`absolute left-0 right-0 m-0.5 px-1 py-0.5 rounded text-[9px] cursor-pointer transition-all z-10 flex flex-col justify-center ${colorClass}`}
+                            style={{
+                              top: `${top}px`,
+                              height: `${Math.max(4, height - 4)}px`,
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleReservationClick(reservation);
+                            }}
+                          >
+                            <div className="font-semibold truncate text-[9px] leading-tight">
+                              {reservation.client_name}
                             </div>
-                          )}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                            <div className="text-[8px] opacity-90">
+                              {reservation.num_people}p
+                              {isMultiTable && (
+                                <span className="ml-1">📍{reservation.table_ids.length}T</span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+
+                {/* Body-level horizontal grid lines spanning all columns.
+                    Solid for major (:00, :30) boundaries, dashed for minor (:15, :45). */}
+                {timeSlots.map((time, i) => {
+                  if (i === 0) return null;
+                  const isMajor = shouldShowTimeLabel(time);
+                  return (
+                    <div
+                      key={`gridline-${time}`}
+                      className={`absolute left-0 right-0 pointer-events-none ${
+                        isMajor
+                          ? "border-t border-border/50"
+                          : "border-t border-dashed border-border/30"
+                      }`}
+                      style={{ top: `${slotOffsets[i]}px`, height: 0 }}
+                    />
+                  );
+                })}
+
+                {/* Body-level current time line */}
+                {currentTimeTopPx !== null && (
+                  <div
+                    className="absolute left-0 right-0 border-t-2 border-red-500 z-40 pointer-events-none"
+                    style={{ top: `${currentTimeTopPx}px`, height: 0 }}
+                  />
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -785,8 +834,15 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
                 <div className="flex items-start gap-2">
                   <span className="font-semibold min-w-[100px]">🪑 {t("reservations.table")}:</span>
                   <span>
-                    {selectedReservation.table_numbers ? `${t("reservations.table")} ${selectedReservation.table_numbers}` : 'N/A'}
-                    {selectedReservation.table_capacity > 0 && ` (${selectedReservation.table_capacity})`}
+                    {selectedReservation.table_numbers
+                      ? (() => {
+                          const parts = String(selectedReservation.table_numbers).split('+');
+                          const label = parts.length > 4
+                            ? `${parts.length} ${t("reservations.tables").toLowerCase()}`
+                            : `${t("reservations.table")} ${selectedReservation.table_numbers}`;
+                          return `${label}${selectedReservation.table_capacity > 0 ? ` (${selectedReservation.table_capacity})` : ''}`;
+                        })()
+                      : 'N/A'}
                   </span>
                 </div>
 
