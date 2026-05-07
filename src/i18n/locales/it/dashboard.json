@@ -444,8 +444,6 @@
       "default_booking_duration_minutes": "Durata predefinita prenotazione (minuti)",
       "fixed_time_slots_lunch": "Orari fissi per pranzo (solo se mode=fixed). Formato: HH:MM,HH:MM",
       "fixed_time_slots_dinner": "Orari fissi per cena (solo se mode=fixed). Formato: HH:MM,HH:MM",
-      "generate_schedule_days_ahead": "Giorni di orario generato",
-      "delete_old_data_days": "Giorni di conservazione dati vecchi",
       "cleanup_messages_days": "Giorni di conservazione conversazioni",
       "conversation_history_minutes": "Minuti di conservazione cronologia",
       "conversation_history_limit": "Numero massimo di messaggi",

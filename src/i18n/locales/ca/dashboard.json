@@ -443,8 +443,6 @@
       "default_booking_duration_minutes": "Durada per defecte de reserva (minuts)",
       "fixed_time_slots_lunch": "Horaris fixos per al dinar (només si mode=fixed). Format: HH:MM,HH:MM",
       "fixed_time_slots_dinner": "Horaris fixos per al sopar (només si mode=fixed). Format: HH:MM,HH:MM",
-      "generate_schedule_days_ahead": "Dies d'horari generat",
-      "delete_old_data_days": "Dies que es guarden dades antigues",
       "cleanup_messages_days": "Dies que es guarden converses",
       "conversation_history_minutes": "Minuts de retenció d'historial",
       "conversation_history_limit": "Nombre màxim de missatges",

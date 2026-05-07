@@ -443,8 +443,6 @@
       "default_booking_duration_minutes": "Default booking duration (minutes)",
       "fixed_time_slots_lunch": "Fixed lunch time slots (only if mode=fixed). Format: HH:MM,HH:MM",
       "fixed_time_slots_dinner": "Fixed dinner time slots (only if mode=fixed). Format: HH:MM,HH:MM",
-      "generate_schedule_days_ahead": "Days of schedule generated ahead",
-      "delete_old_data_days": "Days to keep old data",
       "cleanup_messages_days": "Days to keep conversations",
       "conversation_history_minutes": "Conversation history retention (minutes)",
       "conversation_history_limit": "Maximum number of messages",
