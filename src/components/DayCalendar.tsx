@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -757,6 +758,11 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>{t("reservations.details")}</DialogTitle>
+            <DialogDescription>
+              {selectedReservation
+                ? `${selectedReservation.client_name} · ${format(parseISO(selectedReservation.date), "d MMMM yyyy", { locale: dateLocale })}`
+                : t("reservations.details")}
+            </DialogDescription>
           </DialogHeader>
 
           {selectedReservation && (
