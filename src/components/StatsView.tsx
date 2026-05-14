@@ -14,6 +14,7 @@ import { Command, CommandGroup, CommandItem, CommandList } from "@/components/ui
 import { getGlobalStats, getCustomers } from "@/services/api";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAppointmentsQuery } from "@/hooks/useAppointmentsQuery";
+import { useTenantKey } from "@/hooks/useTenantKey";
 
 type TimeFilter = 'all' | 'today' | 'week' | 'month' | 'year' | 'custom';
 
@@ -30,7 +31,7 @@ const StatsView = () => {
   const customerInputRef = useRef<HTMLDivElement>(null);
 
   const { data: globalStats, isLoading: globalLoading } = useQuery({
-    queryKey: ["globalStats"],
+    queryKey: useTenantKey(["globalStats"]),
     queryFn: getGlobalStats,
   });
 
@@ -38,7 +39,7 @@ const StatsView = () => {
   const { data: allAppointments, isLoading: appointmentsLoading } = useAppointmentsQuery();
 
   const { data: customers } = useQuery({
-    queryKey: ["customers"],
+    queryKey: useTenantKey(["customers"]),
     queryFn: getCustomers,
   });
 

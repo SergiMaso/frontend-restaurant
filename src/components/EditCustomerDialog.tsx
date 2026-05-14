@@ -33,6 +33,7 @@ import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
 import { updateCustomer, deleteCustomer } from "@/services/api";
 import { useDefaultPhoneCountry } from "@/hooks/useDefaultPhoneCountry";
+import { useTenantKey } from "@/hooks/useTenantKey";
 
 interface EditCustomerDialogProps {
   open: boolean;
@@ -44,6 +45,7 @@ const EditCustomerDialog = ({ open, onOpenChange, customer }: EditCustomerDialog
   const { t } = useTranslation("dashboard");
   const { t: tCommon } = useTranslation("common");
   const queryClient = useQueryClient();
+  const customersKey = useTenantKey(["customers"]);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [language, setLanguage] = useState("");
@@ -61,7 +63,7 @@ const EditCustomerDialog = ({ open, onOpenChange, customer }: EditCustomerDialog
   const updateMutation = useMutation({
     mutationFn: (data: any) => updateCustomer(customer.phone, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["customers"] });
+      queryClient.invalidateQueries({ queryKey: customersKey });
       toast.success(t("customers.updateSuccess"));
       onOpenChange(false);
     },
@@ -77,7 +79,7 @@ const EditCustomerDialog = ({ open, onOpenChange, customer }: EditCustomerDialog
   const deleteMutation = useMutation({
     mutationFn: () => deleteCustomer(customer.phone),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["customers"] });
+      queryClient.invalidateQueries({ queryKey: customersKey });
       toast.success(t("customers.deleteSuccess"));
       setDeleteDialogOpen(false);
       onOpenChange(false);

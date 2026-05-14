@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { format, addMonths } from "date-fns";
+import { useTenantKey } from "@/hooks/useTenantKey";
 
 interface RecurringHoursDialogProps {
   open: boolean;
@@ -27,6 +28,7 @@ interface RecurringHoursDialogProps {
 
 const RecurringHoursDialog = ({ open, onOpenChange }: RecurringHoursDialogProps) => {
   const queryClient = useQueryClient();
+  const openingHoursKey = useTenantKey(["opening-hours"]);
   const [dayOfWeek, setDayOfWeek] = useState<string>("1");
   const [status, setStatus] = useState<string>("full_day");
   const [lunchStart, setLunchStart] = useState("12:00");
@@ -54,7 +56,7 @@ const RecurringHoursDialog = ({ open, onOpenChange }: RecurringHoursDialogProps)
       return response.json();
     },
     onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: ["opening-hours"] });
+      queryClient.invalidateQueries({ queryKey: openingHoursKey });
       toast.success(`Horaris aplicats a ${response.days_updated} dies`);
       onOpenChange(false);
     },

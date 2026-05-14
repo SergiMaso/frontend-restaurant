@@ -22,6 +22,7 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { getWeeklyDefaults, updateWeeklyDefault, type WeeklyDefault } from "@/services/api";
+import { useTenantKey } from "@/hooks/useTenantKey";
 
 const WeeklyScheduleManager = () => {
   const queryClient = useQueryClient();
@@ -36,9 +37,12 @@ const WeeklyScheduleManager = () => {
     return tCommon(`days.${dayKeys[dayOfWeek]}`);
   };
 
+  const weeklyDefaultsKey = useTenantKey(["weekly-defaults"]);
+  const openingHoursKey = useTenantKey(["opening-hours"]);
+
   // Carregar configuració setmanal
   const { data: weeklyDefaults, isLoading } = useQuery({
-    queryKey: ["weekly-defaults"],
+    queryKey: weeklyDefaultsKey,
     queryFn: getWeeklyDefaults,
   });
 
@@ -46,8 +50,8 @@ const WeeklyScheduleManager = () => {
     mutationFn: ({ dayOfWeek, data }: { dayOfWeek: number; data: any }) =>
       updateWeeklyDefault(dayOfWeek, data),
     onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: ["weekly-defaults"] });
-      queryClient.invalidateQueries({ queryKey: ["opening-hours"] });
+      queryClient.invalidateQueries({ queryKey: weeklyDefaultsKey });
+      queryClient.invalidateQueries({ queryKey: openingHoursKey });
       toast.success(`✅ ${t("weeklySchedule.configUpdated")}! ${response.days_updated || 0} ${t("weeklySchedule.daysAffected")}.`);
       setDialogOpen(false);
     },

@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { setOpeningHours, type SetOpeningHoursData } from "@/services/api";
+import { useTenantKey } from "@/hooks/useTenantKey";
 
 interface OpeningHoursDialogProps {
   open: boolean;
@@ -40,6 +41,7 @@ interface OpeningHoursDialogProps {
 
 const OpeningHoursDialog = ({ open, onOpenChange, date, initialData }: OpeningHoursDialogProps) => {
   const queryClient = useQueryClient();
+  const openingHoursKey = useTenantKey(["opening-hours"]);
   const [status, setStatus] = useState<string>("full_day");
   const [lunchStart, setLunchStart] = useState("12:00");
   const [lunchEnd, setLunchEnd] = useState("15:00");
@@ -73,7 +75,7 @@ const OpeningHoursDialog = ({ open, onOpenChange, date, initialData }: OpeningHo
       return setOpeningHours(data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["opening-hours"] });
+      queryClient.invalidateQueries({ queryKey: openingHoursKey });
       toast.success(t("weeklySchedule.saveSuccess"));
       onOpenChange(false);
     },

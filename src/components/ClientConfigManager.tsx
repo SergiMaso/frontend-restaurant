@@ -19,12 +19,39 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+// IANA timezones we explicitly support. Anything else can be typed in via
+// the manual override at the bottom of the dropdown.
+const TIMEZONE_OPTIONS = [
+  "Europe/Madrid",
+  "Europe/Lisbon",
+  "Europe/London",
+  "Europe/Paris",
+  "Europe/Rome",
+  "Europe/Berlin",
+  "Europe/Amsterdam",
+  "Europe/Brussels",
+  "Europe/Zurich",
+  "Atlantic/Canary",
+  "America/New_York",
+  "America/Los_Angeles",
+  "America/Mexico_City",
+  "America/Argentina/Buenos_Aires",
+];
 import { useToast } from "@/hooks/use-toast";
 import { Settings, Save, Pencil, ExternalLink, CheckCircle, AlertCircle, Copy, Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRestaurantConfig } from "@/hooks/useRestaurantConfig";
 import { useRestaurant } from "@/contexts/RestaurantContext";
+import { useTenantKey } from "@/hooks/useTenantKey";
 
 const ClientConfigManager = () => {
   const { t } = useTranslation("dashboard");
@@ -41,14 +68,14 @@ const ClientConfigManager = () => {
   const [snippetTab, setSnippetTab] = useState<'js'|'iframe'>('js');
 
   const { data: configs = [], isLoading, refetch } = useQuery({
-    queryKey: ["client-configs"],
+    queryKey: useTenantKey(["client-configs"]),
     queryFn: getClientConfigs,
     staleTime: 0,  // Always consider data stale
     refetchOnMount: 'always',  // Always refetch when component mounts
   });
 
   const { data: stripeStatus } = useQuery({
-    queryKey: ["stripe-connect-status"],
+    queryKey: useTenantKey(["stripe-connect-status"]),
     queryFn: getStripeConnectStatus,
     enabled: paymentEnabled,
     staleTime: 30000,
@@ -218,13 +245,29 @@ const ClientConfigManager = () => {
                           </TableCell>
                           <TableCell>
                             {editingKey === config.key ? (
-                              <Input
-                                value={editValue}
-                                onChange={(e) => setEditValue(e.target.value)}
-                                className="max-w-[150px]"
-                                autoFocus
-                                {...(config.key === 'payment_expiry_minutes' ? { type: 'number', min: 30 } : {})}
-                              />
+                              config.key === 'timezone' ? (
+                                <Select value={editValue} onValueChange={setEditValue}>
+                                  <SelectTrigger className="max-w-[220px]">
+                                    <SelectValue placeholder="Select timezone" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {TIMEZONE_OPTIONS.map((tz) => (
+                                      <SelectItem key={tz} value={tz}>{tz}</SelectItem>
+                                    ))}
+                                    {editValue && !TIMEZONE_OPTIONS.includes(editValue) && (
+                                      <SelectItem value={editValue}>{editValue} (current)</SelectItem>
+                                    )}
+                                  </SelectContent>
+                                </Select>
+                              ) : (
+                                <Input
+                                  value={editValue}
+                                  onChange={(e) => setEditValue(e.target.value)}
+                                  className="max-w-[150px]"
+                                  autoFocus
+                                  {...(config.key === 'payment_expiry_minutes' ? { type: 'number', min: 30 } : {})}
+                                />
+                              )
                             ) : (
                               <span className="font-medium">{config.value}</span>
                             )}

@@ -21,11 +21,12 @@ import {
 import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
 import { format, addHours, parse } from "date-fns";
-import { getTables, createAppointment, updateAppointment, deleteAppointment, updateCustomer } from "@/services/api";
+import { getTables, getCustomers, createAppointment, updateAppointment, deleteAppointment, updateCustomer } from "@/services/api";
 import DeleteReservationDialog from "@/components/DeleteReservationDialog";
 import CustomerAutocomplete from "@/components/CustomerAutocomplete";
 import { useRestaurantConfig } from "@/hooks/useRestaurantConfig";
 import { useDefaultPhoneCountry } from "@/hooks/useDefaultPhoneCountry";
+import { useTenantKey } from "@/hooks/useTenantKey";
 import { Checkbox } from "@/components/ui/checkbox";
 
 interface ReservationDialogProps {
@@ -101,8 +102,11 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
   const [selectedTableIds, setSelectedTableIds] = useState<number[]>([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
+  const tablesKey = useTenantKey(["tables"]);
+  const customersKey = useTenantKey(["customers"]);
+
   const { data: tables } = useQuery({
-    queryKey: ["tables"],
+    queryKey: tablesKey,
     queryFn: getTables,
   });
 
@@ -115,12 +119,8 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
 
   // Obtenir clients per autocompletat
   const { data: customers } = useQuery({
-    queryKey: ["customers"],
-    queryFn: async () => {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/customers`);
-      if (!response.ok) throw new Error('Error obtenint clients');
-      return response.json();
-    },
+    queryKey: customersKey,
+    queryFn: getCustomers,
   });
 
   // Efecte per calcular automàticament l'hora final
@@ -242,7 +242,7 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
       queryClient.invalidateQueries({
         predicate: (query) => Array.isArray(query.queryKey) && query.queryKey[0] === "appointments",
       });
-      queryClient.invalidateQueries({ queryKey: ["customers"] });
+      queryClient.invalidateQueries({ queryKey: customersKey });
       toast.success(reservation ? t("reservations.updateSuccess") : t("reservations.createSuccess"));
       onOpenChange(false);
     },

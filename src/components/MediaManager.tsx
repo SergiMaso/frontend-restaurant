@@ -33,6 +33,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { getMedia, uploadMedia, deleteMedia } from "@/services/api";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTenantKey } from "@/hooks/useTenantKey";
 
 const MediaManager = () => {
   const { t } = useTranslation("dashboard");
@@ -50,9 +51,11 @@ const MediaManager = () => {
   const [description, setDescription] = useState("");
   const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
 
+  const mediaKey = useTenantKey(["media"]);
+
   // Query per obtenir media
   const { data: allMedia, isLoading } = useQuery({
-    queryKey: ["media"],
+    queryKey: mediaKey,
     queryFn: () => getMedia(),
   });
 
@@ -60,7 +63,7 @@ const MediaManager = () => {
   const uploadMutation = useMutation({
     mutationFn: uploadMedia,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["media"] });
+      queryClient.invalidateQueries({ queryKey: mediaKey });
       toast.success(t("media.uploadSuccess"));
       setUploadDialogOpen(false);
       resetForm();
@@ -74,7 +77,7 @@ const MediaManager = () => {
   const deleteMutation = useMutation({
     mutationFn: deleteMedia,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["media"] });
+      queryClient.invalidateQueries({ queryKey: mediaKey });
       toast.success(t("media.deleteSuccess"));
     },
     onError: (error: Error) => {

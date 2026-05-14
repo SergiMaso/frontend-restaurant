@@ -9,7 +9,8 @@ import { format } from "date-fns";
 import ReservationDialog from "./ReservationDialog";
 import DeleteReservationDialog from "./DeleteReservationDialog";
 import { deleteAppointment, type Appointment } from "@/services/api";
-import { useAppointmentsQuery } from "@/hooks/useAppointmentsQuery";
+import { getAppointmentsQueryKey, useAppointmentsQuery } from "@/hooks/useAppointmentsQuery";
+import { useRestaurant } from "@/contexts/RestaurantContext";
 import { useRestaurantConfig } from "@/hooks/useRestaurantConfig";
 
 interface ReservationsListProps {
@@ -26,6 +27,8 @@ const ReservationsList = ({ selectedDate, onEdit }: ReservationsListProps) => {
   const { t } = useTranslation("dashboard");
   const { t: tCommon } = useTranslation("common");
   const { paymentEnabled } = useRestaurantConfig();
+  const { selectedRestaurant } = useRestaurant();
+  const appointmentsKey = getAppointmentsQueryKey(selectedRestaurant?.id);
 
   const { data: reservations, isLoading } = useAppointmentsQuery({
     refetchInterval: 300000,
@@ -44,7 +47,7 @@ const ReservationsList = ({ selectedDate, onEdit }: ReservationsListProps) => {
     mutationFn: ({ id, refund }: { id: number; refund: boolean }) =>
       deleteAppointment(id, refund),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      queryClient.invalidateQueries({ queryKey: appointmentsKey });
       toast.success(t("reservations.deleteSuccess"));
       setDeleteDialogOpen(false);
       setDeletingReservation(null);

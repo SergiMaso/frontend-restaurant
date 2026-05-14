@@ -13,6 +13,7 @@ import BroadcastManager from "@/components/BroadcastManager";
 import EditCustomerDialog from "@/components/EditCustomerDialog";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAppointmentsQuery } from "@/hooks/useAppointmentsQuery";
+import { useTenantKey } from "@/hooks/useTenantKey";
 
 const CustomersList = () => {
   const { t } = useTranslation("dashboard");
@@ -29,8 +30,11 @@ const CustomersList = () => {
   const [sendingMessage, setSendingMessage] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  const customersKey = useTenantKey(["customers"]);
+  const conversationsKey = useTenantKey(["conversations", selectedCustomer]);
+
   const { data: customers, isLoading } = useQuery({
-    queryKey: ["customers"],
+    queryKey: customersKey,
     queryFn: getCustomers,
   });
 
@@ -61,7 +65,7 @@ const CustomersList = () => {
   }, [allAppointments]);
 
   const { data: conversations, isLoading: conversationsLoading } = useQuery({
-    queryKey: ["conversations", selectedCustomer],
+    queryKey: conversationsKey,
     queryFn: () => getConversations(selectedCustomer!),
     enabled: !!selectedCustomer && conversationsDialogOpen,
   });
@@ -116,7 +120,7 @@ const CustomersList = () => {
       setMessageText("");
 
       // Refrescar converses
-      queryClient.invalidateQueries({ queryKey: ["conversations", selectedCustomer] });
+      queryClient.invalidateQueries({ queryKey: conversationsKey });
 
       // Fer scroll cap a baix després d'enviar
       setTimeout(() => {

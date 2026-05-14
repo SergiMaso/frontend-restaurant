@@ -1,12 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { getClientConfigs } from "@/services/api";
+import { useTenantKey } from "@/hooks/useTenantKey";
 
 /**
  * Hook personalitzat per accedir a les configuracions del restaurant
  */
 export const useRestaurantConfig = () => {
   const { data: configs, isLoading, error } = useQuery({
-    queryKey: ["client-configs"],
+    queryKey: useTenantKey(["client-configs"]),
     queryFn: getClientConfigs,
     staleTime: 5 * 60 * 1000, // 5 minuts
     refetchOnWindowFocus: false,

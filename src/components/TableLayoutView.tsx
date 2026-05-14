@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Maximize2, Minimize2, RotateCw, Lock, Unlock, Undo2, Redo2, Pencil, Square, Circle, Trash2, X } from "lucide-react";
 import { getTables } from "@/services/api";
+import { useTenantKey } from "@/hooks/useTenantKey";
 import { useState, useRef, useEffect, useCallback } from "react";
 
 interface TablePosition {
@@ -51,7 +52,7 @@ const TableLayoutView = () => {
   const isDraggingWallRef = useRef(false);
 
   const { data: tables, isLoading } = useQuery({
-    queryKey: ["tables"],
+    queryKey: useTenantKey(["tables"]),
     queryFn: getTables,
   });
 

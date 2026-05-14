@@ -16,6 +16,7 @@ import { UserPlus, UserX, UserCheck, Trash2, Copy, CheckCircle2 } from "lucide-r
 import { format } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTenantKey } from "@/hooks/useTenantKey";
 
 interface User {
   id: number;
@@ -40,10 +41,11 @@ const UserManagement = () => {
   const { toast } = useToast();
   const { isSuperadmin } = useAuth();
   const queryClient = useQueryClient();
+  const usersKey = useTenantKey(['users']);
 
   // Query per obtenir usuaris
   const { data: users = [], isLoading } = useQuery({
-    queryKey: ['users'],
+    queryKey: usersKey,
     queryFn: listUsers,
   });
 
@@ -67,7 +69,7 @@ const UserManagement = () => {
         setRole('admin');
       }
 
-      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: usersKey });
     },
     onError: (error: Error) => {
       toast({
@@ -86,7 +88,7 @@ const UserManagement = () => {
         title: t("users.userDeactivated"),
         description: t("users.userDeactivatedDesc"),
       });
-      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: usersKey });
     },
     onError: (error: Error) => {
       toast({
@@ -105,7 +107,7 @@ const UserManagement = () => {
         title: t("users.userReactivated"),
         description: t("users.userReactivatedDesc"),
       });
-      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: usersKey });
     },
     onError: (error: Error) => {
       toast({
@@ -124,7 +126,7 @@ const UserManagement = () => {
         title: t("users.userDeleted"),
         description: t("users.userDeletedDesc"),
       });
-      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: usersKey });
     },
     onError: (error: Error) => {
       toast({

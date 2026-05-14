@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Users, Ban, Check, Edit, Trash2, Link, Plus } from "lucide-react";
 import { getTables, updateTable, deleteTable, createTable } from "@/services/api";
+import { useTenantKey } from "@/hooks/useTenantKey";
 import { toast } from "sonner";
 import TableDialog from "./TableDialog";
 import {
@@ -32,8 +33,10 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
   const { t } = useTranslation("dashboard");
   const { t: tCommon } = useTranslation("common");
 
+  const tablesKey = useTenantKey(["tables"]);
+
   const { data: tables, isLoading } = useQuery({
-    queryKey: ["tables"],
+    queryKey: tablesKey,
     queryFn: getTables,
   });
 
@@ -41,7 +44,7 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
     mutationFn: ({ tableId, data }: { tableId: number; data: any }) =>
       updateTable(tableId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tables"] });
+      queryClient.invalidateQueries({ queryKey: tablesKey });
       toast.success(t("tables.saveSuccess"));
       setDialogOpen(false);
     },
@@ -53,7 +56,7 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
   const createTableMutation = useMutation({
     mutationFn: createTable,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tables"] });
+      queryClient.invalidateQueries({ queryKey: tablesKey });
       toast.success(t("tables.saveSuccess"));
       setDialogOpen(false);
     },
@@ -65,7 +68,7 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
   const deleteTableMutation = useMutation({
     mutationFn: deleteTable,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tables"] });
+      queryClient.invalidateQueries({ queryKey: tablesKey });
       toast.success(t("tables.deleteSuccess"));
       setDeleteDialogOpen(false);
     },

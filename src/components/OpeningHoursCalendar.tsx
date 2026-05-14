@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getOpeningHoursRange } from "@/services/api";
 import { useAppointmentsQuery } from "@/hooks/useAppointmentsQuery";
+import { useTenantKey } from "@/hooks/useTenantKey";
 import OpeningHoursDialog from "./OpeningHoursDialog";
 
 interface OpeningHoursCalendarProps {
@@ -30,7 +31,7 @@ const OpeningHoursCalendar = ({ onViewDay }: OpeningHoursCalendarProps) => {
 
   // Obtenir horaris del mes
   const { data: openingHoursData } = useQuery({
-    queryKey: ["opening-hours", format(monthStart, "yyyy-MM-dd"), format(monthEnd, "yyyy-MM-dd")],
+    queryKey: useTenantKey(["opening-hours", format(monthStart, "yyyy-MM-dd"), format(monthEnd, "yyyy-MM-dd")]),
     queryFn: () => getOpeningHoursRange(format(monthStart, "yyyy-MM-dd"), format(monthEnd, "yyyy-MM-dd")),
   });
 

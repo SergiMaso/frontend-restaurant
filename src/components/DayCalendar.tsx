@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useRestaurant } from "@/contexts/RestaurantContext";
 import { getAppointmentsQueryKey, useAppointmentsQuery } from "@/hooks/useAppointmentsQuery";
+import { useTenantKey } from "@/hooks/useTenantKey";
 import { Pencil, Trash2, User, UserCheck, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -199,8 +200,13 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
     };
   }, [isDragging, startY, scrollTop]);
 
+  const tablesKey = useTenantKey(["tables"]);
+  const customersKey = useTenantKey(["customers"]);
+  const globalStatsKey = useTenantKey(["globalStats"]);
+  const appointmentPaymentKey = useTenantKey(["appointment-payment", selectedReservation?.id]);
+
   const { data: tables, isLoading: tablesLoading } = useQuery({
-    queryKey: ["tables"],
+    queryKey: tablesKey,
     queryFn: getTables,
   });
 
@@ -211,7 +217,7 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
   const seatedMutation = useMutation({
     mutationFn: markAppointmentSeated,
     onSuccess: async (data) => {
-      await queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      await queryClient.invalidateQueries({ queryKey: appointmentsQueryKey });
       await queryClient.refetchQueries({ queryKey: appointmentsQueryKey, exact: true });
 
       const delayMsg = data.delay_minutes
@@ -233,7 +239,7 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
   const leftMutation = useMutation({
     mutationFn: markAppointmentLeft,
     onSuccess: async (data) => {
-      await queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      await queryClient.invalidateQueries({ queryKey: appointmentsQueryKey });
       await queryClient.refetchQueries({ queryKey: appointmentsQueryKey, exact: true });
 
       toast.success(`👋 ${t("calendar.left")} ${data.duration_minutes} min`);
@@ -252,9 +258,9 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
   const noShowMutation = useMutation({
     mutationFn: markAppointmentNoShow,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["appointments"] });
-      queryClient.invalidateQueries({ queryKey: ["customers"] });
-      queryClient.invalidateQueries({ queryKey: ["globalStats"] });
+      queryClient.invalidateQueries({ queryKey: appointmentsQueryKey });
+      queryClient.invalidateQueries({ queryKey: customersKey });
+      queryClient.invalidateQueries({ queryKey: globalStatsKey });
       toast.success(`❌ ${t("calendar.noShowRegistered")}`);
       setDetailsDialogOpen(false);
     },
@@ -266,10 +272,10 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
   const deleteMutation = useMutation({
     mutationFn: ({ id, refund }: { id: number; refund: boolean }) => deleteAppointment(id, refund),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      await queryClient.invalidateQueries({ queryKey: appointmentsQueryKey });
       await queryClient.refetchQueries({ queryKey: appointmentsQueryKey, exact: true });
-      await queryClient.invalidateQueries({ queryKey: ["customers"] });
-      await queryClient.invalidateQueries({ queryKey: ["globalStats"] });
+      await queryClient.invalidateQueries({ queryKey: customersKey });
+      await queryClient.invalidateQueries({ queryKey: globalStatsKey });
       toast.success(t("reservations.deleteSuccess"));
       setDeleteDialogOpen(false);
       setDetailsDialogOpen(false);
@@ -302,7 +308,7 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
   const { paymentEnabled } = useRestaurantConfig();
 
   const { data: selectedPayment } = useQuery({
-    queryKey: ['appointment-payment', selectedReservation?.id],
+    queryKey: appointmentPaymentKey,
     queryFn: () => getAppointmentPayment(selectedReservation!.id),
     enabled: detailsDialogOpen && !!selectedReservation && paymentEnabled,
   });
@@ -310,7 +316,7 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
   const markPaidMutation = useMutation({
     mutationFn: markAppointmentPaid,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      queryClient.invalidateQueries({ queryKey: appointmentsQueryKey });
       toast.success(`✅ ${t("payments.markedAsPaid")}`);
       setDetailsDialogOpen(false);
     },

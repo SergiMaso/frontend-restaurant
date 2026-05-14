@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/dialog";
 import { Loader2, RotateCcw, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { getPayments, refundAppointmentPayment, type PaymentRecord } from "@/services/api";
+import { useTenantKey } from "@/hooks/useTenantKey";
 
 const STATUS_COLORS: Record<string, string> = {
   pending:   "bg-yellow-100 text-yellow-800 border-yellow-200",
@@ -61,8 +62,11 @@ const PaymentsPage = () => {
     }, 400);
   }, []);
 
+  const paymentsKey = useTenantKey(["payments"]);
+  const paymentsListKey = useTenantKey(["payments", page, statusFilter, searchQuery]);
+
   const { data, isLoading } = useQuery({
-    queryKey: ["payments", page, statusFilter, searchQuery],
+    queryKey: paymentsListKey,
     queryFn: () => getPayments(page, statusFilter === "all" ? undefined : statusFilter, searchQuery || undefined),
   });
 
@@ -70,7 +74,7 @@ const PaymentsPage = () => {
     mutationFn: (appointmentId: number) => refundAppointmentPayment(appointmentId),
     onSuccess: () => {
       toast.success(t("payments.refundSuccess"));
-      queryClient.invalidateQueries({ queryKey: ["payments"] });
+      queryClient.invalidateQueries({ queryKey: paymentsKey });
       setRefundingPayment(null);
     },
     onError: (error: Error) => {
