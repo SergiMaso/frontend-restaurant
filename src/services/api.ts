@@ -126,6 +126,7 @@ export interface AppointmentMutationResult {
 
 export interface Customer {
   phone: string;
+  bsuid?: string | null;
   name: string;
   language: string;
   visit_count: number;

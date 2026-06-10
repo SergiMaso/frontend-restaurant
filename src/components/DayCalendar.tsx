@@ -7,6 +7,7 @@ import { useRestaurant } from "@/contexts/RestaurantContext";
 import { getAppointmentsQueryKey, useAppointmentsQuery } from "@/hooks/useAppointmentsQuery";
 import { useTenantKey } from "@/hooks/useTenantKey";
 import { Pencil, Trash2, User, UserCheck, XCircle } from "lucide-react";
+import { CustomerIdentifier } from "@/components/CustomerIdentifier";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -825,7 +826,7 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
 
                 <div className="flex items-start gap-2">
                   <span className="font-semibold min-w-[100px]">📞 {tCommon("phone")}:</span>
-                  <span>{selectedReservation.phone}</span>
+                  <CustomerIdentifier phone={selectedReservation.phone} bsuid={(selectedReservation as any).bsuid} showIcon={false} />
                 </div>
 
                 <div className="flex items-start gap-2">

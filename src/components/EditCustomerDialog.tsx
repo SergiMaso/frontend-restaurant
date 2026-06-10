@@ -52,10 +52,13 @@ const EditCustomerDialog = ({ open, onOpenChange, customer }: EditCustomerDialog
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const defaultCountry = useDefaultPhoneCountry();
 
+  const isBsuidOnly = customer && customer.bsuid && !customer.phone?.startsWith("+");
+
   useEffect(() => {
     if (customer) {
       setName(customer.name || "");
-      setPhone(customer.phone || "");
+      // For BSUID-only customers, leave the phone field empty so the operator can add a real one
+      setPhone(customer.phone?.startsWith("+") ? customer.phone : "");
       setLanguage(customer.language || "es");
     }
   }, [customer, open]);
@@ -97,16 +100,15 @@ const EditCustomerDialog = ({ open, onOpenChange, customer }: EditCustomerDialog
       return;
     }
 
-    if (!phone.trim()) {
+    // For BSUID-only customers the phone field may be empty (no real phone yet); that's allowed
+    if (!isBsuidOnly && !phone.trim()) {
       toast.error(t("customers.phoneRequired"));
       return;
     }
 
-    updateMutation.mutate({
-      name: name.trim(),
-      phone: phone.trim(),
-      language: language,
-    });
+    const payload: any = { name: name.trim(), language };
+    if (phone.trim()) payload.phone = phone.trim();
+    updateMutation.mutate(payload);
   };
 
   const handleDelete = () => {
@@ -141,9 +143,18 @@ const EditCustomerDialog = ({ open, onOpenChange, customer }: EditCustomerDialog
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {isBsuidOnly && (
+              <div className="space-y-1 rounded-md bg-muted px-3 py-2 text-sm">
+                <p className="font-medium text-muted-foreground">WhatsApp ID</p>
+                <p className="font-mono text-xs break-all">{customer.bsuid}</p>
+                <p className="text-xs text-muted-foreground">
+                  This customer hid their phone number. Enter a real phone below to link it.
+                </p>
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="phone">
-                {t("customers.phone")} <span className="text-destructive">*</span>
+                {t("customers.phone")}{!isBsuidOnly && <span className="text-destructive"> *</span>}
               </Label>
               <PhoneInput
                 id="phone"
@@ -151,7 +162,7 @@ const EditCustomerDialog = ({ open, onOpenChange, customer }: EditCustomerDialog
                 onChange={setPhone}
                 defaultCountry={defaultCountry}
                 placeholder="600 000 000"
-                required
+                required={!isBsuidOnly}
               />
               <p className="text-xs text-muted-foreground">
                 {t("customers.phoneChangeWarning")}
