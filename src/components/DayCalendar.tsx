@@ -587,6 +587,14 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
           {t("tables.noTables")}
         </div>
       ) : (
+        <>
+        <div className="flex gap-3 px-1 py-1.5 text-[11px] text-muted-foreground flex-wrap">
+          <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-orange-500 inline-block" /><span className="w-2.5 h-2.5 rounded-sm bg-yellow-500 inline-block" />{tCommon("reservationStatus.confirmed")}</span>
+          <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-blue-400 inline-block" /><span className="w-2.5 h-2.5 rounded-sm bg-blue-600 inline-block" />{tCommon("notes")}</span>
+          <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-red-500 inline-block" /><span className="w-2.5 h-2.5 rounded-sm bg-red-700 inline-block" />{t("calendar.seated")}</span>
+          <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-green-500 inline-block" /><span className="w-2.5 h-2.5 rounded-sm bg-emerald-600 inline-block" />{tCommon("reservationStatus.completed")}</span>
+          {paymentEnabled && <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-gray-300 inline-block" /><span className="w-2.5 h-2.5 rounded-sm bg-gray-400 inline-block" />{tCommon("reservationStatus.pending_payment")}</span>}
+        </div>
         <div className="border border-border/50 rounded-lg overflow-hidden bg-card relative" style={{ height: isFullscreen ? 'calc(100vh - 120px)' : '70vh' }}>
           <div ref={scrollContainerRef} className="overflow-auto relative h-full">
             <div style={{ minWidth: wideScheduleMinWidth }}>
@@ -759,6 +767,7 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
             </div>
           </div>
         </div>
+        </>
       )}
 
       <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>

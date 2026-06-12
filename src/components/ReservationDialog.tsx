@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -21,7 +21,7 @@ import {
 import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
 import { format, addHours, parse } from "date-fns";
-import { getTables, getCustomers, createAppointment, updateAppointment, deleteAppointment, updateCustomer } from "@/services/api";
+import { getTables, getCustomers, getAppointments, createAppointment, updateAppointment, deleteAppointment, updateCustomer, markAppointmentSeated } from "@/services/api";
 import DeleteReservationDialog from "@/components/DeleteReservationDialog";
 import CustomerAutocomplete from "@/components/CustomerAutocomplete";
 import { useRestaurantConfig } from "@/hooks/useRestaurantConfig";
@@ -101,6 +101,8 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
   const [areaPreference, setAreaPreference] = useState<"auto" | "inside" | "terrace">("auto");
   const [selectedTableIds, setSelectedTableIds] = useState<number[]>([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isWalkIn, setIsWalkIn] = useState(false);
+  const [walkInArea, setWalkInArea] = useState<"all" | "inside" | "terrace">("all");
 
   const tablesKey = useTenantKey(["tables"]);
   const customersKey = useTenantKey(["customers"]);
@@ -122,6 +124,39 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
     queryKey: customersKey,
     queryFn: getCustomers,
   });
+
+  const appointmentsKey = useTenantKey(["appointments"]);
+  const { data: todayAppointments } = useQuery({
+    queryKey: appointmentsKey,
+    queryFn: getAppointments,
+    enabled: isWalkIn,
+  });
+
+  const busyTableIds = useMemo(() => {
+    if (!isWalkIn || !todayAppointments) return new Set<number>();
+    const now = new Date();
+    const walkInEnd = new Date(now.getTime() + defaultBookingDuration * 60 * 60 * 1000);
+    const todayStr = format(now, "yyyy-MM-dd");
+    const occupied = new Set<number>();
+    for (const appt of todayAppointments) {
+      if (appt.date !== todayStr) continue;
+      // Actually seated right now
+      const isSeated = !!(appt.seated_at && !appt.left_at);
+      // Has a confirmed reservation overlapping the walk-in window (now → now + defaultDuration)
+      let overlaps = false;
+      if (!isSeated && (appt.status === "confirmed" || appt.status === "pending_payment")) {
+        try {
+          const rStart = new Date(appt.start_time.split("+")[0].split("Z")[0]);
+          const rEnd = new Date(appt.end_time.split("+")[0].split("Z")[0]);
+          overlaps = rStart < walkInEnd && rEnd > now;
+        } catch {}
+      }
+      if (isSeated || overlaps) {
+        (appt.table_ids || (appt.table_id ? [appt.table_id] : [])).forEach((id: number) => occupied.add(id));
+      }
+    }
+    return occupied;
+  }, [isWalkIn, todayAppointments, defaultBookingDuration]);
 
   // Efecte per calcular automàticament l'hora final
   useEffect(() => {
@@ -207,6 +242,8 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
       setAutoEndTime(true);
       setLanguage("ca");
       setAreaPreference("auto");
+      setIsWalkIn(false);
+      setWalkInArea("all");
     }
   }, [reservation, open, defaultTime, defaultTableId, defaultDate]);
 
@@ -237,13 +274,26 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
         return createAppointment(data);
       }
     },
-    onSuccess: (response) => {
+    onSuccess: async (response) => {
       console.log("✅ Resposta del servidor:", response);
+      let seatingFailed = false;
+      if (isWalkIn && response?.appointment_id) {
+        try {
+          await markAppointmentSeated(response.appointment_id);
+        } catch (e) {
+          console.error("Error marking walk-in as seated:", e);
+          seatingFailed = true;
+        }
+      }
       queryClient.invalidateQueries({
         predicate: (query) => Array.isArray(query.queryKey) && query.queryKey[0] === "appointments",
       });
       queryClient.invalidateQueries({ queryKey: customersKey });
-      toast.success(reservation ? t("reservations.updateSuccess") : t("reservations.createSuccess"));
+      if (seatingFailed) {
+        toast.warning(t("reservations.walkInSeatingFailed"));
+      } else {
+        toast.success(reservation ? t("reservations.updateSuccess") : t("reservations.createSuccess"));
+      }
       onOpenChange(false);
     },
     onError: (error: Error & { status?: number }) => {
@@ -274,10 +324,21 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!clientName || !phone || !numPeople) {
+    const now = new Date();
+    const walkInTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    const walkInName = "Walk-in";
+    const walkInPhone = "walkin";
+
+    if (isWalkIn) {
+      if (!numPeople) {
+        toast.error(t("reservations.fillRequiredFields"));
+        return;
+      }
+    } else if (!clientName || !phone || !numPeople) {
       toast.error(t("reservations.fillRequiredFields"));
       return;
     }
+
     const requestedPeople = Number.parseInt(numPeople, 10);
     if (!Number.isFinite(requestedPeople) || requestedPeople < 1) {
       toast.error(t("reservations.fillRequiredFields"));
@@ -285,17 +346,21 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
     }
 
     const dataToSend: any = {
-      client_name: clientName,
-      phone: phone,
-      date: reservationDate,
-      time: reservationTime,
+      client_name: isWalkIn ? walkInName : clientName,
+      phone: isWalkIn ? walkInPhone : phone,
+      date: isWalkIn ? format(now, "yyyy-MM-dd") : reservationDate,
+      time: isWalkIn ? walkInTime : reservationTime,
       num_people: requestedPeople,
-      language: language,
-      area_preference: areaPreference,
+      language: isWalkIn ? language : language,
+      area_preference: isWalkIn ? (walkInArea === "all" ? "auto" : walkInArea) : areaPreference,
     };
 
     // IMPORTANT: Calcular duration_hours per al backend
-    if (endTime && reservationTime) {
+    // Walk-ins always use the default duration — endTime/reservationTime are stale state values
+    // unrelated to the actual walk-in start time and must not be used here.
+    if (isWalkIn) {
+      dataToSend.duration_hours = defaultBookingDuration;
+    } else if (endTime && reservationTime) {
       try {
         // Parsejar les hores
         const [startHour, startMin] = reservationTime.split(':').map(Number);
@@ -409,9 +474,35 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {!reservation && (
+              <label className="flex items-center gap-2 cursor-pointer select-none rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted/50 transition-colors">
+                <Checkbox
+                  checked={isWalkIn}
+                  onCheckedChange={(checked) => setIsWalkIn(checked as boolean)}
+                />
+                🚶 {t("reservations.walkIn")}
+                {isWalkIn && <span className="ml-auto text-xs text-muted-foreground">{t("reservations.walkInHint")}</span>}
+              </label>
+            )}
+
+            {isWalkIn && (
+              <div className="flex gap-2">
+                {(["all", "inside", "terrace"] as const).map((area) => (
+                  <button
+                    key={area}
+                    type="button"
+                    onClick={() => setWalkInArea(area)}
+                    className={`flex-1 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors ${walkInArea === area ? "bg-primary text-primary-foreground border-primary" : "hover:bg-muted/50"}`}
+                  >
+                    {area === "all" ? `⌂☀ ${t("reservations.allTables")}` : area === "inside" ? `⌂ ${t("reservations.areaInside")}` : `☀ ${t("reservations.areaTerrace")}`}
+                  </button>
+                ))}
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Autocompletat per NOM */}
-              <CustomerAutocomplete
+              {!isWalkIn && <CustomerAutocomplete
                 customers={customers}
                 value={clientName}
                 onChange={setClientName}
@@ -420,10 +511,10 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
                 placeholder="Joan García"
                 type="name"
                 required
-              />
+              />}
 
               {/* Autocompletat per TELÈFON */}
-              <CustomerAutocomplete
+              {!isWalkIn && <CustomerAutocomplete
                 customers={customers}
                 value={phone}
                 onChange={setPhone}
@@ -433,7 +524,7 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
                 type="phone"
                 required
                 defaultCountry={defaultCountry}
-              />
+              />}
 
               <div className="space-y-2">
                 <Label htmlFor="numPeople">
@@ -456,7 +547,7 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
                 </p>
               </div>
 
-              <div className="space-y-2">
+              {!isWalkIn && <div className="space-y-2">
                 <Label htmlFor="reservationDate">
                   {t("reservations.date")} <span className="text-destructive">*</span>
                 </Label>
@@ -467,9 +558,9 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
                   onChange={(e) => setReservationDate(e.target.value)}
                   required
                 />
-              </div>
+              </div>}
 
-              <div className="space-y-2">
+              {!isWalkIn && <div className="space-y-2">
                 <Label htmlFor="reservationTime">
                   {t("reservations.startTime")} <span className="text-destructive">*</span>
                 </Label>
@@ -485,9 +576,9 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
+              </div>}
 
-              <div className="space-y-2">
+              {!isWalkIn && <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="endTime">{t("reservations.endTime")}</Label>
                   <Checkbox
@@ -504,9 +595,9 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
                   disabled={autoEndTime}
                   placeholder="22:00"
                 />
-              </div>
+              </div>}
 
-              <div className="space-y-2">
+              {!isWalkIn && <div className="space-y-2">
                 <Label htmlFor="language">
                   {t("reservations.language")} <span className="text-destructive">*</span>
                 </Label>
@@ -515,16 +606,18 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
                     <SelectValue placeholder={t("reservations.selectLanguage")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ca">Català</SelectItem>
-                    <SelectItem value="es">Español</SelectItem>
-                    <SelectItem value="en">English</SelectItem>
-                    <SelectItem value="fr">Français</SelectItem>
-                    <SelectItem value="de">Deutsch</SelectItem>
+                    <SelectItem value="ca">🌍 Català</SelectItem>
+                    <SelectItem value="es">🇪🇸 Español</SelectItem>
+                    <SelectItem value="en">🇬🇧 English</SelectItem>
+                    <SelectItem value="fr">🇫🇷 Français</SelectItem>
+                    <SelectItem value="it">🇮🇹 Italiano</SelectItem>
+                    <SelectItem value="de">🇩🇪 Deutsch</SelectItem>
+                    <SelectItem value="pt">🇵🇹 Português</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
+              </div>}
 
-              <div className="space-y-2">
+              {!isWalkIn && <div className="space-y-2">
                 <Label htmlFor="areaPreference">{t("reservations.areaPreference")}</Label>
                 <Select value={areaPreference} onValueChange={(value: "auto" | "inside" | "terrace") => setAreaPreference(value)}>
                   <SelectTrigger>
@@ -536,7 +629,7 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
                     <SelectItem value="terrace">{t("reservations.areaTerrace")}</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
+              </div>}
 
               <div className="space-y-2 md:col-span-2">
                 <div className="flex items-center justify-between">
@@ -570,22 +663,28 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
                     <span className="rounded border border-rose-300 bg-rose-50 px-2 py-0.5 text-rose-800">🚫 {t("reservations.disabledManual")}</span>
                   </div>
                   {tables
-                    ?.slice()
+                    ?.filter((t) => !isWalkIn || walkInArea === "all" || t.area === walkInArea)
+                    .slice()
                     .sort((a, b) => {
-                      // 1. available before unavailable
+                      // 1. busy (currently occupied) last
+                      const aBusy = isWalkIn && busyTableIds.has(a.id) ? 1 : 0;
+                      const bBusy = isWalkIn && busyTableIds.has(b.id) ? 1 : 0;
+                      if (aBusy !== bBusy) return aBusy - bBusy;
+                      // 2. available before unavailable
                       if (a.status !== b.status) return a.status === "available" ? -1 : 1;
-                      // 2. inside before terrace
+                      // 3. inside before terrace
                       const areaOrder = (area: string) => area === "terrace" ? 1 : 0;
                       if (a.area !== b.area) return areaOrder(a.area) - areaOrder(b.area);
-                      // 3. table number ascending
+                      // 4. table number ascending
                       return a.table_number - b.table_number;
                     })
                     .map((table) => {
                       const isTerrace = table.area === "terrace";
                       const isDisabled = table.status !== "available";
+                      const isBusy = isWalkIn && busyTableIds.has(table.id);
                       const isSelected = selectedTableIds.includes(table.id);
                       const areaSymbol = isTerrace ? "☀" : "⌂";
-                      const tablePrefix = isDisabled ? `🚫${areaSymbol}` : areaSymbol;
+                      const tablePrefix = isDisabled ? `🚫${areaSymbol}` : isBusy ? `🔴${areaSymbol}` : areaSymbol;
 
                       const baseClass = isTerrace
                         ? "border-amber-200 bg-amber-50/60"
@@ -593,6 +692,7 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
                       const disabledClass = isTerrace
                         ? "border-rose-300 bg-gradient-to-r from-rose-50 to-amber-50 text-rose-900"
                         : "border-rose-300 bg-rose-50/90 text-rose-900";
+                      const busyClass = "border-orange-300 bg-orange-50/80 text-orange-900";
                       const selectedClass = isSelected
                         ? isTerrace
                           ? "ring-2 ring-amber-400 border-amber-400"
@@ -602,14 +702,14 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
                       return (
                         <label
                           key={table.id}
-                          className={`flex items-center justify-between rounded-md border px-3 py-2 text-sm transition-colors ${isDisabled ? disabledClass : baseClass} ${selectedClass}`}
+                          className={`flex items-center justify-between rounded-md border px-3 py-2 text-sm transition-colors ${isDisabled ? disabledClass : isBusy ? busyClass : baseClass} ${selectedClass}`}
                         >
                           <span>
                             {tablePrefix} {tCommon("table")} {table.table_number} ({table.capacity} {t("tables.people")}) ·{" "}
                             <span className={isTerrace ? "text-amber-700 font-medium" : "text-slate-700 font-medium"}>
                               {table.area === "terrace" ? t("reservations.areaTerrace") : t("reservations.areaInside")}
                             </span>{" "}
-                            · {isDisabled ? t("reservations.disabledManual") : table.status}
+                            · {isDisabled ? t("reservations.disabledManual") : isBusy ? t("reservations.tableBusy") : table.status}
                           </span>
                           <Checkbox
                             checked={isSelected}
