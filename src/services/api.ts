@@ -61,6 +61,13 @@ export interface Appointment {
   notes?: string | null;
   created_at?: string;
   language?: string;
+  /**
+   * The CUSTOMER's current language, joined in by GET /api/appointments.
+   * Distinct from `language` above, which is stored on the booking and can be
+   * older than the customer's. ReservationDialog falls back to this when the
+   * booking has no language of its own.
+   */
+  customer_language?: string;
   no_show?: boolean;
   seated_at?: string | null;
   left_at?: string | null;

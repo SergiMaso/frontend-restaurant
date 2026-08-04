@@ -46,7 +46,26 @@ export const useRestaurantConfig = () => {
   const fixedTimeSlotsLunch = getConfigValue("fixed_time_slots_lunch", "13:00,15:00");
   const fixedTimeSlotsDinner = getConfigValue("fixed_time_slots_dinner", "20:00,21:30");
 
+  // Restaurant's own default language = first of supported_languages, mirroring
+  // the backend (voice_handler._get_default_language and
+  // ai_processor.get_default_language both use supported_languages[0]).
+  // Never hardcode a language in the UI: the reservation dialog used to default
+  // to "ca" for every restaurant, so staff saved without touching the field and
+  // silently overwrote the customer's real language.
+  const supportedLanguages = getConfigValue("supported_languages", "es")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  // Empty while the config query is still in flight — "not known yet" must be
+  // distinguishable from a real answer. Returning a provisional "es" meant the
+  // dialog filled the field with it, and its "only fill if empty" rule then
+  // blocked the real value from ever replacing it: a Catalan restaurant would
+  // show Spanish purely because the placeholder won the race.
+  const restaurantDefaultLanguage = isLoading ? "" : supportedLanguages[0] || "es";
+
   return {
+    supportedLanguages,
+    restaurantDefaultLanguage,
     configs,
     isLoading,
     error,

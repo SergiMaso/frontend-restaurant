@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Trash2 } from "lucide-react";
+import { Trash2, Loader2 } from "lucide-react";
 import { format, addHours, parse } from "date-fns";
 import { getTables, getCustomers, getAppointments, createAppointment, updateAppointment, deleteAppointment, updateCustomer, markAppointmentSeated } from "@/services/api";
 import DeleteReservationDialog from "@/components/DeleteReservationDialog";
@@ -71,6 +71,8 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
     fixedTimeSlotsLunch,
     fixedTimeSlotsDinner,
     paymentEnabled,
+    restaurantDefaultLanguage,
+    isLoading: configLoading,
   } = useRestaurantConfig();
   const defaultCountry = useDefaultPhoneCountry();
 
@@ -97,7 +99,18 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
   const [reservationTime, setReservationTime] = useState(availableTimeSlots[0] || "20:00");
   const [endTime, setEndTime] = useState("");
   const [autoEndTime, setAutoEndTime] = useState(true);
-  const [language, setLanguage] = useState("ca");
+  const [language, setLanguage] = useState("");
+  // Whether staff actually picked a language in this dialog session.
+  //
+  // On EDIT the field is only sent when this is true. Displaying a value is not
+  // consent to write it: an old reservation can hold a stale language (the
+  // customer has since switched, and save_customer_language updates only the
+  // customer row), and the PUT cascades whatever it receives to BOTH the
+  // appointment and the customer. Sending an untouched value would destroy the
+  // newer preference. On CREATE we always send, since there is nothing to clobber
+  // and the backend would otherwise fall back to 'es' rather than the
+  // restaurant's configured language.
+  const [languageTouched, setLanguageTouched] = useState(false);
   const [areaPreference, setAreaPreference] = useState<"auto" | "inside" | "terrace">("auto");
   const [selectedTableIds, setSelectedTableIds] = useState<number[]>([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -192,7 +205,17 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
       setNumPeople(reservation.num_people?.toString() || "");
       setSelectedTableIds(currentTableIds);
       setAreaPreference((reservation.area_preference as "auto" | "inside" | "terrace") || "auto");
-      setLanguage(reservation.language || "ca");
+      // customer -> booking -> restaurant config. Never a hardcoded language.
+      //
+      // Customer first, deliberately: the booking's language is a snapshot from
+      // when it was made and can only go stale, while the customer's record
+      // self-corrects whenever they write. Every reservation edited via the
+      // dashboard before 2026-07-31 also had 'ca' written onto it by the bug this
+      // fixes, so preferring the booking would keep showing that wrong value.
+      setLanguage(
+        reservation.customer_language || reservation.language || restaurantDefaultLanguage
+      );
+      setLanguageTouched(false);
 
       if (reservation.date) {
         const date = new Date(reservation.date);
@@ -240,12 +263,45 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
       setReservationTime(defaultTime || "20:00");
       setEndTime("");
       setAutoEndTime(true);
-      setLanguage("ca");
+      // New reservation, customer not yet known: the restaurant's configured
+      // language, not a hardcoded "ca". If staff then pick an existing customer,
+      // handleSelectCustomer overrides this with that customer's language.
+      setLanguage(restaurantDefaultLanguage);
+      setLanguageTouched(false);
       setAreaPreference("auto");
       setIsWalkIn(false);
       setWalkInArea("all");
     }
+    // NOTE: restaurantDefaultLanguage is deliberately NOT a dependency here.
+    // It arrives asynchronously (react-query), and adding it makes this whole
+    // effect re-run when the config resolves — wiping name, phone, party size,
+    // tables, date, time and languageTouched while staff are typing. The late
+    // config is handled by the narrow effect below instead.
   }, [reservation, open, defaultTime, defaultTableId, defaultDate]);
+
+  // Fill in the language only once, and only if nothing is set yet — covers the
+  // dialog opening before the restaurant config query resolves. Never overwrites
+  // a stored value or a staff selection, and touches no other field.
+  useEffect(() => {
+    if (!languageTouched && !language && restaurantDefaultLanguage) {
+      setLanguage(restaurantDefaultLanguage);
+    }
+  }, [restaurantDefaultLanguage, languageTouched, language]);
+
+  // The config is normally already cached, so the spinner below should never be
+  // visible in practice. If it is, something is wrong (slow network, failing
+  // /api/client-configs, cache miss) — say so, because the symptom otherwise is
+  // just "the dialog feels stuck" with nothing to point at.
+  useEffect(() => {
+    if (!open || !configLoading) return;
+    const timer = setTimeout(() => {
+      console.warn(
+        "[ReservationDialog] restaurant config still loading after 1s — " +
+          "form is blocked until it arrives so the language field cannot show a wrong default."
+      );
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [open, configLoading]);
 
   const updateMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -351,7 +407,12 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
       date: isWalkIn ? format(now, "yyyy-MM-dd") : reservationDate,
       time: isWalkIn ? walkInTime : reservationTime,
       num_people: requestedPeople,
-      language: isWalkIn ? language : language,
+      // CREATE: always send (nothing to clobber, and omitting would make the
+      // backend fall back to 'es' instead of the restaurant's configured language).
+      // EDIT: send only if staff actually changed the field — the PUT cascades
+      // language to both the appointment and the customer, so an untouched stale
+      // value would overwrite a newer customer preference.
+      ...(!reservation || languageTouched ? { language } : {}),
       area_preference: isWalkIn ? (walkInArea === "all" ? "auto" : walkInArea) : areaPreference,
     };
 
@@ -436,7 +497,12 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
     console.log("✅ Client seleccionat:", customer);
     setClientName(customer.name);
     setPhone(customer.phone);
-    // Si el client ja té idioma definit, el carreguem
+    // A stored customer language is real evidence of what they speak, so it wins
+    // over whatever is currently in the box.
+    //
+    // Only when they actually have one: falling back to restaurantDefaultLanguage
+    // here would blank the field if the config is still loading, and could wipe a
+    // language the staff member had already chosen.
     if (customer.language) {
       setLanguage(customer.language);
     }
@@ -473,6 +539,21 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
             </DialogDescription>
           </DialogHeader>
 
+          {/* The dialog opens immediately so the click always responds, but the
+              form is withheld until the restaurant config has arrived. Otherwise
+              the language field would render before its source is known and show
+              a wrong default. In practice the config is cached and this never
+              appears; if it lingers, the effect above logs why. */}
+          {configLoading ? (
+            <div
+              className="flex flex-col items-center justify-center gap-3 py-16 text-muted-foreground"
+              role="status"
+              aria-live="polite"
+            >
+              <Loader2 className="h-6 w-6 animate-spin" />
+              <span className="text-sm">{tCommon("loading", { defaultValue: "Loading…" })}</span>
+            </div>
+          ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             {!reservation && (
               <label className="flex items-center gap-2 cursor-pointer select-none rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted/50 transition-colors">
@@ -601,7 +682,13 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
                 <Label htmlFor="language">
                   {t("reservations.language")} <span className="text-destructive">*</span>
                 </Label>
-                <Select value={language} onValueChange={setLanguage}>
+                <Select
+                  value={language}
+                  onValueChange={(v) => {
+                    setLanguage(v);
+                    setLanguageTouched(true);
+                  }}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder={t("reservations.selectLanguage")} />
                   </SelectTrigger>
@@ -744,12 +831,17 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                   {tCommon("cancel")}
                 </Button>
-                <Button type="submit" disabled={updateMutation.isPending}>
+                {/* Blocked while the restaurant config is loading: until it
+                    arrives the language box can still be empty, and saving would
+                    send language:"" — which the backend resolves to the customer's
+                    language or a hardcoded "es", never the restaurant's. */}
+                <Button type="submit" disabled={updateMutation.isPending || configLoading}>
                   {updateMutation.isPending ? tCommon("saving") : reservation ? t("tables.saveChanges") : t("reservations.create")}
                 </Button>
               </div>
             </div>
           </form>
+          )}
         </DialogContent>
       </Dialog>
 
