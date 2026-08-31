@@ -22,6 +22,8 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { getWeeklyDefaults, updateWeeklyDefault, type WeeklyDefault } from "@/services/api";
+import { useRestaurantConfig } from "@/hooks/useRestaurantConfig";
+import DayRulesEditor, { type DayRulesValue } from "@/components/DayRulesEditor";
 import { useTenantKey } from "@/hooks/useTenantKey";
 
 const WeeklyScheduleManager = () => {
@@ -169,8 +171,18 @@ const DayEditorDialog = ({ day, open, onOpenChange, onSave, isLoading }: DayEdit
   const [lunchEnd, setLunchEnd] = useState(day.lunch_end || "15:00");
   const [dinnerStart, setDinnerStart] = useState(day.dinner_start || "19:00");
   const [dinnerEnd, setDinnerEnd] = useState(day.dinner_end || "22:30");
+  // Slot caps and deposits for this weekday. Undefined stays undefined: sending a key
+  // the user never touched would record this level as overriding it.
+  const [dayRules, setDayRules] = useState<DayRulesValue>({
+    slot_config: day.slot_config ?? null,
+    payment_config: day.payment_config ?? null,
+  });
   const { t } = useTranslation("dashboard");
   const { t: tCommon } = useTranslation("common");
+  const {
+    timeSlotsMode, fixedTimeSlotsLunch, fixedTimeSlotsDinner,
+    paymentEnabled, getConfigNumber, getConfigValue,
+  } = useRestaurantConfig();
 
   // Map day_of_week (0=Monday, 6=Sunday) to translation keys
   const getDayName = (dayOfWeek: number) => {
@@ -185,7 +197,11 @@ const DayEditorDialog = ({ day, open, onOpenChange, onSave, isLoading }: DayEdit
       lunch_start: lunchStart,
       lunch_end: lunchEnd,
       dinner_start: dinnerStart,
-      dinner_end: dinnerEnd
+      dinner_end: dinnerEnd,
+      // null clears the override so this weekday inherits global again — that is what
+      // the reset control produces, and the backend treats null and {} differently.
+      slot_config: dayRules.slot_config ?? null,
+      payment_config: dayRules.payment_config ?? null,
     };
 
     onSave(data);
@@ -283,6 +299,30 @@ const DayEditorDialog = ({ day, open, onOpenChange, onSave, isLoading }: DayEdit
                 </div>
               </div>
             </div>
+          )}
+          {/* Slot caps and deposits for every Monday. Collapsed by default so someone
+              who only came to change the hours never has to look at it. */}
+          {status !== "closed" && (
+            <DayRulesEditor
+              value={dayRules}
+              onChange={setDayRules}
+              timeSlotsMode={timeSlotsMode}
+              inheritedSlots={{
+                lunch: fixedTimeSlotsLunch.split(",").map((x) => x.trim()).filter(Boolean),
+                dinner: fixedTimeSlotsDinner.split(",").map((x) => x.trim()).filter(Boolean),
+              }}
+              inheritedPayment={{
+                amount: getConfigNumber("payment_deposit_amount", 0),
+                minPeople: getConfigNumber("payment_min_people", 1),
+                currency: getConfigValue("payment_currency", "EUR"),
+              }}
+              paymentsAvailable={paymentEnabled}
+              openServices={
+                status === "lunch_only" ? ["lunch"]
+                  : status === "dinner_only" ? ["dinner"]
+                  : ["lunch", "dinner"]
+              }
+            />
           )}
         </div>
 

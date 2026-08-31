@@ -620,5 +620,25 @@
       "expired": "Expirado",
       "bypassed": "Omitido"
     }
+  },
+  "dayRules": {
+    "lunch": "Comida",
+    "dinner": "Cena",
+    "slots": "Franjas",
+    "payment": "Pago",
+    "reset": "Volver a heredar",
+    "inheritedSlots": "hereda ({{count}} franjas)",
+    "ownSlots": "{{count}} franjas · {{caps}}",
+    "customiseSlots": "Personalizar las franjas de este día",
+    "noLimit": "sin límite",
+    "people": "personas",
+    "addSlot": "Añadir franja",
+    "inheritedDeposit": "hereda ({{amount}} {{currency}}, {{people}}+)",
+    "inheritedNoDeposit": "hereda (sin depósito)",
+    "noDepositHere": "sin depósito este día",
+    "ownDeposit": "{{amount}} {{currency}} · a partir de {{people}}",
+    "depositRequired": "Pedir depósito",
+    "amountPerPerson": "Importe por persona",
+    "fromPeople": "A partir de"
   }
 }

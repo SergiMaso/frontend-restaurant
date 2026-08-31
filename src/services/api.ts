@@ -395,6 +395,10 @@ export interface OpeningHours {
   dinner_start?: string | null;
   dinner_end?: string | null;
   notes?: string | null;
+  /** null = this date inherits its weekday. The backend returns these; without them
+      declared here the date dialog cannot show what it is currently overriding. */
+  slot_config?: SlotConfig | null;
+  payment_config?: PaymentConfig | null;
 }
 
 export interface SetOpeningHoursData {
@@ -405,6 +409,9 @@ export interface SetOpeningHoursData {
   dinner_start?: string;
   dinner_end?: string;
   notes?: string;
+  /** Send null to clear the override and inherit the weekday again. */
+  slot_config?: SlotConfig | null;
+  payment_config?: PaymentConfig | null;
 }
 
 export async function getOpeningHours(date: string): Promise<OpeningHours> {
@@ -471,6 +478,31 @@ export async function updateOpeningHours(date: string, data: Partial<SetOpeningH
 // WEEKLY DEFAULTS
 // ========================================
 
+/**
+ * Per-day overrides. NULL means INHERIT — a level that has not been customised follows
+ * the one above automatically, which is why clearing a value is how you reset it.
+ *
+ * slot_config keys ARE the slots that exist for that service; a null cap means the slot
+ * exists with no people limit. Defining a service takes ownership of its whole list, so
+ * slots added globally afterwards do not appear there — the reset control is the way back.
+ */
+export interface SlotConfig {
+  lunch?: Record<string, number | null>;
+  dinner?: Record<string, number | null>;
+}
+
+export interface ServicePaymentConfig {
+  required?: boolean;
+  /** Per person. Omit to inherit the amount from the level above. */
+  amount?: number;
+  min_people?: number;
+}
+
+export interface PaymentConfig {
+  lunch?: ServicePaymentConfig;
+  dinner?: ServicePaymentConfig;
+}
+
 export interface WeeklyDefault {
   day_of_week: number;
   day_name: string;
@@ -479,6 +511,9 @@ export interface WeeklyDefault {
   lunch_end?: string | null;
   dinner_start?: string | null;
   dinner_end?: string | null;
+  /** null = inherits the global config. Distinct from {} , which would be an override. */
+  slot_config?: SlotConfig | null;
+  payment_config?: PaymentConfig | null;
 }
 
 export interface UpdateWeeklyDefaultData {
@@ -487,6 +522,9 @@ export interface UpdateWeeklyDefaultData {
   lunch_end?: string;
   dinner_start?: string;
   dinner_end?: string;
+  /** Send null to clear the override and inherit global again. */
+  slot_config?: SlotConfig | null;
+  payment_config?: PaymentConfig | null;
 }
 
 export async function getWeeklyDefaults(): Promise<WeeklyDefault[]> {

@@ -620,5 +620,25 @@
       "expired": "Expirat",
       "bypassed": "Omès"
     }
+  },
+  "dayRules": {
+    "lunch": "Dinar",
+    "dinner": "Sopar",
+    "slots": "Franges",
+    "payment": "Pagament",
+    "reset": "Tornar a heretar",
+    "inheritedSlots": "hereta ({{count}} franges)",
+    "ownSlots": "{{count}} franges · {{caps}}",
+    "customiseSlots": "Personalitzar les franges d'aquest dia",
+    "noLimit": "sense límit",
+    "people": "persones",
+    "addSlot": "Afegir franja",
+    "inheritedDeposit": "hereta ({{amount}} {{currency}}, {{people}}+)",
+    "inheritedNoDeposit": "hereta (sense dipòsit)",
+    "noDepositHere": "sense dipòsit aquest dia",
+    "ownDeposit": "{{amount}} {{currency}} · a partir de {{people}}",
+    "depositRequired": "Demanar dipòsit",
+    "amountPerPerson": "Import per persona",
+    "fromPeople": "A partir de"
   }
 }
