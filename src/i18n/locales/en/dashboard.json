@@ -211,7 +211,14 @@
     "warningOverCapacity": "Warning: {{people}} people for {{seats}} seats (manual override, +{{over}}).",
     "configuredMax": "Configured max: {{max}}",
     "overrideActive": "(override active: {{people}})",
-    "warningAboveConfiguredMax": "Warning: {{people}} people is above configured max ({{max}}). Manual frontend override applied."
+    "warningAboveConfiguredMax": "Warning: {{people}} people is above configured max ({{max}}). Manual frontend override applied.",
+    "askForDeposit": "Ask for a deposit to confirm",
+    "depositPerPerson": "Amount per person",
+    "depositTotal": "= {{total}} {{currency}} for {{people}} people",
+    "depositHelp": "A payment link will be sent by WhatsApp. The booking is confirmed once it is paid.",
+    "depositLinkSent": "Reservation created. Payment link for {{amount}} {{currency}} sent by WhatsApp.",
+    "depositLinkNotSent": "Reservation created and deposit requested, but the WhatsApp could not be sent. Link: {{url}}",
+    "createdButDepositFailed": "Reservation created, but without a deposit: {{reason}}"
   },
   "customers": {
     "title": "Customers",
@@ -310,7 +317,7 @@
     "userReactivatedDesc": "User has been reactivated successfully",
     "userDeletedDesc": "User has been permanently deleted",
     "deactivateError": "Could not deactivate user",
-    "reactivateError": "Could not reactivate user",
+    "reactivateError": "Error reactivating user",
     "linkCopiedDesc": "Link has been copied to clipboard",
     "emailRequired": "Email is required",
     "registerLink": "Registration link",
@@ -323,7 +330,6 @@
     "deleteSuccess": "User deleted",
     "deleteError": "Error deleting user",
     "reactivateSuccess": "User reactivated",
-    "reactivateError": "Error reactivating user",
     "confirmDelete": "Are you sure you want to delete this user?",
     "confirmReactivate": "Do you want to reactivate this user?",
     "loadingUsers": "Loading users...",

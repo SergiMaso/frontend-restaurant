@@ -211,7 +211,14 @@
     "warningOverCapacity": "Advertència: {{people}} persones per {{seats}} places (anul·lació manual, +{{over}}).",
     "configuredMax": "Màxim configurat: {{max}}",
     "overrideActive": "(anul·lació activa: {{people}})",
-    "warningAboveConfiguredMax": "Advertència: {{people}} persones està per sobre del màxim configurat ({{max}}). S'aplica anul·lació manual des del frontend."
+    "warningAboveConfiguredMax": "Advertència: {{people}} persones està per sobre del màxim configurat ({{max}}). S'aplica anul·lació manual des del frontend.",
+    "askForDeposit": "Demanar un dipòsit per confirmar",
+    "depositPerPerson": "Import per persona",
+    "depositTotal": "= {{total}} {{currency}} per a {{people}} persones",
+    "depositHelp": "S'enviarà un enllaç de pagament per WhatsApp. La reserva es confirma quan es paga.",
+    "depositLinkSent": "Reserva creada. Enllaç de pagament de {{amount}} {{currency}} enviat per WhatsApp.",
+    "depositLinkNotSent": "Reserva creada i dipòsit demanat, però no s'ha pogut enviar el WhatsApp. Enllaç: {{url}}",
+    "createdButDepositFailed": "Reserva creada correctament, però sense dipòsit: {{reason}}"
   },
   "customers": {
     "title": "Clients",
@@ -310,7 +317,7 @@
     "userReactivatedDesc": "L'usuari ha estat reactivat correctament",
     "userDeletedDesc": "L'usuari ha estat eliminat permanentment",
     "deactivateError": "No s'ha pogut desactivar l'usuari",
-    "reactivateError": "No s'ha pogut reactivar l'usuari",
+    "reactivateError": "Error reactivant usuari",
     "linkCopiedDesc": "L'enllaç ha estat copiat al porta-retalls",
     "emailRequired": "El correu és obligatori",
     "registerLink": "Enllaç de registre",
@@ -323,7 +330,6 @@
     "deleteSuccess": "Usuari eliminat",
     "deleteError": "Error eliminant usuari",
     "reactivateSuccess": "Usuari reactivat",
-    "reactivateError": "Error reactivant usuari",
     "confirmDelete": "Estàs segur que vols eliminar aquest usuari?",
     "confirmReactivate": "Vols reactivar aquest usuari?",
     "loadingUsers": "Carregant usuaris...",

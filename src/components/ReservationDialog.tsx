@@ -21,7 +21,7 @@ import {
 import { toast } from "sonner";
 import { Trash2, Loader2 } from "lucide-react";
 import { format, addHours, parse } from "date-fns";
-import { getTables, getCustomers, getAppointments, createAppointment, updateAppointment, deleteAppointment, updateCustomer, markAppointmentSeated } from "@/services/api";
+import { getTables, getCustomers, getAppointments, createAppointment, updateAppointment, deleteAppointment, updateCustomer, markAppointmentSeated, getPaymentTerms } from "@/services/api";
 import DeleteReservationDialog from "@/components/DeleteReservationDialog";
 import CustomerAutocomplete from "@/components/CustomerAutocomplete";
 import { useRestaurantConfig } from "@/hooks/useRestaurantConfig";
@@ -115,6 +115,11 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
   const [selectedTableIds, setSelectedTableIds] = useState<number[]>([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isWalkIn, setIsWalkIn] = useState(false);
+  // Deposit controls. `depositTouched` keeps a staff-typed figure from being
+  // overwritten when the suggested amount arrives or the date/time changes.
+  const [askForDeposit, setAskForDeposit] = useState(false);
+  const [depositAmount, setDepositAmount] = useState("");
+  const [depositTouched, setDepositTouched] = useState(false);
   const [walkInArea, setWalkInArea] = useState<"all" | "inside" | "terrace">("all");
 
   const tablesKey = useTenantKey(["tables"]);
@@ -124,6 +129,45 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
     queryKey: tablesKey,
     queryFn: getTables,
   });
+
+  // What the day's rules would charge for this booking. Only used to suggest a figure
+  // and to decide whether the deposit controls exist at all — staff can type anything
+  // over it. Editing an existing reservation is out of scope: this is for new bookings.
+  // Walk-ins are excluded on purpose: the customer is already standing at the door,
+  // so a deposit link they would have to open on their phone before being seated is
+  // not a thing anyone wants. (They also compute their own time inside the submit
+  // handler, which is not in scope here.)
+  const peopleForTerms = Number.parseInt(numPeople, 10) || 1;
+  const { data: paymentTerms } = useQuery({
+    queryKey: useTenantKey([
+      "payment-terms", reservationDate, reservationTime, String(peopleForTerms),
+    ]),
+    queryFn: () => getPaymentTerms(reservationDate, reservationTime, peopleForTerms),
+    enabled: !reservation && !isWalkIn && open && !!reservationDate && !!reservationTime,
+    staleTime: 60 * 1000,
+  });
+
+  // Every deposit control hangs off this. Nothing about payments is rendered when the
+  // restaurant has no Stripe set up — an unusable box invites staff to tick it and then
+  // wonder why nothing happened.
+  const depositAvailable = !isWalkIn && !reservation && !!paymentTerms?.payments_available;
+
+  // Suggest the day's amount, but never overwrite a figure staff have typed.
+  useEffect(() => {
+    if (!depositAvailable || depositTouched) return;
+    const suggested = paymentTerms?.amount_per_person;
+    setDepositAmount(suggested != null && suggested > 0 ? String(suggested) : "");
+    setAskForDeposit(!!paymentTerms?.would_apply);
+  }, [depositAvailable, paymentTerms?.amount_per_person, paymentTerms?.would_apply, depositTouched]);
+
+  // A fresh dialog starts from the day's rules again.
+  useEffect(() => {
+    if (!open) {
+      setDepositTouched(false);
+      setAskForDeposit(false);
+      setDepositAmount("");
+    }
+  }, [open]);
 
   // DEBUG: Mostrar taules disponibles
   console.log("🔍 [ReservationDialog] Taules disponibles:", {
@@ -347,6 +391,26 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
       queryClient.invalidateQueries({ queryKey: customersKey });
       if (seatingFailed) {
         toast.warning(t("reservations.walkInSeatingFailed"));
+      } else if (response?.payment_error) {
+        // The booking saved; only the deposit failed. Said explicitly and left on
+        // screen, because "reservation created" alone would hide it and staff would
+        // believe a deposit was requested when none was.
+        toast.warning(
+          t("reservations.createdButDepositFailed", { reason: response.payment_error }),
+          { duration: 12000 },
+        );
+      } else if (response?.requires_payment) {
+        toast.success(
+          response.payment_link_sent
+            ? t("reservations.depositLinkSent", {
+                amount: response.payment_amount,
+                currency: response.payment_currency,
+              })
+            // The link is real either way — staff can read it out — so this is a
+            // warning, not an error, and it must not claim delivery.
+            : t("reservations.depositLinkNotSent", { url: response.payment_short_url }),
+          { duration: response.payment_link_sent ? 6000 : 20000 },
+        );
       } else {
         toast.success(reservation ? t("reservations.updateSuccess") : t("reservations.createSuccess"));
       }
@@ -415,6 +479,14 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
       ...(!reservation || languageTouched ? { language } : {}),
       area_preference: isWalkIn ? (walkInArea === "all" ? "auto" : walkInArea) : areaPreference,
     };
+
+    // Only sent when the box is both available and ticked. The amount goes as typed;
+    // the server refuses a blank or zero rather than reading it as "no deposit",
+    // because ticking the box says a deposit IS wanted — unticking is how you say no.
+    if (depositAvailable && askForDeposit) {
+      dataToSend.send_payment_link = true;
+      dataToSend.deposit_amount_per_person = Number.parseFloat(depositAmount);
+    }
 
     // IMPORTANT: Calcular duration_hours per al backend
     // Walk-ins always use the default duration — endTime/reservationTime are stale state values
@@ -824,6 +896,69 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
                   <Trash2 className="h-4 w-4 mr-2" />
                   {tCommon("delete")}
                 </Button>
+              )}
+
+              {/* Deposit. Rendered ONLY when the restaurant can actually take one —
+                  payments enabled AND Stripe onboarding finished. A box that cannot
+                  work invites staff to tick it and then wonder why nothing happened. */}
+              {depositAvailable && (
+                <div className="w-full space-y-3 rounded-lg border border-border/50 p-3 mb-2">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="ask-deposit"
+                      checked={askForDeposit}
+                      onCheckedChange={(checked) => {
+                        setAskForDeposit(checked === true);
+                        setDepositTouched(true);
+                      }}
+                    />
+                    <Label htmlFor="ask-deposit" className="cursor-pointer">
+                      {t("reservations.askForDeposit")}
+                    </Label>
+                  </div>
+
+                  {askForDeposit && (
+                    <div className="space-y-2">
+                      <Label htmlFor="deposit-amount">
+                        {t("reservations.depositPerPerson")}
+                      </Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          id="deposit-amount"
+                          type="number"
+                          /* Per person, but Stripe's floor applies to the TOTAL. A
+                             per-person minimum of 0.50 keeps even a party of one above
+                             it, so the server-side refusal stays unreachable in
+                             practice. It remains as a backstop: the floor varies by
+                             currency and the API can be called directly. */
+                          min="0.50"
+                          step="0.50"
+                          value={depositAmount}
+                          onChange={(e) => {
+                            setDepositAmount(e.target.value);
+                            setDepositTouched(true);
+                          }}
+                          className="max-w-[140px]"
+                        />
+                        <span className="text-sm text-muted-foreground">
+                          {paymentTerms?.currency || "EUR"}
+                        </span>
+                        {Number.parseFloat(depositAmount) > 0 && peopleForTerms > 0 && (
+                          <span className="text-sm text-muted-foreground">
+                            {t("reservations.depositTotal", {
+                              total: (Number.parseFloat(depositAmount) * peopleForTerms).toFixed(2),
+                              currency: paymentTerms?.currency || "EUR",
+                              people: peopleForTerms,
+                            })}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {t("reservations.depositHelp")}
+                      </p>
+                    </div>
+                  )}
+                </div>
               )}
 
               {/* Botons cancel·lar i guardar a la dreta */}

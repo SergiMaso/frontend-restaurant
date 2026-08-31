@@ -112,6 +112,10 @@ export interface CreateAppointmentData {
   table_ids?: number[];
   language?: string;
   notes?: string | null;
+  /** Staff ticked "ask for a deposit". Overrides the day's rules and min_people. */
+  send_payment_link?: boolean;
+  /** Per person. Pre-filled from the day's rules, then whatever staff types. */
+  deposit_amount_per_person?: number;
 }
 
 export interface UpdateAppointmentData {
@@ -129,6 +133,48 @@ export interface AppointmentMutationResult {
   table_ids: number[];
   manual_override: boolean;
   message?: string;
+  /** Present when a deposit was requested and created. */
+  requires_payment?: boolean;
+  checkout_url?: string;
+  payment_short_url?: string;
+  payment_amount?: number;
+  payment_currency?: string;
+  payment_expiry_minutes?: number;
+  /** False when the link exists but the WhatsApp message did not go out. */
+  payment_link_sent?: boolean;
+  /**
+   * The booking WAS created; only the deposit failed. Comes back with a 201, not an
+   * error status, so staff are never left thinking the reservation did not save.
+   */
+  payment_error?: string;
+}
+
+export interface PaymentTerms {
+  /** False when the restaurant has no Stripe set up — hide the deposit controls. */
+  payments_available: boolean;
+  /** True when the day's own rules would charge this party automatically. */
+  would_apply?: boolean;
+  amount_per_person?: number | null;
+  min_people?: number;
+  currency?: string;
+  /** The rules could not be resolved; the dialog opens but cannot suggest a figure. */
+  terms_unavailable?: boolean;
+}
+
+/** What the day's rules would charge, for pre-filling the deposit box. */
+export async function getPaymentTerms(
+  date: string, time: string, numPeople: number,
+): Promise<PaymentTerms> {
+  const params = new URLSearchParams({ date, time, num_people: String(numPeople) });
+  const response = await fetch(`${API_URL}/api/payment-terms?${params}`, {
+    headers: { ...getRestaurantHeaders() },
+    credentials: 'include',
+  });
+  if (!response.ok) {
+    // Never block the dialog over this: it only supplies a suggested figure.
+    return { payments_available: false };
+  }
+  return response.json();
 }
 
 export interface Customer {
