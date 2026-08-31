@@ -932,7 +932,13 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
                              practice. It remains as a backstop: the floor varies by
                              currency and the API can be called directly. */
                           min="0.50"
-                          step="0.50"
+                          /* 0.01, not a coarser step: the input sits in a native form,
+                             so the browser enforces step alignment and step="0.50"
+                             would reject 10.10 or 18.75 with a stepMismatch — amounts
+                             the backend explicitly accepts (two decimals, matching
+                             DECIMAL(10,2)). The minimum is the guard here; the step is
+                             only a spinner increment. */
+                          step="0.01"
                           value={depositAmount}
                           onChange={(e) => {
                             setDepositAmount(e.target.value);
