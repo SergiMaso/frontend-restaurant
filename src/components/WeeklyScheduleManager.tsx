@@ -146,6 +146,15 @@ const WeeklyScheduleManager = () => {
       {/* Modal d'edició */}
       {selectedDay && (
         <DayEditorDialog
+          /* Remount per weekday. selectedDay changes without this component ever
+             unmounting — it is never set back to null — so its useState initial
+             values stay frozen at whichever weekday was opened FIRST. Clicking
+             Monday, closing, then clicking Tuesday showed Monday's hours and
+             Monday's slot caps, and saving wrote them onto Tuesday.
+
+             Pre-existing for the hour fields; adding slot and deposit state made it
+             a great deal more destructive. */
+          key={selectedDay.day_of_week}
           day={selectedDay}
           open={dialogOpen}
           onOpenChange={setDialogOpen}
@@ -311,11 +320,17 @@ const DayEditorDialog = ({ day, open, onOpenChange, onSave, isLoading }: DayEdit
                 lunch: fixedTimeSlotsLunch.split(",").map((x) => x.trim()).filter(Boolean),
                 dinner: fixedTimeSlotsDinner.split(",").map((x) => x.trim()).filter(Boolean),
               }}
-              inheritedPayment={{
-                amount: getConfigNumber("payment_deposit_amount", 0),
-                minPeople: getConfigNumber("payment_min_people", 1),
-                currency: getConfigValue("payment_currency", "EUR"),
-              }}
+              /* Global config has a single deposit for the whole restaurant, so both
+                 services legitimately inherit the same figure here. The per-service
+                 shape matters one level down, where a weekday CAN differ. */
+              inheritedPayment={(() => {
+                const global = {
+                  amount: getConfigNumber("payment_deposit_amount", 0),
+                  minPeople: getConfigNumber("payment_min_people", 1),
+                  currency: getConfigValue("payment_currency", "EUR"),
+                };
+                return { lunch: global, dinner: global };
+              })()}
               paymentsAvailable={paymentEnabled}
               openServices={
                 status === "lunch_only" ? ["lunch"]

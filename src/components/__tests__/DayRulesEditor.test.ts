@@ -89,3 +89,42 @@ describe('Both dialogs use the same editor', () => {
     expect(dateDialog).toMatch(/status !== "closed" &&/);
   });
 });
+
+describe('State cannot leak between days', () => {
+  it('the weekday dialog is remounted when a different weekday is opened', () => {
+    // DayEditorDialog holds its fields in useState, initialised from `day`. The parent
+    // never sets selectedDay back to null, so the component is never unmounted and
+    // those initial values stay frozen at whichever weekday was opened FIRST: click
+    // Monday, close, click Tuesday, and you edit Monday's data — then save it onto
+    // Tuesday. A key is what forces the remount.
+    const dialogUsage = weekday.slice(weekday.indexOf('<DayEditorDialog'));
+    expect(
+      /key=\{selectedDay\.day_of_week\}/.test(dialogUsage),
+      'without a key, one weekday’s hours and slot caps get saved onto another',
+    ).toBe(true);
+  });
+
+  it('the weekday dialog seeds its rules from the day it was given', () => {
+    expect(weekday).toMatch(/slot_config:\s*day\.slot_config/);
+    expect(weekday).toMatch(/payment_config:\s*day\.payment_config/);
+  });
+});
+
+describe('Inherited deposits are resolved per service', () => {
+  it('the date dialog does not collapse lunch and dinner into one figure', () => {
+    // A weekday can charge 10 for lunch and 25 for dinner. `lunch || dinner` showed
+    // one of them as the suggestion for BOTH, and accepting that suggestion wrote the
+    // wrong price for the other service.
+    expect(dateDialog).not.toMatch(/payment_config\?\.lunch\s*\|\|\s*weekday\?\.payment_config\?\.dinner/);
+    expect(dateDialog).toContain('inheritedPaymentFor');
+    expect(dateDialog).toMatch(/weekday\?\.payment_config\?\.\[service\]/);
+  });
+
+  it('the editor looks the inherited deposit up by service', () => {
+    expect(editor).toMatch(/inheritedPayment\?\.\[service\]/);
+    // Two uses: the collapsed summary and the expanded fields. Missing either one
+    // shows the wrong figure in that place only, which is easy to overlook.
+    const lookups = editor.match(/inheritedPayment\?\.\[service\]/g) || [];
+    expect(lookups.length).toBeGreaterThanOrEqual(2);
+  });
+});

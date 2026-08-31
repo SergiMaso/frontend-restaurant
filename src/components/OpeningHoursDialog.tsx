@@ -81,14 +81,21 @@ const OpeningHoursDialog = ({ open, onOpenChange, date, initialData }: OpeningHo
     return global.split(",").map((x) => x.trim()).filter(Boolean);
   };
 
-  const inheritedPayment = (() => {
-    const wd = weekday?.payment_config?.lunch || weekday?.payment_config?.dinner;
+  // Resolved per service. `lunch || dinner` collapsed them into one figure, so a
+  // weekday charging 10 for lunch and 25 for dinner suggested 10 for both — and
+  // accepting that suggestion would have written the wrong price for dinner.
+  const inheritedPaymentFor = (service: "lunch" | "dinner") => {
+    const wd = weekday?.payment_config?.[service];
     return {
       amount: wd?.amount ?? getConfigNumber("payment_deposit_amount", 0),
       minPeople: wd?.min_people ?? getConfigNumber("payment_min_people", 1),
       currency: getConfigValue("payment_currency", "EUR"),
     };
-  })();
+  };
+  const inheritedPayment = {
+    lunch: inheritedPaymentFor("lunch"),
+    dinner: inheritedPaymentFor("dinner"),
+  };
 
   useEffect(() => {
     if (initialData) {

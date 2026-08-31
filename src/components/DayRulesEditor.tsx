@@ -21,8 +21,12 @@ interface DayRulesEditorProps {
   timeSlotsMode: string;
   /** Slots inherited from the level above, shown as placeholders. */
   inheritedSlots: Record<Service, string[]>;
-  /** Deposit inherited from the level above, shown when this level overrides nothing. */
-  inheritedPayment?: { amount?: number; minPeople?: number; currency?: string } | null;
+  /**
+   * Deposit inherited from the level above, PER SERVICE. A weekday can override lunch
+   * and dinner differently, so one figure for both would suggest the wrong price for
+   * whichever service it did not come from.
+   */
+  inheritedPayment?: Partial<Record<Service, { amount?: number; minPeople?: number; currency?: string }>>;
   /** False when the restaurant cannot take deposits — the payment sections disappear. */
   paymentsAvailable: boolean;
   /** Which services are open; a closed one has nothing to configure. */
@@ -101,19 +105,20 @@ const DayRulesEditor = ({
 
   const paymentSummary = (service: Service) => {
     const own = paymentFor(service);
+    const inherited = inheritedPayment?.[service];
     if (!own) {
-      if (!inheritedPayment?.amount) return t("dayRules.inheritedNoDeposit");
+      if (!inherited?.amount) return t("dayRules.inheritedNoDeposit");
       return t("dayRules.inheritedDeposit", {
-        amount: inheritedPayment.amount,
-        currency: inheritedPayment.currency || "EUR",
-        people: inheritedPayment.minPeople ?? 1,
+        amount: inherited.amount,
+        currency: inherited.currency || "EUR",
+        people: inherited.minPeople ?? 1,
       });
     }
     if (own.required === false) return t("dayRules.noDepositHere");
     return t("dayRules.ownDeposit", {
-      amount: own.amount ?? inheritedPayment?.amount ?? "–",
-      currency: inheritedPayment?.currency || "EUR",
-      people: own.min_people ?? inheritedPayment?.minPeople ?? 1,
+      amount: own.amount ?? inherited?.amount ?? "–",
+      currency: inherited?.currency || "EUR",
+      people: own.min_people ?? inherited?.minPeople ?? 1,
     });
   };
 
@@ -184,7 +189,7 @@ const DayRulesEditor = ({
             >
               <PaymentRows
                 block={paymentFor(service)}
-                inherited={inheritedPayment}
+                inherited={inheritedPayment?.[service]}
                 onChange={(next) => setPayment(service, next)}
               />
             </Section>
