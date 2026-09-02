@@ -21,7 +21,7 @@ import {
 import { toast } from "sonner";
 import { Trash2, Loader2 } from "lucide-react";
 import { format, addHours, parse } from "date-fns";
-import { getTables, getCustomers, getAppointments, createAppointment, updateAppointment, deleteAppointment, updateCustomer, markAppointmentSeated, getPaymentTerms } from "@/services/api";
+import { getTables, getCustomers, getAppointments, createAppointment, updateAppointment, deleteAppointment, updateCustomer, markAppointmentSeated, getPaymentTerms, getSlotCapacity } from "@/services/api";
 import DeleteReservationDialog from "@/components/DeleteReservationDialog";
 import CustomerAutocomplete from "@/components/CustomerAutocomplete";
 import { useRestaurantConfig } from "@/hooks/useRestaurantConfig";
@@ -146,6 +146,82 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
     enabled: !reservation && !isWalkIn && open && !!reservationDate && !!reservationTime,
     staleTime: 60 * 1000,
   });
+
+  // Staff bookings bypass the arrival cap on purpose — the phone rings, it is a
+  // regular — so the create call will not refuse and there is nothing to react to
+  // afterwards. This is the only moment the cap can be mentioned at all.
+  //
+  // A walk-in does NOT book reservationTime: the submit handler builds its own date and
+  // time from the clock, so asking about reservationTime would warn about a slot the
+  // booking never touches. Mirrored here, and re-read while the dialog sits open so a
+  // walk-in typed at 13:29 and confirmed at 13:31 is judged on the right slot.
+  const [walkInNow, setWalkInNow] = useState(() => new Date());
+  useEffect(() => {
+    if (!open || !isWalkIn) return;
+    setWalkInNow(new Date());
+    const tick = setInterval(() => setWalkInNow(new Date()), 60 * 1000);
+    return () => clearInterval(tick);
+  }, [open, isWalkIn]);
+
+  const capDate = isWalkIn ? format(walkInNow, "yyyy-MM-dd") : reservationDate;
+  const capTime = isWalkIn
+    ? `${String(walkInNow.getHours()).padStart(2, "0")}:${String(walkInNow.getMinutes()).padStart(2, "0")}`
+    : reservationTime;
+
+  const { data: slotCapacity } = useQuery({
+    queryKey: useTenantKey([
+      "slot-capacity", capDate, capTime, String(peopleForTerms),
+      String(reservation?.id ?? ""), String(isWalkIn),
+    ]),
+    queryFn: () => getSlotCapacity(capDate, capTime, peopleForTerms, reservation?.id, isWalkIn),
+    enabled: open && !!capDate && !!capTime,
+    staleTime: 30 * 1000,
+  });
+
+  // Only worth a word when this booking is the one going over. A slot that is merely
+  // busy is the restaurant's normal state and saying so every time trains staff to
+  // click past the warning that matters.
+  const capWarning = (() => {
+    if (!slotCapacity?.applies || slotCapacity.unavailable) return null;
+    // A walk-in is moved onto a real sitting, so say where they are actually going —
+    // staff are looking at 13:20 on screen and the booking will read 13:30.
+    if (slotCapacity.snapped_from) {
+      if (slotCapacity.overflow) {
+        return t(
+          "reservations.walkInSnappedOver",
+          "S'apuntarà al torn de les {{slot}}, que quedarà {{n}} persones per sobre.",
+        )
+          .replace("{{slot}}", slotCapacity.assigned ?? capTime)
+          .replace("{{n}}", String(slotCapacity.over_by ?? 0));
+      }
+      return t("reservations.walkInSnapped", "S'apuntarà al torn de les {{slot}}.")
+        .replace("{{slot}}", slotCapacity.assigned ?? capTime);
+    }
+
+    // Said before the capacity messages because it is not a warning at all: the save
+    // will fail. How full a sitting is has nothing to say about a time that is not one.
+    if (slotCapacity.bookable === false) {
+      return t(
+        "reservations.capNotASitting",
+        "Aquesta hora no és cap dels torns ({{sittings}}), i el sistema no la desarà.",
+      ).replace("{{sittings}}", (slotCapacity.sittings || []).join(", "));
+    }
+    if (slotCapacity.overflow) {
+      return t(
+        "reservations.capOverflow",
+        "Aquesta hora no és cap dels torns i cap dels dos del costat té lloc. Es pot fer, però el torn de les {{slot}} quedarà {{n}} persones per sobre.",
+      )
+        .replace("{{slot}}", slotCapacity.assigned ?? capTime)
+        .replace("{{n}}", String(slotCapacity.over_by ?? 0));
+    }
+    if (slotCapacity.would_exceed) {
+      const left = slotCapacity.remaining ?? 0;
+      return t("reservations.capExceeded", "El torn de les {{slot}} només té {{left}} places lliures.")
+        .replace("{{slot}}", slotCapacity.assigned ?? capTime)
+        .replace("{{left}}", String(left));
+    }
+    return null;
+  })();
 
   // Every deposit control hangs off this. Nothing about payments is rendered when the
   // restaurant has no Stripe set up — an unusable box invites staff to tick it and then
@@ -304,7 +380,12 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
       setNumPeople("");
       setSelectedTableIds(defaultTableId ? [defaultTableId] : []);
       setReservationDate(defaultDate ? format(defaultDate, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd"));
-      setReservationTime(defaultTime || "20:00");
+      // The first slot the restaurant actually offers, not a hardcoded 20:00. In fixed
+      // mode the dropdown lists only the configured sittings, so a restaurant whose
+      // lunch is 13:00/14:30 opened this dialog showing a time absent from its own
+      // list — and saving without touching it booked off-slot, which is precisely the
+      // case the arrival cap then has to treat as a deliberate override.
+      setReservationTime(defaultTime || availableTimeSlots[0] || "20:00");
       setEndTime("");
       setAutoEndTime(true);
       // New reservation, customer not yet known: the restaurant's configured
@@ -322,6 +403,25 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
     // tables, date, time and languageTouched while staff are typing. The late
     // config is handled by the narrow effect below instead.
   }, [reservation, open, defaultTime, defaultTableId, defaultDate]);
+
+  // The restaurant's config arrives asynchronously, and the reset above does not wait
+  // for it: opening the dialog first computes availableTimeSlots from whatever the hook
+  // returns while loading, so the time can settle on a provisional 12:00 (interval
+  // default) or 20:00 and stay there once the real slots arrive. In fixed mode the
+  // backend rejects any time outside the configured sittings, so that provisional value
+  // is not merely odd — the save fails with "l'hora no està disponible".
+  //
+  // Only ever corrects a value the dropdown does not offer, so a time staff picked
+  // themselves is never moved. Skipped when editing: an existing booking may sit on an
+  // off-slot time from before the sittings were configured, and snapping it would
+  // silently reschedule somebody.
+  useEffect(() => {
+    if (!open || reservation || configLoading) return;
+    if (!availableTimeSlots.length) return;
+    if (availableTimeSlots.includes(reservationTime)) return;
+    setReservationTime(defaultTime || availableTimeSlots[0]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, reservation, configLoading, availableTimeSlots.join(','), defaultTime]);
 
   // Fill in the language only once, and only if nothing is set yet — covers the
   // dialog opening before the restaurant config query resolves. Never overwrites
@@ -478,6 +578,11 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
       // value would overwrite a newer customer preference.
       ...(!reservation || languageTouched ? { language } : {}),
       area_preference: isWalkIn ? (walkInArea === "all" ? "auto" : walkInArea) : areaPreference,
+      // Told explicitly rather than inferred from the "Walk-in" name and "walkin"
+      // phone: the backend moves the arrival onto the nearest sitting, and deciding
+      // that from a name a person could type themselves is not a rule anyone can rely
+      // on. In fixed mode this is also what lets the booking through at all.
+      ...(isWalkIn ? { walk_in: true } : {}),
     };
 
     // Only sent when the box is both available and ticked. The amount goes as typed;
@@ -965,6 +1070,18 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
                     </div>
                   )}
                 </div>
+              )}
+
+              {/* Next to the confirm button on purpose: the cap does not block the
+                  save, so this is information for the person about to click, not a
+                  validation error. Worded as what it costs, never as a refusal. */}
+              {capWarning && (
+                <p
+                  role="status"
+                  className="text-sm text-amber-600 dark:text-amber-500 basis-full sm:basis-auto sm:mr-auto"
+                >
+                  ⚠️ {capWarning}
+                </p>
               )}
 
               {/* Botons cancel·lar i guardar a la dreta */}

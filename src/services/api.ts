@@ -162,6 +162,46 @@ export interface PaymentTerms {
 }
 
 /** What the day's rules would charge, for pre-filling the deposit box. */
+export interface SlotCapacity {
+  applies: boolean;
+  bookable?: boolean;
+  sittings?: string[];
+  snapped_from?: string | null;
+  unavailable?: boolean;
+  overflow?: boolean;
+  over_by?: number | null;
+  would_exceed?: boolean;
+  assigned?: string | null;
+  how?: string;
+  cap?: number | null;
+  taken?: number;
+  remaining?: number | null;
+}
+
+export async function getSlotCapacity(
+  date: string, time: string, numPeople: number, excludeAppointmentId?: number,
+  walkIn?: boolean,
+): Promise<SlotCapacity> {
+  const params = new URLSearchParams({ date, time, num_people: String(numPeople) });
+  // A walk-in is moved onto a real sitting when it is saved, so the answer has to be
+  // about that sitting rather than about the clock time nobody will store.
+  if (walkIn) params.set('walk_in', 'true');
+  // Editing: the booking must not be counted against itself.
+  if (excludeAppointmentId) {
+    params.set('exclude_appointment_id', String(excludeAppointmentId));
+  }
+  const response = await fetch(`${API_URL}/api/slot-capacity?${params}`, {
+    headers: { ...getRestaurantHeaders() },
+    credentials: 'include',
+  });
+  if (!response.ok) {
+    // Never block the dialog over this: staff may exceed the cap deliberately, so a
+    // failure to warn must not become a failure to book.
+    return { applies: false };
+  }
+  return response.json();
+}
+
 export async function getPaymentTerms(
   date: string, time: string, numPeople: number,
 ): Promise<PaymentTerms> {
