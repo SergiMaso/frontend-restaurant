@@ -84,6 +84,42 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
     fixedTimeSlotsDinner
   );
 
+  // DEBUG: Mostrar valors del hook
+  console.log("🔍 [ReservationDialog] Valors del hook:", {
+    maxPeoplePerBooking,
+    defaultBookingDuration,
+    timeSlotsMode,
+    availableTimeSlots: configuredTimeSlots.length
+  });
+
+  const [clientName, setClientName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [numPeople, setNumPeople] = useState("");
+  const [reservationDate, setReservationDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  // The configured list, not the day's: the day's sittings are fetched for a date that
+  // does not exist yet at this point, and the effect below snaps the time onto them the
+  // moment they arrive. Reaching for them here is a temporal dead zone — the whole
+  // dialog throws before it renders, which no source-reading test can see.
+  const [reservationTime, setReservationTime] = useState(configuredTimeSlots[0] || "20:00");
+  const [endTime, setEndTime] = useState("");
+  const [autoEndTime, setAutoEndTime] = useState(true);
+  const [language, setLanguage] = useState("");
+  // Whether staff actually picked a language in this dialog session.
+  //
+  // On EDIT the field is only sent when this is true. Displaying a value is not
+  // consent to write it: an old reservation can hold a stale language (the
+  // customer has since switched, and save_customer_language updates only the
+  // customer row), and the PUT cascades whatever it receives to BOTH the
+  // appointment and the customer. Sending an untouched value would destroy the
+  // newer preference. On CREATE we always send, since there is nothing to clobber
+  // and the backend would otherwise fall back to 'es' rather than the
+  // restaurant's configured language.
+  const [languageTouched, setLanguageTouched] = useState(false);
+  const [areaPreference, setAreaPreference] = useState<"auto" | "inside" | "terrace">("auto");
+  const [selectedTableIds, setSelectedTableIds] = useState<number[]>([]);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isWalkIn, setIsWalkIn] = useState(false);
+
   // The sittings for the DATE, not the restaurant's global list. A date or weekday can
   // set its own, and the save resolves that cascade — so building the dropdown from the
   // global config listed times the save would reject and hid the ones it would accept.
@@ -103,37 +139,6 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
       ? daySittings.slots
       : configuredTimeSlots;
 
-  // DEBUG: Mostrar valors del hook
-  console.log("🔍 [ReservationDialog] Valors del hook:", {
-    maxPeoplePerBooking,
-    defaultBookingDuration,
-    timeSlotsMode,
-    availableTimeSlots: availableTimeSlots.length
-  });
-
-  const [clientName, setClientName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [numPeople, setNumPeople] = useState("");
-  const [reservationDate, setReservationDate] = useState(format(new Date(), "yyyy-MM-dd"));
-  const [reservationTime, setReservationTime] = useState(availableTimeSlots[0] || "20:00");
-  const [endTime, setEndTime] = useState("");
-  const [autoEndTime, setAutoEndTime] = useState(true);
-  const [language, setLanguage] = useState("");
-  // Whether staff actually picked a language in this dialog session.
-  //
-  // On EDIT the field is only sent when this is true. Displaying a value is not
-  // consent to write it: an old reservation can hold a stale language (the
-  // customer has since switched, and save_customer_language updates only the
-  // customer row), and the PUT cascades whatever it receives to BOTH the
-  // appointment and the customer. Sending an untouched value would destroy the
-  // newer preference. On CREATE we always send, since there is nothing to clobber
-  // and the backend would otherwise fall back to 'es' rather than the
-  // restaurant's configured language.
-  const [languageTouched, setLanguageTouched] = useState(false);
-  const [areaPreference, setAreaPreference] = useState<"auto" | "inside" | "terrace">("auto");
-  const [selectedTableIds, setSelectedTableIds] = useState<number[]>([]);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [isWalkIn, setIsWalkIn] = useState(false);
   // Deposit controls. `depositTouched` keeps a staff-typed figure from being
   // overwritten when the suggested amount arrives or the date/time changes.
   const [askForDeposit, setAskForDeposit] = useState(false);

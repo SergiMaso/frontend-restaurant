@@ -349,3 +349,36 @@ describe('ReservationDialog — the dropdown follows the date', () => {
     expect(clean).toContain('availableTimeSlots.includes(reservationTime)');
   });
 });
+
+describe('ReservationDialog — it can actually run', () => {
+  // The tests above read the source. They cannot see a variable used before it is
+  // declared: `const { data } = useQuery({ queryKey: [reservationDate] })` placed above
+  // the useState that declares it parses fine, reads fine, and throws a ReferenceError
+  // the first time the dialog renders — the whole thing, blank, before anything is
+  // drawn. That shipped, and every one of these tests passed on it.
+  //
+  // The compiler does see it (TS2448). The project's own `tsc -p tsconfig.json` does
+  // not: the root config has "files": [] and only project references, so it checks
+  // nothing without --build. That is why "typecheck clean" meant nothing here.
+  it('has no TypeScript errors of its own', async () => {
+    const { execFileSync } = await import('node:child_process');
+    const { resolve } = await import('node:path');
+
+    let output = '';
+    try {
+      execFileSync('npx', ['tsc', '--noEmit', '-p', 'tsconfig.app.json'], {
+        cwd: resolve(__dirname, '../../..'), encoding: 'utf8', stdio: 'pipe',
+      });
+    } catch (error: any) {
+      output = `${error.stdout ?? ''}${error.stderr ?? ''}`;
+    }
+
+    // Scoped to this file: other components carry pre-existing errors, and failing on
+    // those would make this test noise somebody silences rather than a signal.
+    const mine = output
+      .split('\n')
+      .filter((line) => line.includes('ReservationDialog.tsx') && line.includes('error TS'));
+
+    expect(mine, `\n${mine.join('\n')}`).toEqual([]);
+  }, 120_000);
+});
