@@ -311,3 +311,41 @@ describe('ReservationDialog — a walk-in moved onto a sitting', () => {
       .toBeLessThan(block.indexOf('slotCapacity.bookable === false'));
   });
 });
+
+describe('ReservationDialog — the dropdown follows the date', () => {
+  const clean = stripComments(source);
+
+  it('asks the backend which sittings that date has', () => {
+    // The list was built here from the restaurant's GLOBAL config, while the save
+    // resolves the per-day cascade: a Saturday with its own sittings had them rejected
+    // and the global ones offered instead.
+    expect(clean).toContain('getTimeSlots(reservationDate)');
+    expect(clean).toMatch(/queryKey:\s*useTenantKey\(\["time-slots", reservationDate\]\)/);
+  });
+
+  it('re-asks when the date changes', () => {
+    // The date is in the key, or picking another day keeps the first day's sittings.
+    const block = clean.slice(clean.indexOf('const { data: daySittings }'),
+                              clean.indexOf('const { data: daySittings }') + 500);
+    expect(block).toContain('reservationDate');
+  });
+
+  it('only asks in fixed mode', () => {
+    // Interval mode has no sitting list, and the generated grid covers hours staff are
+    // allowed to book outside opening times.
+    const block = clean.slice(clean.indexOf('const { data: daySittings }'),
+                              clean.indexOf('const { data: daySittings }') + 500);
+    expect(block).toContain('timeSlotsMode === "fixed"');
+  });
+
+  it('falls back to the generated list rather than emptying the dropdown', () => {
+    // A failed request must not leave staff unable to pick any time at all.
+    expect(clean).toMatch(/daySittings\?\.slots\?\.length\s*\?\s*daySittings\.slots\s*:\s*configuredTimeSlots/);
+  });
+
+  it('still corrects a time the day does not offer', () => {
+    // The existing effect snaps reservationTime onto availableTimeSlots, which now
+    // means the day's sittings — so changing the date fixes a stale time too.
+    expect(clean).toContain('availableTimeSlots.includes(reservationTime)');
+  });
+});

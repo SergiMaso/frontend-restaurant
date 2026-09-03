@@ -21,7 +21,7 @@ import {
 import { toast } from "sonner";
 import { Trash2, Loader2 } from "lucide-react";
 import { format, addHours, parse } from "date-fns";
-import { getTables, getCustomers, getAppointments, createAppointment, updateAppointment, deleteAppointment, updateCustomer, markAppointmentSeated, getPaymentTerms, getSlotCapacity } from "@/services/api";
+import { getTables, getCustomers, getAppointments, createAppointment, updateAppointment, deleteAppointment, updateCustomer, markAppointmentSeated, getPaymentTerms, getSlotCapacity, getTimeSlots } from "@/services/api";
 import DeleteReservationDialog from "@/components/DeleteReservationDialog";
 import CustomerAutocomplete from "@/components/CustomerAutocomplete";
 import { useRestaurantConfig } from "@/hooks/useRestaurantConfig";
@@ -77,12 +77,31 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
   const defaultCountry = useDefaultPhoneCountry();
 
   // Generar time slots disponibles
-  const availableTimeSlots = generateTimeSlots(
+  const configuredTimeSlots = generateTimeSlots(
     timeSlotsMode,
     timeSlotIntervalMinutes,
     fixedTimeSlotsLunch,
     fixedTimeSlotsDinner
   );
+
+  // The sittings for the DATE, not the restaurant's global list. A date or weekday can
+  // set its own, and the save resolves that cascade — so building the dropdown from the
+  // global config listed times the save would reject and hid the ones it would accept.
+  //
+  // Only in fixed mode. Interval mode has no sitting list to resolve, and the grid
+  // generated here covers hours staff are allowed to book outside opening times, so
+  // replacing it would take something away.
+  const { data: daySittings } = useQuery({
+    queryKey: useTenantKey(["time-slots", reservationDate]),
+    queryFn: () => getTimeSlots(reservationDate),
+    enabled: open && timeSlotsMode === "fixed" && !!reservationDate,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const availableTimeSlots =
+    timeSlotsMode === "fixed" && daySittings?.slots?.length
+      ? daySittings.slots
+      : configuredTimeSlots;
 
   // DEBUG: Mostrar valors del hook
   console.log("🔍 [ReservationDialog] Valors del hook:", {

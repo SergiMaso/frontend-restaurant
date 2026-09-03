@@ -162,6 +162,24 @@ export interface PaymentTerms {
 }
 
 /** What the day's rules would charge, for pre-filling the deposit box. */
+export interface DaySittings {
+  mode: string;
+  slots: string[];
+}
+
+export async function getTimeSlots(date: string): Promise<DaySittings> {
+  const params = new URLSearchParams({ date });
+  const response = await fetch(`${API_URL}/api/time-slots?${params}`, {
+    headers: { ...getRestaurantHeaders() },
+    credentials: 'include',
+  });
+  if (!response.ok) {
+    // Never block the dialog: the caller falls back to the list it builds itself.
+    return { mode: 'interval', slots: [] };
+  }
+  return response.json();
+}
+
 export interface SlotCapacity {
   applies: boolean;
   bookable?: boolean;
