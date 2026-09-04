@@ -290,7 +290,10 @@ describe('ReservationDialog — a walk-in moved onto a sitting', () => {
                             clean.indexOf('const capWarning') + 2200);
 
   it('asks about the sitting the walk-in will land on', () => {
-    expect(clean).toMatch(/getSlotCapacity\(capDate, capTime, peopleForTerms, reservation\?\.id, isWalkIn\)/);
+    // Prefix match: the argument list grows as the preview learns more about the
+    // booking it is predicting, and pinning the whole call means editing this test
+    // every time rather than checking what it is for.
+    expect(clean).toMatch(/getSlotCapacity\(capDate, capTime, peopleForTerms, reservation\?\.id,\s*\n?\s*isWalkIn/);
     expect(clean).toContain('String(isWalkIn)');   // or the answer goes stale on toggle
   });
 

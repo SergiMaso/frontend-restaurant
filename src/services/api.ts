@@ -198,9 +198,14 @@ export interface SlotCapacity {
 
 export async function getSlotCapacity(
   date: string, time: string, numPeople: number, excludeAppointmentId?: number,
-  walkIn?: boolean,
+  walkIn?: boolean, durationMinutes?: number,
 ): Promise<SlotCapacity> {
   const params = new URLSearchParams({ date, time, num_people: String(numPeople) });
+  // The length this booking will actually be saved with. The save honours it, so a
+  // preview using the restaurant's default disagrees for any booking that sets its own.
+  if (durationMinutes && durationMinutes > 0) {
+    params.set('duration_minutes', String(durationMinutes));
+  }
   // A walk-in is moved onto a real sitting when it is saved, so the answer has to be
   // about that sitting rather than about the clock time nobody will store.
   if (walkIn) params.set('walk_in', 'true');

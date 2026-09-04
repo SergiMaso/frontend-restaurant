@@ -192,12 +192,26 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
     ? `${String(walkInNow.getHours()).padStart(2, "0")}:${String(walkInNow.getMinutes()).padStart(2, "0")}`
     : reservationTime;
 
+  // What the save will use: an explicit end time when staff set one, otherwise the
+  // restaurant's default. Previewing with the default while the booking carries its own
+  // puts the warning and the booking on different lengths — and a longer table reaches a
+  // sitting a shorter one does not.
+  const capStayMinutes = (() => {
+    if (autoEndTime || !endTime || !capTime) return undefined;
+    const [startH, startM] = capTime.split(":").map(Number);
+    const [endH, endM] = endTime.split(":").map(Number);
+    if ([startH, startM, endH, endM].some(Number.isNaN)) return undefined;
+    const minutes = (endH * 60 + endM) - (startH * 60 + startM);
+    return minutes > 0 ? minutes : undefined;
+  })();
+
   const { data: slotCapacity } = useQuery({
     queryKey: useTenantKey([
       "slot-capacity", capDate, capTime, String(peopleForTerms),
-      String(reservation?.id ?? ""), String(isWalkIn),
+      String(reservation?.id ?? ""), String(isWalkIn), String(capStayMinutes ?? ""),
     ]),
-    queryFn: () => getSlotCapacity(capDate, capTime, peopleForTerms, reservation?.id, isWalkIn),
+    queryFn: () => getSlotCapacity(capDate, capTime, peopleForTerms, reservation?.id,
+                                   isWalkIn, capStayMinutes),
     enabled: open && !!capDate && !!capTime,
     staleTime: 30 * 1000,
   });
