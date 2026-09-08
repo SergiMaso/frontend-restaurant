@@ -140,7 +140,16 @@
     "deleteError": "Error deleting table",
     "saveSuccess": "Table saved",
     "saveError": "Error saving table",
-    "saveChanges": "Save Changes"
+    "saveChanges": "Save Changes",
+    "assignTables": "Assign tables",
+    "assignTablesOn": "Every booking is given a specific table.",
+    "assignTablesOff": "Seating is by area capacity, with no table assigned.",
+    "setCapacity": "Capacity per area",
+    "setCapacityHelp": "Set how many people each area holds. The tables are generated for you.",
+    "setCapacityWarning": "This replaces every current table.",
+    "setCapacityConfirm": "Generate",
+    "capacityGenerated": "{{count}} seats generated",
+    "capacityBlocked": "{{count}} future bookings still hold a table. Move or cancel them first."
   },
   "reservations": {
     "title": "Reservation Management",

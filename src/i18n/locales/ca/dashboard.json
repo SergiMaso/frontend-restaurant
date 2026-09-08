@@ -140,7 +140,16 @@
     "deleteError": "Error eliminant taula",
     "saveSuccess": "Taula desada",
     "saveError": "Error desant taula",
-    "saveChanges": "Desar Canvis"
+    "saveChanges": "Desar Canvis",
+    "assignTables": "Assignar taules",
+    "assignTablesOn": "Cada reserva rep una taula concreta.",
+    "assignTablesOff": "Es treballa per capacitat de cada zona, sense assignar taula.",
+    "setCapacity": "Capacitat per zona",
+    "setCapacityHelp": "Indica quantes persones caben a cada zona. Les taules es generen soles.",
+    "setCapacityWarning": "Es substituiran totes les taules actuals.",
+    "setCapacityConfirm": "Generar",
+    "capacityGenerated": "{{count}} places generades",
+    "capacityBlocked": "Hi ha {{count}} reserves futures amb taula assignada. Mou-les o cancel·la-les abans."
   },
   "reservations": {
     "title": "Gestió de Reserves",

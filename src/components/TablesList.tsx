@@ -3,9 +3,21 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Users, Ban, Check, Edit, Trash2, Link, Plus } from "lucide-react";
-import { getTables, updateTable, deleteTable, createTable } from "@/services/api";
+import { Users, Ban, Check, Edit, Trash2, Link, Plus, LayoutGrid } from "lucide-react";
+import { getTables, updateTable, deleteTable, createTable, generateCapacityTables, updateClientConfig, CapacityTablesError, type Table } from "@/services/api";
 import { useTenantKey } from "@/hooks/useTenantKey";
+import { useRestaurantConfig } from "@/hooks/useRestaurantConfig";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import TableDialog from "./TableDialog";
 import {
@@ -33,7 +45,14 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
   const { t } = useTranslation("dashboard");
   const { t: tCommon } = useTranslation("common");
 
+  const [capacityOpen, setCapacityOpen] = useState(false);
+  const [insideSeats, setInsideSeats] = useState("");
+  const [terraceSeats, setTerraceSeats] = useState("");
+
+  const { tablesEnabled } = useRestaurantConfig();
+
   const tablesKey = useTenantKey(["tables"]);
+  const configKey = useTenantKey(["client-configs"]);
 
   const { data: tables, isLoading } = useQuery({
     queryKey: tablesKey,
@@ -116,6 +135,50 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
     }
   };
 
+  const capacityMutation = useMutation({
+    mutationFn: generateCapacityTables,
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: tablesKey });
+      const total = Object.values(result.created).reduce((a, b) => a + b, 0);
+      toast.success(t("tables.capacityGenerated", { count: total }));
+      setCapacityOpen(false);
+    },
+    onError: (error: CapacityTablesError) => {
+      // A refusal because bookings still hold the current tables is not a failure the
+      // user caused by typing something wrong, so it gets its own message telling them
+      // what to do about it.
+      if (error.code === "future_bookings") {
+        toast.error(t("tables.capacityBlocked", { count: error.count }));
+      } else {
+        toast.error(error.message);
+      }
+    },
+  });
+
+  const modeMutation = useMutation({
+    mutationFn: (enabled: boolean) => updateClientConfig("tables_enabled", String(enabled)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: configKey });
+      queryClient.invalidateQueries({ queryKey: tablesKey });
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  // What the restaurant currently holds, per area. In capacity mode the individual
+  // tables are an implementation detail — a hundred cards each listing ninety-nine
+  // pairings is unreadable and would put ten thousand badges on the page — so the seats
+  // are summarised instead.
+  const seatsByArea = (tables || []).reduce((acc: Record<string, number>, table: Table) => {
+    acc[table.area] = (acc[table.area] || 0) + (table.capacity || 0);
+    return acc;
+  }, {});
+
+  const openCapacityDialog = () => {
+    setInsideSeats(String(seatsByArea.inside || 0));
+    setTerraceSeats(String(seatsByArea.terrace || 0));
+    setCapacityOpen(true);
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "available":
@@ -141,14 +204,53 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
 
   return (
     <>
-      {/* Button to create new table */}
-      <div className="mb-4">
-        <Button onClick={handleCreate}>
-          <Plus className="h-4 w-4 mr-2" />
-          {t("tables.create")}
-        </Button>
+      {/* Does this restaurant seat by table at all? */}
+      <div className="mb-4 flex items-center justify-between gap-4 p-4 rounded-lg border border-border bg-card">
+        <div>
+          <Label htmlFor="tables-mode" className="font-medium">
+            {t("tables.assignTables")}
+          </Label>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {tablesEnabled ? t("tables.assignTablesOn") : t("tables.assignTablesOff")}
+          </p>
+        </div>
+        <Switch
+          id="tables-mode"
+          checked={tablesEnabled}
+          disabled={modeMutation.isPending}
+          onCheckedChange={(checked) => modeMutation.mutate(checked)}
+        />
       </div>
 
+      {tablesEnabled ? (
+        <div className="mb-4">
+          <Button onClick={handleCreate}>
+            <Plus className="h-4 w-4 mr-2" />
+            {t("tables.create")}
+          </Button>
+        </div>
+      ) : (
+        <div className="mb-4 p-4 rounded-lg border border-border bg-card">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex gap-6">
+              <div>
+                <p className="text-sm text-muted-foreground">{t("reservations.areaInside")}</p>
+                <p className="text-2xl font-bold">{seatsByArea.inside || 0}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">{t("reservations.areaTerrace")}</p>
+                <p className="text-2xl font-bold">{seatsByArea.terrace || 0}</p>
+              </div>
+            </div>
+            <Button onClick={openCapacityDialog}>
+              <LayoutGrid className="h-4 w-4 mr-2" />
+              {t("tables.setCapacity")}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {tablesEnabled && (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {tables?.map((table) => (
           <div
@@ -232,12 +334,61 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
           </div>
         ))}
       </div>
+      )}
 
-      {tables?.length === 0 && (
+      {tablesEnabled && tables?.length === 0 && (
         <div className="text-center py-12 text-muted-foreground">
           <p>{tCommon("noResults")}</p>
         </div>
       )}
+
+      <Dialog open={capacityOpen} onOpenChange={setCapacityOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("tables.setCapacity")}</DialogTitle>
+            <DialogDescription>{t("tables.setCapacityHelp")}</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="grid gap-2">
+              <Label htmlFor="inside-seats">{t("reservations.areaInside")}</Label>
+              <Input
+                id="inside-seats"
+                type="number"
+                min={0}
+                value={insideSeats}
+                onChange={(e) => setInsideSeats(e.target.value)}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="terrace-seats">{t("reservations.areaTerrace")}</Label>
+              <Input
+                id="terrace-seats"
+                type="number"
+                min={0}
+                value={terraceSeats}
+                onChange={(e) => setTerraceSeats(e.target.value)}
+              />
+            </div>
+            <p className="text-sm text-muted-foreground">{t("tables.setCapacityWarning")}</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCapacityOpen(false)}>
+              {tCommon("cancel")}
+            </Button>
+            <Button
+              disabled={capacityMutation.isPending}
+              onClick={() =>
+                capacityMutation.mutate({
+                  inside: Number(insideSeats) || 0,
+                  terrace: Number(terraceSeats) || 0,
+                })
+              }
+            >
+              {t("tables.setCapacityConfirm")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <TableDialog
         open={dialogOpen}

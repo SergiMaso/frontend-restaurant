@@ -420,6 +420,49 @@ export async function deleteTable(tableId: number): Promise<void> {
   }
 }
 
+/**
+ * A refusal from the capacity generator.
+ *
+ * `code` matters to the caller: a refusal because bookings still hold the current tables
+ * needs a different message from a plain validation error — the user has something to do
+ * about the first and nothing to do about the second.
+ */
+export class CapacityTablesError extends Error {
+  code?: string;
+  count?: number;
+
+  constructor(message: string, code?: string, count?: number) {
+    super(message);
+    this.name = 'CapacityTablesError';
+    this.code = code;
+    this.count = count;
+  }
+}
+
+/**
+ * Replace every table with one-seat rows generated from a per-area capacity.
+ *
+ * Only valid while tables_enabled is false; the backend enforces that as well, because
+ * this deletes the restaurant's whole table plan and a stale tab must not be able to
+ * wipe one that is still in use.
+ */
+export async function generateCapacityTables(
+  capacities: { inside?: number; terrace?: number }
+): Promise<{ success: boolean; created: Record<string, number>; removed: number }> {
+  const response = await fetch(`${API_URL}/api/tables/capacity`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { ...getRestaurantHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(capacities),
+  });
+
+  const body = await response.json();
+  if (!response.ok) {
+    throw new CapacityTablesError(body.error || 'Error generant taules', body.code, body.count);
+  }
+  return body;
+}
+
 // ========================================
 // CUSTOMERS
 // ========================================

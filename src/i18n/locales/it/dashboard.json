@@ -140,7 +140,16 @@
     "deleteError": "Errore nell'eliminazione del tavolo",
     "saveSuccess": "Tavolo salvato",
     "saveError": "Errore nel salvataggio del tavolo",
-    "saveChanges": "Salva Modifiche"
+    "saveChanges": "Salva Modifiche",
+    "assignTables": "Assegnare i tavoli",
+    "assignTablesOn": "Ogni prenotazione riceve un tavolo specifico.",
+    "assignTablesOff": "Si lavora per capienza di ogni zona, senza assegnare un tavolo.",
+    "setCapacity": "Capienza per zona",
+    "setCapacityHelp": "Indica quante persone entrano in ogni zona. I tavoli vengono generati da soli.",
+    "setCapacityWarning": "Sostituirà tutti i tavoli attuali.",
+    "setCapacityConfirm": "Genera",
+    "capacityGenerated": "{{count}} posti generati",
+    "capacityBlocked": "Ci sono {{count}} prenotazioni future con un tavolo assegnato. Spostale o annullale prima."
   },
   "reservations": {
     "title": "Gestione Prenotazioni",
