@@ -27,7 +27,8 @@ interface DayCalendarProps {
   onDateChange: (date: Date) => void;
   onEdit?: (reservation: any) => void;
   isFullscreen?: boolean;
-  onSlotClick?: (time: string, tableId: number) => void;
+  // tableId is absent in capacity mode, where columns are areas rather than tables.
+  onSlotClick?: (time: string, tableId?: number) => void;
 }
 
 const timeSlots = Array.from({ length: 49 }, (_, i) => {
@@ -63,6 +64,34 @@ const normalizeTableArea = (area?: Table["area"]): "inside" | "terrace" =>
 
 const getTableColumnMinWidthPx = (tableCount: number): number =>
   tableCount > 15 ? DENSE_TABLE_COLUMN_MIN_WIDTH_PX : DEFAULT_TABLE_COLUMN_MIN_WIDTH_PX;
+
+// Pack time ranges into the fewest lanes that keep overlapping ones apart.
+//
+// Used by the capacity-mode schedule, where columns are areas rather than tables: five
+// bookings at 13:00 in the dining room must sit side by side, not stacked on top of each
+// other in a single column. Each booking takes the first lane whose previous booking has
+// already finished, so the lane count is the busiest moment's concurrency and no more.
+//
+// Exported for its tests: this is ordinary interval scheduling and its edge — a booking
+// starting exactly when another ends shares the lane rather than opening a new one — is
+// worth pinning down.
+export const packIntoLanes = (
+  items: { id: number; startIndex: number; endIndex: number }[]
+): Set<number>[] => {
+  const lanes: { end: number; ids: Set<number> }[] = [];
+  [...items]
+    .sort((a, b) => a.startIndex - b.startIndex || a.endIndex - b.endIndex)
+    .forEach((item) => {
+      let lane = lanes.find((l) => l.end <= item.startIndex);
+      if (!lane) {
+        lane = { end: 0, ids: new Set<number>() };
+        lanes.push(lane);
+      }
+      lane.ids.add(item.id);
+      lane.end = item.endIndex;
+    });
+  return lanes.map((l) => l.ids);
+};
 
 // Keep the schedule grouped by area first, then cluster combinable tables together inside each area.
 const orderTablesForSchedule = (tables: Table[]): Table[] => {
@@ -306,7 +335,7 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
     }
   };
 
-  const { paymentEnabled } = useRestaurantConfig();
+  const { paymentEnabled, tablesEnabled } = useRestaurantConfig();
 
   const { data: selectedPayment } = useQuery({
     queryKey: appointmentPaymentKey,
@@ -342,11 +371,10 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
   });
 
   const isLoading = tablesLoading || appointmentsLoading;
-  const orderedTables = orderTablesForSchedule(tables || []);
-  const tableColumnMinWidth = `${getTableColumnMinWidthPx(orderedTables.length)}px`;
-  const wideScheduleMinWidth = orderedTables.length > 15
-    ? `${orderedTables.length * DENSE_TABLE_COLUMN_MIN_WIDTH_PX + 48}px`
-    : undefined;
+  // Skipped entirely in capacity mode: the clustering walks the pairing graph, and
+  // there every seat pairs with every other one in its area — a hundred seats would be
+  // ten thousand edges traversed on every render for columns that are never drawn.
+  const orderedTables = tablesEnabled ? orderTablesForSchedule(tables || []) : [];
 
   // Adaptive grid density: attempt full-day fit while preserving readability.
   useEffect(() => {
@@ -576,13 +604,78 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
     return getStatusColor(reservation.status, hasNotes, isSeated);
   };
 
-  const gridTemplateColumns = `48px repeat(${orderedTables.length}, minmax(${tableColumnMinWidth}, 1fr))`;
+  // --- schedule columns ----------------------------------------------------
+  //
+  // With assigned tables it is one column per table, as it has always been. In capacity
+  // mode the tables are one seat each and there may be a hundred of them, so a column
+  // per table would be both unreadable and meaningless — the seats are an implementation
+  // detail there. Reservations are packed into lanes per area instead: each booking
+  // takes the first lane whose previous booking has already ended, which is the fewest
+  // columns that still shows concurrent bookings side by side rather than stacked on top
+  // of one another.
+  type ScheduleColumn = {
+    key: string;
+    table?: Table;
+    area?: string;
+    reservationIds?: Set<number>;
+  };
+
+  const tableAreaById = new Map<number, string>((tables || []).map((t) => [t.id, t.area]));
+
+  // The area a booking is actually in comes from the tables it holds; area_preference
+  // may still say "auto", which is what the guest asked for and not where they ended up.
+  const areaOfReservation = (r: Appointment): string => {
+    const seated = (r.table_ids || []).find((id: number) => tableAreaById.has(id));
+    if (seated !== undefined) return tableAreaById.get(seated)!;
+    return r.area_preference && r.area_preference !== "auto" ? r.area_preference : "inside";
+  };
+
+  const buildAreaLanes = (): ScheduleColumn[] => {
+    const columns: ScheduleColumn[] = [];
+    ["inside", "terrace"].forEach((area) => {
+      const inArea = (reservations || [])
+        .filter((r: Appointment) => areaOfReservation(r) === area)
+        .map((r: Appointment) => ({ r, range: getReservationSlotRange(r) }))
+        .filter((x) => x.range !== null);
+
+      const lanes = packIntoLanes(
+        inArea.map(({ r, range }) => ({
+          id: r.id,
+          startIndex: range!.startIndex,
+          endIndex: range!.endIndex,
+        }))
+      );
+
+      // An area with nothing booked still gets one lane, so it stays visible and
+      // clickable on an empty day.
+      if (lanes.length === 0) lanes.push(new Set<number>());
+
+      lanes.forEach((ids, i) =>
+        columns.push({ key: `${area}-${i}`, area, reservationIds: ids })
+      );
+    });
+    return columns;
+  };
+
+  const scheduleColumns: ScheduleColumn[] = tablesEnabled
+    ? orderedTables.map((table) => ({ key: `table-${table.id}`, table }))
+    : buildAreaLanes();
+
+  // Widths follow the real column count. In capacity mode that is the number of lanes,
+  // not the number of seats, so a hundred-seat dining room is only as wide as its
+  // busiest moment needs — usually a handful of columns.
+  const tableColumnMinWidth = `${getTableColumnMinWidthPx(scheduleColumns.length)}px`;
+  const wideScheduleMinWidth = scheduleColumns.length > 15
+    ? `${scheduleColumns.length * DENSE_TABLE_COLUMN_MIN_WIDTH_PX + 48}px`
+    : undefined;
+
+  const gridTemplateColumns = `48px repeat(${scheduleColumns.length}, minmax(${tableColumnMinWidth}, 1fr))`;
 
   return (
     <div className="space-y-4">
       {isLoading ? (
         <div className="text-center py-8 text-muted-foreground">{tCommon("loading")}</div>
-      ) : orderedTables.length === 0 ? (
+      ) : (tables || []).length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
           {t("tables.noTables")}
         </div>
@@ -607,16 +700,17 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
                 <div className="px-1 py-1.5 text-[10px] font-semibold border-r border-border/50 sticky left-0 bg-muted/95 backdrop-blur-sm z-30 text-center">
                   {tCommon("time")}
                 </div>
-                {orderedTables.map((table) => {
-                  const isTerrace = table.area === "terrace";
-                  const isDisabledTable = table.status === "unavailable";
+                {scheduleColumns.map((column) => {
+                  const table = column.table;
+                  const isTerrace = (table ? table.area : column.area) === "terrace";
+                  const isDisabledTable = table?.status === "unavailable";
                   const tableSymbol = isDisabledTable
                     ? (isTerrace ? "🚫☀" : "🚫T")
                     : (isTerrace ? "☀" : "T");
 
                   return (
                     <div
-                      key={table.id}
+                      key={column.key}
                       className={`px-1 py-1.5 text-[10px] font-semibold text-center border-r ${
                         isDisabledTable
                           ? "border-rose-300/90 bg-rose-100/90 text-rose-900"
@@ -625,7 +719,13 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
                           : "border-border/50 bg-muted/95"
                       }`}
                     >
-                      <div>{tableSymbol}{table.table_number}</div>
+                      <div>
+                        {table
+                          ? `${tableSymbol}${table.table_number}`
+                          : isTerrace
+                            ? t("reservations.areaTerrace")
+                            : t("reservations.areaInside")}
+                      </div>
                       <div className={`text-[9px] font-normal ${
                         isDisabledTable
                           ? "text-rose-700"
@@ -633,7 +733,7 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
                             ? "text-amber-700"
                             : "text-muted-foreground"
                       }`}>
-                        {table.capacity}p
+                        {table ? `${table.capacity}p` : "\u00a0"}
                       </div>
                     </div>
                   );
@@ -664,10 +764,15 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
                 </div>
 
                 {/* Per-table columns */}
-                {orderedTables.map((table) => {
-                  const tableReservations = (reservations || []).filter(
-                    (r) => r.table_ids && Array.isArray(r.table_ids) && r.table_ids.includes(table.id)
-                  );
+                {scheduleColumns.map((column) => {
+                  const table = column.table;
+                  // A table column holds whatever is seated at that table; a lane holds
+                  // the bookings the packing above assigned to it.
+                  const tableReservations = table
+                    ? (reservations || []).filter(
+                        (r) => r.table_ids && Array.isArray(r.table_ids) && r.table_ids.includes(table.id)
+                      )
+                    : (reservations || []).filter((r) => column.reservationIds?.has(r.id));
 
                   const coveredSlots = new Set<number>();
                   tableReservations.forEach((r) => {
@@ -680,7 +785,7 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
 
                   return (
                     <div
-                      key={table.id}
+                      key={column.key}
                       className="relative border-r border-border/50"
                       style={{ height: `${totalBodyHeight}px` }}
                     >
@@ -695,7 +800,7 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
                               top: `${slotOffsets[i]}px`,
                               height: `${slotOffsets[i + 1] - slotOffsets[i]}px`,
                             }}
-                            onClick={() => onSlotClick(time, table.id)}
+                            onClick={() => onSlotClick(time, table?.id)}
                           />
                         );
                       })}
@@ -727,7 +832,7 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
                             </div>
                             <div className="text-[8px] opacity-90">
                               {reservation.num_people}p
-                              {isMultiTable && (
+                              {tablesEnabled && isMultiTable && (
                                 <span className="ml-1">📍{reservation.table_ids.length}T</span>
                               )}
                             </div>
