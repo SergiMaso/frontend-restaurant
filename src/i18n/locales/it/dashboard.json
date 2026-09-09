@@ -493,7 +493,7 @@
       "widget_website_url": "URL del tuo sito (per CORS, es: https://tuoristorante.com)",
       "widget_primary_color": "Colore principale del widget (hex, es: #2563eb)",
       "widget_title": "Titolo del widget (default: nome del ristorante)",
-      "tables_enabled": "Assegnare un tavolo specifico a ogni prenotazione. Disattivato: si lavora per capienza di zona e i tavoli non si mostrano mai."
+      "tables_enabled": "Attivo: ogni prenotazione riceve un tavolo specifico, gestito nel pannello tavoli. Disattivato: si prenota per capienza di ogni zona (interno e terrazza), non si assegna alcun tavolo e il cliente non ne vede nessuno."
     }
   },
   "calendar": {

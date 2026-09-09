@@ -493,7 +493,7 @@
       "widget_website_url": "URL de tu web (para CORS, ej: https://turestaurante.com)",
       "widget_primary_color": "Color principal del widget (hex, ej: #2563eb)",
       "widget_title": "Título del widget (por defecto: nombre del restaurante)",
-      "tables_enabled": "Asignar mesas concretas a cada reserva. Desactivado: se trabaja por capacidad de cada zona y las mesas no se muestran nunca."
+      "tables_enabled": "Activado: cada reserva recibe una mesa concreta y las gestionas en el panel de mesas. Desactivado: se reserva por capacidad de cada zona (interior y terraza), no se asigna ninguna mesa y el cliente no ve ninguna."
     }
   },
   "calendar": {

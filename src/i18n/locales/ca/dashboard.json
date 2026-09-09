@@ -493,7 +493,7 @@
       "widget_website_url": "URL del teu web (per CORS, ex: https://elteuestaurant.com)",
       "widget_primary_color": "Color principal del widget (hex, ex: #2563eb)",
       "widget_title": "Títol del widget (per defecte: nom del restaurant)",
-      "tables_enabled": "Assignar taules concretes a cada reserva. Desactivat: es treballa per capacitat de cada zona i les taules no es mostren mai."
+      "tables_enabled": "Activat: cada reserva rep una taula concreta i les gestiones al tauler de taules. Desactivat: es reserva per capacitat de cada zona (interior i terrassa), no s'assigna cap taula i el client no en veu cap."
     }
   },
   "calendar": {

@@ -172,7 +172,9 @@ const OpeningHoursCalendar = ({ onViewDay }: OpeningHoursCalendarProps) => {
           <span>{t("calendar.dinnerOnly")}</span>
         </div>
         <div className="flex items-center gap-2">
-          <Pencil className="h-4 w-4 text-muted-foreground" />
+          <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-foreground text-background">
+            <Pencil className="h-3 w-3" />
+          </span>
           <span>{t("calendar.editedDay")}</span>
         </div>
         <div className="flex items-center gap-2">
@@ -229,10 +231,14 @@ const OpeningHoursCalendar = ({ onViewDay }: OpeningHoursCalendarProps) => {
                           inherited one look the same, so there is no way to tell which
                           days a change to the weekly schedule will actually reach. */}
                       {hours?.is_custom && (
-                        <Pencil
-                          className="h-3 w-3 text-muted-foreground shrink-0"
+                        <span
+                          className="inline-flex items-center justify-center h-5 w-5 rounded-full
+                                     bg-foreground text-background shadow-sm shrink-0"
+                          title={t("calendar.editedDay")}
                           aria-label={t("calendar.editedDay")}
-                        />
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </span>
                       )}
                     </span>
                     <span className="text-xl">{getStatusIcon(status)}</span>
