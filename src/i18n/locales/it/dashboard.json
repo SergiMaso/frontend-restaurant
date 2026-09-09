@@ -524,7 +524,8 @@
     "infoViewDay": "Vedi l'orario dettagliato delle prenotazioni di quel giorno",
     "infoDefault": "I giorni senza configurazione utilizzeranno l'orario predefinito (12:00-15:00 e 19:00-22:30)",
     "reservation": "prenotazione",
-    "reservations_plural": "prenotazioni"
+    "reservations_plural": "prenotazioni",
+    "editedDay": "Giorno modificato singolarmente"
   },
   "weeklySchedule": {
     "title": "Configurazione Settimanale",

@@ -524,7 +524,8 @@
     "infoViewDay": "Veure l'horari detallat de reserves d'aquest dia",
     "infoDefault": "Els dies sense configuració utilitzaran l'horari per defecte (12:00-15:00 i 19:00-22:30)",
     "reservation": "reserva",
-    "reservations_plural": "reserves"
+    "reservations_plural": "reserves",
+    "editedDay": "Dia editat individualment"
   },
   "weeklySchedule": {
     "title": "Configuració Setmanal",

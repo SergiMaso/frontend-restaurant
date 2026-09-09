@@ -496,6 +496,10 @@ export async function getConversations(phone: string): Promise<Conversation[]> {
 export interface OpeningHours {
   date: string;
   status: 'closed' | 'lunch_only' | 'dinner_only' | 'full_day';
+  /** true when this date was edited on its own, false when it simply follows its
+      weekday. The backend has always sent it for every day in a range; nothing read it,
+      so an overridden day looked identical to an inherited one. */
+  is_custom?: boolean;
   lunch_start?: string | null;
   lunch_end?: string | null;
   dinner_start?: string | null;

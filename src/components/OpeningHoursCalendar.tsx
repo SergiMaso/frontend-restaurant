@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths, isSameDay, parseISO } from "date-fns";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { ChevronLeft, ChevronRight, Clock, Eye, Edit } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock, Eye, Edit, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getOpeningHoursRange } from "@/services/api";
@@ -172,6 +172,10 @@ const OpeningHoursCalendar = ({ onViewDay }: OpeningHoursCalendarProps) => {
           <span>{t("calendar.dinnerOnly")}</span>
         </div>
         <div className="flex items-center gap-2">
+          <Pencil className="h-4 w-4 text-muted-foreground" />
+          <span>{t("calendar.editedDay")}</span>
+        </div>
+        <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded bg-red-500" />
           <span>{t("calendar.closed")}</span>
         </div>
@@ -217,8 +221,19 @@ const OpeningHoursCalendar = ({ onViewDay }: OpeningHoursCalendarProps) => {
                 <div className="flex flex-col h-full">
                   {/* Header del dia */}
                   <div className="flex items-center justify-between mb-1">
-                    <span className={`text-lg font-semibold ${today ? "text-primary" : ""}`}>
-                      {format(day, "d")}
+                    <span className="flex items-center gap-1">
+                      <span className={`text-lg font-semibold ${today ? "text-primary" : ""}`}>
+                        {format(day, "d")}
+                      </span>
+                      {/* This date overrides its weekday. Without it an edited day and an
+                          inherited one look the same, so there is no way to tell which
+                          days a change to the weekly schedule will actually reach. */}
+                      {hours?.is_custom && (
+                        <Pencil
+                          className="h-3 w-3 text-muted-foreground shrink-0"
+                          aria-label={t("calendar.editedDay")}
+                        />
+                      )}
                     </span>
                     <span className="text-xl">{getStatusIcon(status)}</span>
                   </div>
