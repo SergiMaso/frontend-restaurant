@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths, isSameDay, parseISO } from "date-fns";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { ChevronLeft, ChevronRight, Clock, Eye, Edit, Pencil } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock, Eye, Edit, PenLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getOpeningHoursRange } from "@/services/api";
@@ -172,14 +172,15 @@ const OpeningHoursCalendar = ({ onViewDay }: OpeningHoursCalendarProps) => {
           <span>{t("calendar.dinnerOnly")}</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-foreground text-background">
-            <Pencil className="h-3 w-3" />
-          </span>
-          <span>{t("calendar.editedDay")}</span>
-        </div>
-        <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded bg-red-500" />
           <span>{t("calendar.closed")}</span>
+        </div>
+        <div className="flex items-center gap-2 sm:ml-auto sm:pl-6 sm:border-l sm:border-border/60">
+          <span className="inline-flex items-center justify-center h-5 w-5 rounded-full
+                           bg-violet-500 text-white ring-2 ring-violet-500/25 shadow-sm">
+            <PenLine className="h-3 w-3" />
+          </span>
+          <span>{t("calendar.editedDay")}</span>
         </div>
       </div>
 
@@ -249,11 +250,11 @@ const OpeningHoursCalendar = ({ onViewDay }: OpeningHoursCalendarProps) => {
                       {isEdited && (
                         <span
                           className="inline-flex items-center justify-center h-5 w-5 rounded-full
-                                     bg-foreground text-background shadow-sm shrink-0"
+                                     bg-violet-500 text-white ring-2 ring-white/70 shadow-sm shrink-0"
                           title={`${t("calendar.editedDay")}: ${editedParts.join(", ")}`}
                           aria-label={`${t("calendar.editedDay")}: ${editedParts.join(", ")}`}
                         >
-                          <Pencil className="h-3 w-3" />
+                          <PenLine className="h-3 w-3" />
                         </span>
                       )}
                     </span>

@@ -228,7 +228,11 @@ const DayEditorDialog = ({ day, open, onOpenChange, onSave, isLoading }: DayEdit
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      {/* Bounded and scrollable, matching OpeningHoursDialog. Expanding the slot
+          list made this taller than the viewport, and with no limit the save and
+          close buttons simply went off the bottom of the screen with no way to
+          reach them. */}
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5" />
