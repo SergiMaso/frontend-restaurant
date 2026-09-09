@@ -494,7 +494,12 @@
       "widget_primary_color": "Colore principale del widget (hex, es: #2563eb)",
       "widget_title": "Titolo del widget (default: nome del ristorante)",
       "tables_enabled": "Attivo: ogni prenotazione riceve un tavolo specifico, gestito nel pannello tavoli. Disattivato: si prenota per capienza di ogni zona (interno e terrazza), non si assegna alcun tavolo e il cliente non ne vede nessuno."
-    }
+    },
+    "exportTitle": "Esportare prenotazioni future",
+    "exportSubtitle": "Copia da conservare prima di cambiare la configurazione dei tavoli",
+    "exportButton": "Scarica CSV",
+    "exportError": "Errore di esportazione",
+    "exportWarning": "Contiene nomi e telefoni dei clienti. È un registro, non un modo di ripristinare: ricreare una prenotazione le dà un nuovo id e la caparra già incassata resterebbe legata a quella vecchia. Il file include gli id Stripe per poter ricollegare."
   },
   "calendar": {
     "today": "Oggi",

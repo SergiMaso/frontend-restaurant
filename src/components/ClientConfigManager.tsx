@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getClientConfigs, updateClientConfig, createStripeConnectAccount, getStripeConnectStatus } from "@/services/api";
+import { getClientConfigs, updateClientConfig, createStripeConnectAccount, getStripeConnectStatus, exportFutureAppointments } from "@/services/api";
 import {
   Card,
   CardContent,
@@ -46,7 +46,7 @@ const TIMEZONE_OPTIONS = [
   "America/Argentina/Buenos_Aires",
 ];
 import { useToast } from "@/hooks/use-toast";
-import { Settings, Save, Pencil, ExternalLink, CheckCircle, AlertCircle, Copy, Check } from "lucide-react";
+import { Settings, Save, Pencil, ExternalLink, CheckCircle, AlertCircle, Copy, Check, Download } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRestaurantConfig } from "@/hooks/useRestaurantConfig";
@@ -64,6 +64,7 @@ const ClientConfigManager = () => {
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [connectingStripe, setConnectingStripe] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [snippetCopied, setSnippetCopied] = useState<'js'|'iframe'|null>(null);
   const [snippetTab, setSnippetTab] = useState<'js'|'iframe'>('js');
 
@@ -488,6 +489,48 @@ const ClientConfigManager = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Superadmin only: this file leaves the system carrying customer names and phone
+          numbers, and it is trivially forwardable once downloaded. */}
+      {isSuperadmin && (
+        <Card className="border-border/50 shadow-card">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Download className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <CardTitle>{t("config.exportTitle")}</CardTitle>
+                <CardDescription>{t("config.exportSubtitle")}</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">{t("config.exportWarning")}</p>
+            <Button
+              variant="outline"
+              disabled={exporting}
+              onClick={async () => {
+                setExporting(true);
+                try {
+                  await exportFutureAppointments();
+                } catch (error) {
+                  toast({
+                    title: t("config.exportError"),
+                    description: (error as Error).message,
+                    variant: "destructive",
+                  });
+                } finally {
+                  setExporting(false);
+                }
+              }}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              {t("config.exportButton")}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

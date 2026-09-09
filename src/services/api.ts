@@ -463,6 +463,41 @@ export async function generateCapacityTables(
   return body;
 }
 
+/**
+ * Download future bookings as a CSV file.
+ *
+ * Fetched rather than linked because the API is a different origin from the dashboard in
+ * development, and a plain <a href> would not carry the session cookie.
+ */
+export async function exportFutureAppointments(): Promise<void> {
+  const response = await fetch(`${API_URL}/api/appointments/export`, {
+    credentials: 'include',
+    headers: getRestaurantHeaders(),
+  });
+
+  if (!response.ok) {
+    let message = 'Error exportant reserves';
+    try {
+      message = (await response.json()).error || message;
+    } catch {
+      // A 403 from the decorator has a JSON body; other failures may not.
+    }
+    throw new Error(message);
+  }
+
+  const disposition = response.headers.get('Content-Disposition') || '';
+  const named = /filename="?([^"]+)"?/.exec(disposition);
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = named ? named[1] : 'reserves-futures.csv';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 // ========================================
 // CUSTOMERS
 // ========================================

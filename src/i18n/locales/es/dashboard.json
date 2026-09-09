@@ -494,7 +494,12 @@
       "widget_primary_color": "Color principal del widget (hex, ej: #2563eb)",
       "widget_title": "Título del widget (por defecto: nombre del restaurante)",
       "tables_enabled": "Activado: cada reserva recibe una mesa concreta y las gestionas en el panel de mesas. Desactivado: se reserva por capacidad de cada zona (interior y terraza), no se asigna ninguna mesa y el cliente no ve ninguna."
-    }
+    },
+    "exportTitle": "Exportar reservas futuras",
+    "exportSubtitle": "Copia de seguridad antes de cambiar la configuración de mesas",
+    "exportButton": "Descargar CSV",
+    "exportError": "Error exportando",
+    "exportWarning": "Contiene nombres y teléfonos de clientes. Es un registro, no una forma de restaurar: si vuelves a crear una reserva recibirá un identificador nuevo y el depósito ya cobrado quedaría ligado a la reserva antigua. El fichero incluye los identificadores de Stripe para poder reconectarlo."
   },
   "calendar": {
     "today": "Hoy",

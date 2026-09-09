@@ -494,7 +494,12 @@
       "widget_primary_color": "Widget primary colour (hex, e.g. #2563eb)",
       "widget_title": "Widget title (default: restaurant name)",
       "tables_enabled": "On: every booking gets a specific table, managed in the tables panel. Off: booking goes by the capacity of each area (inside and terrace), no table is assigned and the guest is never shown one."
-    }
+    },
+    "exportTitle": "Export future bookings",
+    "exportSubtitle": "A copy to keep before changing the table configuration",
+    "exportButton": "Download CSV",
+    "exportError": "Export failed",
+    "exportWarning": "Contains customer names and phone numbers. It is a record, not a way to restore: re-entering a booking gives it a new id, and a deposit already taken would stay tied to the old one. The file includes the Stripe ids so that link can be repointed."
   },
   "calendar": {
     "today": "Today",
