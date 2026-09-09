@@ -232,6 +232,10 @@ const OpeningHoursCalendar = ({ onViewDay }: OpeningHoursCalendarProps) => {
             // Empty in interval mode, where the window itself is what can be booked.
             const lunchSlots = hours?.slot_times?.lunch ?? [];
             const dinnerSlots = hours?.slot_times?.dinner ?? [];
+            // In fixed mode the window is NOT bookable, so falling back to it when the
+            // sittings are missing would advertise hours a booking is refused at. Show
+            // nothing instead — the day dialog still has the truth.
+            const booksBySlot = hours?.slot_mode === 'fixed';
 
             return (
               <div
@@ -288,6 +292,11 @@ const OpeningHoursCalendar = ({ onViewDay }: OpeningHoursCalendarProps) => {
                             <Clock className="h-3 w-3 shrink-0 mt-px" />
                             <span className="break-words">{lunchSlots.join(" ")}</span>
                           </div>
+                        ) : booksBySlot ? (
+                          <div className="text-[10px] text-muted-foreground italic"
+                               title={t("calendar.noSittings")}>
+                            {t("calendar.noSittings")}
+                          </div>
                         ) : hours.lunch_start && (
                           <div className="text-xs flex items-center gap-1">
                             <Clock className="h-3 w-3" />
@@ -301,6 +310,11 @@ const OpeningHoursCalendar = ({ onViewDay }: OpeningHoursCalendarProps) => {
                                title={dinnerSlots.join(" · ")}>
                             <Clock className="h-3 w-3 shrink-0 mt-px" />
                             <span className="break-words">{dinnerSlots.join(" ")}</span>
+                          </div>
+                        ) : booksBySlot ? (
+                          <div className="text-[10px] text-muted-foreground italic"
+                               title={t("calendar.noSittings")}>
+                            {t("calendar.noSittings")}
                           </div>
                         ) : hours.dinner_start && (
                           <div className="text-xs flex items-center gap-1">

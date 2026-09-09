@@ -533,7 +533,8 @@
     "editedDay": "Dia editat individualment",
     "editedHours": "horari",
     "editedSlots": "límits de franja",
-    "editedPayment": "pagament"
+    "editedPayment": "pagament",
+    "noSittings": "sense franges"
   },
   "weeklySchedule": {
     "title": "Configuració Setmanal",

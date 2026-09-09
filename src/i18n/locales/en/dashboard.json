@@ -533,7 +533,8 @@
     "editedDay": "Edited on its own",
     "editedHours": "hours",
     "editedSlots": "slot limits",
-    "editedPayment": "payment"
+    "editedPayment": "payment",
+    "noSittings": "no sittings"
   },
   "weeklySchedule": {
     "title": "Weekly Configuration",

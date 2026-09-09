@@ -533,7 +533,8 @@
     "editedDay": "Día editado individualmente",
     "editedHours": "horario",
     "editedSlots": "límites de franja",
-    "editedPayment": "pago"
+    "editedPayment": "pago",
+    "noSittings": "sin franjas"
   },
   "weeklySchedule": {
     "title": "Configuración Semanal",

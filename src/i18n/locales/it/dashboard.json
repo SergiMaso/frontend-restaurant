@@ -533,7 +533,8 @@
     "editedDay": "Giorno modificato singolarmente",
     "editedHours": "orario",
     "editedSlots": "limiti di fascia",
-    "editedPayment": "pagamento"
+    "editedPayment": "pagamento",
+    "noSittings": "nessuna fascia"
   },
   "weeklySchedule": {
     "title": "Configurazione Settimanale",

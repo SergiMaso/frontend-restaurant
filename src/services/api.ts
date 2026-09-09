@@ -540,6 +540,12 @@ export interface OpeningHours {
       backend through the same cascade the booking path enforces, so the calendar cannot
       drift from what a booking will actually accept. */
   slot_times?: { lunch?: string[]; dinner?: string[] };
+  /** Which mode produced slot_times. An empty map means "the window is the answer" in
+      interval mode and "the sittings could not be resolved" in fixed mode — opposite
+      meanings the map alone cannot express, and showing the window for the second
+      advertises hours the booking path will refuse. 'unknown' when even the mode could
+      not be read, where the caller keeps the pre-existing behaviour. */
+  slot_mode?: 'fixed' | 'interval' | 'unknown';
   lunch_start?: string | null;
   lunch_end?: string | null;
   dinner_start?: string | null;
