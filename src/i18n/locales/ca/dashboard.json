@@ -141,9 +141,6 @@
     "saveSuccess": "Taula desada",
     "saveError": "Error desant taula",
     "saveChanges": "Desar Canvis",
-    "assignTables": "Assignar taules",
-    "assignTablesOn": "Cada reserva rep una taula concreta.",
-    "assignTablesOff": "Es treballa per capacitat de cada zona, sense assignar taula.",
     "setCapacity": "Capacitat per zona",
     "setCapacityHelp": "Indica quantes persones caben a cada zona. Les taules es generen soles.",
     "setCapacityWarning": "Es substituiran totes les taules actuals.",
@@ -495,7 +492,8 @@
       "widget_enabled": "Widget de reserves habilitat",
       "widget_website_url": "URL del teu web (per CORS, ex: https://elteuestaurant.com)",
       "widget_primary_color": "Color principal del widget (hex, ex: #2563eb)",
-      "widget_title": "Títol del widget (per defecte: nom del restaurant)"
+      "widget_title": "Títol del widget (per defecte: nom del restaurant)",
+      "tables_enabled": "Assignar taules concretes a cada reserva. Desactivat: es treballa per capacitat de cada zona i les taules no es mostren mai."
     }
   },
   "calendar": {

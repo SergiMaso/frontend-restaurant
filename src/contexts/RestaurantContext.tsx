@@ -8,6 +8,12 @@ export interface Restaurant {
   phone?: string;
   is_active: boolean;
   created_at?: string;
+  /** false = capacity per area; tables exist but are never shown as tables.
+   *  Read from here rather than /api/config because that endpoint is admin-only and
+   *  returns 403 to floor staff — who would then fall back to the default and be shown
+   *  a table plan the restaurant does not use. Undefined means the backend predates the
+   *  column, which reads as true. */
+  tables_enabled?: boolean;
 }
 
 interface RestaurantContextType {

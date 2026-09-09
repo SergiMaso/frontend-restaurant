@@ -34,9 +34,6 @@ export const useRestaurantConfig = () => {
   };
 
   const paymentEnabled = getConfigBoolean("payment_enabled", false);
-  // Track C. Defaults to true: a restaurant that has never set it, or a backend
-  // whose database predates the column, assigns tables as it always did.
-  const tablesEnabled = getConfigBoolean("tables_enabled", true);
   const restaurantName = getConfigValue("restaurant_name", "Restaurant");
   const maxPeoplePerBooking = getConfigNumber("max_people_per_booking", 8);
   // Config stores minutes, convert to hours for the frontend
@@ -77,7 +74,6 @@ export const useRestaurantConfig = () => {
     getConfigBoolean,
     // Configuracions específiques
     paymentEnabled,
-    tablesEnabled,
     restaurantName,
     maxPeoplePerBooking,
     defaultBookingDuration,

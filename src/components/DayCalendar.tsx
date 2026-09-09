@@ -335,7 +335,11 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
     }
   };
 
-  const { paymentEnabled, tablesEnabled } = useRestaurantConfig();
+  const { paymentEnabled } = useRestaurantConfig();
+  // Same source as TablesList: the restaurant row, not /api/config. See the note
+  // there — one source for the value, and no dependency on the admin-only endpoint.
+  // selectedRestaurant is already in scope above.
+  const tablesEnabled = selectedRestaurant?.tables_enabled ?? true;
 
   const { data: selectedPayment } = useQuery({
     queryKey: appointmentPaymentKey,

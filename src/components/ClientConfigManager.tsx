@@ -60,7 +60,7 @@ const ClientConfigManager = () => {
   const queryClient = useQueryClient();
   const { user, isSuperadmin } = useAuth();
   const { paymentEnabled, restaurantName } = useRestaurantConfig();
-  const { selectedRestaurant } = useRestaurant();
+  const { selectedRestaurant , refreshRestaurants } = useRestaurant();
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [connectingStripe, setConnectingStripe] = useState(false);
@@ -84,13 +84,20 @@ const ClientConfigManager = () => {
   const updateMutation = useMutation({
     mutationFn: ({ key, value }: { key: string; value: string }) =>
       updateClientConfig(key, value),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       toast({
         title: t("config.updateSuccess"),
         description: t("config.updateSuccessDesc"),
       });
       // Force immediate refetch instead of just invalidating
       refetch();
+      // tables_enabled also lives on the restaurant row, which is where the tables tab
+      // and the day schedule read it from — /api/config is admin-only, so they cannot.
+      // Without this the mode would look changed here and stale everywhere else until
+      // the next page load.
+      if (variables.key === 'tables_enabled') {
+        refreshRestaurants();
+      }
       setEditingKey(null);
     },
     onError: (error: Error) => {
@@ -136,8 +143,14 @@ const ClientConfigManager = () => {
     }
   };
 
-  // Agrupar configuracions per categoria (widget only visible to superadmins)
-  const visibleConfigs = isSuperadmin ? configs : configs.filter(c => c.category !== 'widget');
+  // Agrupar configuracions per categoria.
+  // Superadmin-only: the widget category, and tables_enabled — that one decides whether
+  // the restaurant seats by table at all, and the backend refuses it from anyone else, so
+  // showing an admin a control that always 403s would be worse than not showing it.
+  const SUPERADMIN_ONLY_KEYS = ['tables_enabled'];
+  const visibleConfigs = isSuperadmin
+    ? configs
+    : configs.filter(c => c.category !== 'widget' && !SUPERADMIN_ONLY_KEYS.includes(c.key));
   const groupedConfigs = visibleConfigs.reduce((acc, config) => {
     if (!acc[config.category]) {
       acc[config.category] = [];

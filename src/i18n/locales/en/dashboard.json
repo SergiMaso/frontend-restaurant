@@ -141,9 +141,6 @@
     "saveSuccess": "Table saved",
     "saveError": "Error saving table",
     "saveChanges": "Save Changes",
-    "assignTables": "Assign tables",
-    "assignTablesOn": "Every booking is given a specific table.",
-    "assignTablesOff": "Seating is by area capacity, with no table assigned.",
     "setCapacity": "Capacity per area",
     "setCapacityHelp": "Set how many people each area holds. The tables are generated for you.",
     "setCapacityWarning": "This replaces every current table.",
@@ -495,7 +492,8 @@
       "widget_enabled": "Booking widget enabled",
       "widget_website_url": "Your website URL (for CORS, e.g. https://yourrestaurant.com)",
       "widget_primary_color": "Widget primary colour (hex, e.g. #2563eb)",
-      "widget_title": "Widget title (default: restaurant name)"
+      "widget_title": "Widget title (default: restaurant name)",
+      "tables_enabled": "Give every booking a specific table. Off: seating goes by area capacity and tables are never shown."
     }
   },
   "calendar": {

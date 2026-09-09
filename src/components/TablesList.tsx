@@ -4,12 +4,11 @@ import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Users, Ban, Check, Edit, Trash2, Link, Plus, LayoutGrid } from "lucide-react";
-import { getTables, updateTable, deleteTable, createTable, generateCapacityTables, updateClientConfig, CapacityTablesError, type Table } from "@/services/api";
+import { getTables, updateTable, deleteTable, createTable, generateCapacityTables, CapacityTablesError, type Table } from "@/services/api";
 import { useTenantKey } from "@/hooks/useTenantKey";
-import { useRestaurantConfig } from "@/hooks/useRestaurantConfig";
+import { useRestaurant } from "@/contexts/RestaurantContext";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -49,10 +48,17 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
   const [insideSeats, setInsideSeats] = useState("");
   const [terraceSeats, setTerraceSeats] = useState("");
 
-  const { tablesEnabled } = useRestaurantConfig();
+  // Read from the restaurant row, which every authenticated user receives via
+  // /api/restaurants, rather than from /api/config, which is admin-only.
+  //
+  // This is not fixing a live bug: users_role_check allows only owner, admin and
+  // superadmin, so there is no role today that would be refused by /api/config. It is
+  // one source instead of two for a value the row already carries, and it keeps working
+  // if the 'staff' role auth.py:587 refers to is ever actually added.
+  const { selectedRestaurant } = useRestaurant();
+  const tablesEnabled = selectedRestaurant?.tables_enabled ?? true;
 
   const tablesKey = useTenantKey(["tables"]);
-  const configKey = useTenantKey(["client-configs"]);
 
   const { data: tables, isLoading } = useQuery({
     queryKey: tablesKey,
@@ -155,15 +161,6 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
     },
   });
 
-  const modeMutation = useMutation({
-    mutationFn: (enabled: boolean) => updateClientConfig("tables_enabled", String(enabled)),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: configKey });
-      queryClient.invalidateQueries({ queryKey: tablesKey });
-    },
-    onError: (error: Error) => toast.error(error.message),
-  });
-
   // What the restaurant currently holds, per area. In capacity mode the individual
   // tables are an implementation detail — a hundred cards each listing ninety-nine
   // pairings is unreadable and would put ten thousand badges on the page — so the seats
@@ -204,24 +201,6 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
 
   return (
     <>
-      {/* Does this restaurant seat by table at all? */}
-      <div className="mb-4 flex items-center justify-between gap-4 p-4 rounded-lg border border-border bg-card">
-        <div>
-          <Label htmlFor="tables-mode" className="font-medium">
-            {t("tables.assignTables")}
-          </Label>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {tablesEnabled ? t("tables.assignTablesOn") : t("tables.assignTablesOff")}
-          </p>
-        </div>
-        <Switch
-          id="tables-mode"
-          checked={tablesEnabled}
-          disabled={modeMutation.isPending}
-          onCheckedChange={(checked) => modeMutation.mutate(checked)}
-        />
-      </div>
-
       {tablesEnabled ? (
         <div className="mb-4">
           <Button onClick={handleCreate}>

@@ -141,9 +141,6 @@
     "saveSuccess": "Mesa guardada",
     "saveError": "Error guardando mesa",
     "saveChanges": "Guardar Cambios",
-    "assignTables": "Asignar mesas",
-    "assignTablesOn": "Cada reserva recibe una mesa concreta.",
-    "assignTablesOff": "Se trabaja por capacidad de cada zona, sin asignar mesa.",
     "setCapacity": "Capacidad por zona",
     "setCapacityHelp": "Indica cuántas personas caben en cada zona. Las mesas se generan solas.",
     "setCapacityWarning": "Se sustituirán todas las mesas actuales.",
@@ -495,7 +492,8 @@
       "widget_enabled": "Widget de reservas habilitado",
       "widget_website_url": "URL de tu web (para CORS, ej: https://turestaurante.com)",
       "widget_primary_color": "Color principal del widget (hex, ej: #2563eb)",
-      "widget_title": "Título del widget (por defecto: nombre del restaurante)"
+      "widget_title": "Título del widget (por defecto: nombre del restaurante)",
+      "tables_enabled": "Asignar mesas concretas a cada reserva. Desactivado: se trabaja por capacidad de cada zona y las mesas no se muestran nunca."
     }
   },
   "calendar": {

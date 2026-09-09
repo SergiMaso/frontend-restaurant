@@ -141,9 +141,6 @@
     "saveSuccess": "Tavolo salvato",
     "saveError": "Errore nel salvataggio del tavolo",
     "saveChanges": "Salva Modifiche",
-    "assignTables": "Assegnare i tavoli",
-    "assignTablesOn": "Ogni prenotazione riceve un tavolo specifico.",
-    "assignTablesOff": "Si lavora per capienza di ogni zona, senza assegnare un tavolo.",
     "setCapacity": "Capienza per zona",
     "setCapacityHelp": "Indica quante persone entrano in ogni zona. I tavoli vengono generati da soli.",
     "setCapacityWarning": "Sostituirà tutti i tavoli attuali.",
@@ -495,7 +492,8 @@
       "widget_enabled": "Widget prenotazioni abilitato",
       "widget_website_url": "URL del tuo sito (per CORS, es: https://tuoristorante.com)",
       "widget_primary_color": "Colore principale del widget (hex, es: #2563eb)",
-      "widget_title": "Titolo del widget (default: nome del ristorante)"
+      "widget_title": "Titolo del widget (default: nome del ristorante)",
+      "tables_enabled": "Assegnare un tavolo specifico a ogni prenotazione. Disattivato: si lavora per capienza di zona e i tavoli non si mostrano mai."
     }
   },
   "calendar": {
