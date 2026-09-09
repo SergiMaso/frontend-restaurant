@@ -229,6 +229,10 @@ const OpeningHoursCalendar = ({ onViewDay }: OpeningHoursCalendarProps) => {
             ].filter(Boolean);
             const isEdited = editedParts.length > 0;
 
+            // Empty in interval mode, where the window itself is what can be booked.
+            const lunchSlots = hours?.slot_times?.lunch ?? [];
+            const dinnerSlots = hours?.slot_times?.dinner ?? [];
+
             return (
               <div
                 key={day.toISOString()}
@@ -273,17 +277,37 @@ const OpeningHoursCalendar = ({ onViewDay }: OpeningHoursCalendarProps) => {
                   {/* Horaris */}
                   {hours && (status === "full_day" || status === "lunch_only" || status === "dinner_only") && (
                     <div className="mt-auto space-y-0.5">
-                      {(status === "full_day" || status === "lunch_only") && hours.lunch_start && (
-                        <div className="text-xs flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          <span>{hours.lunch_start}-{hours.lunch_end}</span>
-                        </div>
+                      {/* In fixed mode the service window is not what can be booked — only
+                          the configured sittings are — so showing "13:00-16:00" describes
+                          something the booking path will refuse. The times come from the
+                          backend, resolved through the same cascade a booking obeys. */}
+                      {(status === "full_day" || status === "lunch_only") && (
+                        lunchSlots.length > 0 ? (
+                          <div className="text-[10px] leading-tight flex items-start gap-1"
+                               title={lunchSlots.join(" · ")}>
+                            <Clock className="h-3 w-3 shrink-0 mt-px" />
+                            <span className="break-words">{lunchSlots.join(" ")}</span>
+                          </div>
+                        ) : hours.lunch_start && (
+                          <div className="text-xs flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            <span>{hours.lunch_start}-{hours.lunch_end}</span>
+                          </div>
+                        )
                       )}
-                      {(status === "full_day" || status === "dinner_only") && hours.dinner_start && (
-                        <div className="text-xs flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          <span>{hours.dinner_start}-{hours.dinner_end}</span>
-                        </div>
+                      {(status === "full_day" || status === "dinner_only") && (
+                        dinnerSlots.length > 0 ? (
+                          <div className="text-[10px] leading-tight flex items-start gap-1"
+                               title={dinnerSlots.join(" · ")}>
+                            <Clock className="h-3 w-3 shrink-0 mt-px" />
+                            <span className="break-words">{dinnerSlots.join(" ")}</span>
+                          </div>
+                        ) : hours.dinner_start && (
+                          <div className="text-xs flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            <span>{hours.dinner_start}-{hours.dinner_end}</span>
+                          </div>
+                        )
                       )}
                     </div>
                   )}

@@ -535,6 +535,11 @@ export interface OpeningHours {
       weekday. The backend has always sent it for every day in a range; nothing read it,
       so an overridden day looked identical to an inherited one. */
   is_custom?: boolean;
+  /** The bookable sitting times for this date, per service, when the restaurant is in
+      fixed mode — {} otherwise, where the window itself is the answer. Resolved by the
+      backend through the same cascade the booking path enforces, so the calendar cannot
+      drift from what a booking will actually accept. */
+  slot_times?: { lunch?: string[]; dinner?: string[] };
   lunch_start?: string | null;
   lunch_end?: string | null;
   dinner_start?: string | null;
