@@ -212,6 +212,22 @@ const OpeningHoursCalendar = ({ onViewDay }: OpeningHoursCalendarProps) => {
             const reservationsCount = getReservationsForDay(day);
             const today = isToday(day);
 
+            // Anything this date overrides on its own, not just its hours.
+            //
+            // is_custom covers hours and status; the backend deliberately does NOT set it
+            // for a slot cap or a deposit, because doing so would freeze the schedule of
+            // every date anyone priced. Those overrides are their own columns, and a day
+            // that only carries them is still a day that stops following its weekday —
+            // which is the whole point of the mark.
+            //
+            // Days that inherit have no such keys at all, so absent reads as false.
+            const editedParts = [
+              hours?.is_custom ? t("calendar.editedHours") : null,
+              hours?.slot_config ? t("calendar.editedSlots") : null,
+              hours?.payment_config ? t("calendar.editedPayment") : null,
+            ].filter(Boolean);
+            const isEdited = editedParts.length > 0;
+
             return (
               <div
                 key={day.toISOString()}
@@ -230,12 +246,12 @@ const OpeningHoursCalendar = ({ onViewDay }: OpeningHoursCalendarProps) => {
                       {/* This date overrides its weekday. Without it an edited day and an
                           inherited one look the same, so there is no way to tell which
                           days a change to the weekly schedule will actually reach. */}
-                      {hours?.is_custom && (
+                      {isEdited && (
                         <span
                           className="inline-flex items-center justify-center h-5 w-5 rounded-full
                                      bg-foreground text-background shadow-sm shrink-0"
-                          title={t("calendar.editedDay")}
-                          aria-label={t("calendar.editedDay")}
+                          title={`${t("calendar.editedDay")}: ${editedParts.join(", ")}`}
+                          aria-label={`${t("calendar.editedDay")}: ${editedParts.join(", ")}`}
                         >
                           <Pencil className="h-3 w-3" />
                         </span>

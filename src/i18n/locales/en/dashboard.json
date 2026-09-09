@@ -525,7 +525,10 @@
     "infoDefault": "Days without configuration will use default hours (12:00-15:00 and 19:00-22:30)",
     "reservation": "reservation",
     "reservations_plural": "reservations",
-    "editedDay": "Edited on its own"
+    "editedDay": "Edited on its own",
+    "editedHours": "hours",
+    "editedSlots": "slot limits",
+    "editedPayment": "payment"
   },
   "weeklySchedule": {
     "title": "Weekly Configuration",

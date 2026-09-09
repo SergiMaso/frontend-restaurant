@@ -525,7 +525,10 @@
     "infoDefault": "I giorni senza configurazione utilizzeranno l'orario predefinito (12:00-15:00 e 19:00-22:30)",
     "reservation": "prenotazione",
     "reservations_plural": "prenotazioni",
-    "editedDay": "Giorno modificato singolarmente"
+    "editedDay": "Giorno modificato singolarmente",
+    "editedHours": "orario",
+    "editedSlots": "limiti di fascia",
+    "editedPayment": "pagamento"
   },
   "weeklySchedule": {
     "title": "Configurazione Settimanale",

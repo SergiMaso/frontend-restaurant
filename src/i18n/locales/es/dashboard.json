@@ -525,7 +525,10 @@
     "infoDefault": "Los días sin configuración utilizarán el horario por defecto (12:00-15:00 y 19:00-22:30)",
     "reservation": "reserva",
     "reservations_plural": "reservas",
-    "editedDay": "Día editado individualmente"
+    "editedDay": "Día editado individualmente",
+    "editedHours": "horario",
+    "editedSlots": "límites de franja",
+    "editedPayment": "pago"
   },
   "weeklySchedule": {
     "title": "Configuración Semanal",
