@@ -46,6 +46,7 @@ const TIMEZONE_OPTIONS = [
   "America/Argentina/Buenos_Aires",
 ];
 import { useToast } from "@/hooks/use-toast";
+import { Switch } from "@/components/ui/switch";
 import { Settings, Save, Pencil, ExternalLink, CheckCircle, AlertCircle, Copy, Check, Download } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
@@ -259,7 +260,25 @@ const ClientConfigManager = () => {
                           </TableCell>
                           <TableCell>
                             {editingKey === config.key ? (
-                              config.key === 'timezone' ? (
+                              // A boolean is a switch, not a text box. The backend coerces
+                              // whatever it receives with `value.lower() in ('true','1','yes')`,
+                              // so typing "activat" or "Activado" — the obvious thing to
+                              // write next to a description in your own language — saved
+                              // False and silently turned the setting off.
+                              config.value_type === 'bool' ? (
+                                <div className="flex items-center gap-2">
+                                  <Switch
+                                    // Stored as Python's 'True'/'False', typed as
+                                    // 'true'/'false' by this switch — compare loosely so
+                                    // the toggle does not start in the wrong position.
+                                    checked={String(editValue).toLowerCase() === 'true'}
+                                    onCheckedChange={(checked) => setEditValue(checked ? 'true' : 'false')}
+                                  />
+                                  <span className="text-sm text-muted-foreground">
+                                    {String(editValue).toLowerCase() === 'true' ? 'true' : 'false'}
+                                  </span>
+                                </div>
+                              ) : config.key === 'timezone' ? (
                                 <Select value={editValue} onValueChange={setEditValue}>
                                   <SelectTrigger className="max-w-[220px]">
                                     <SelectValue placeholder="Select timezone" />

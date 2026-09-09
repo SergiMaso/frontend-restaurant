@@ -493,7 +493,7 @@
       "widget_website_url": "Your website URL (for CORS, e.g. https://yourrestaurant.com)",
       "widget_primary_color": "Widget primary colour (hex, e.g. #2563eb)",
       "widget_title": "Widget title (default: restaurant name)",
-      "tables_enabled": "On: every booking gets a specific table, managed in the tables panel. Off: booking goes by the capacity of each area (inside and terrace), no table is assigned and the guest is never shown one."
+      "tables_enabled": "Write true or false. true: every booking gets a specific table, managed in the tables panel. false: booking goes by the capacity of each area (inside and terrace), no table is assigned and the guest is never shown one."
     },
     "exportTitle": "Export future bookings",
     "exportSubtitle": "A copy to keep before changing the table configuration",
