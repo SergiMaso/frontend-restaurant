@@ -216,7 +216,7 @@
     "disabledManual": "Disabled (manual)",
     "warningOverCapacity": "Warning: {{people}} people for {{seats}} seats (manual override, +{{over}}).",
     "configuredMax": "Configured max: {{max}}",
-    "overrideActive": "(override active: {{people}})",
+    "overrideActive": "— above the maximum, it will be saved as a manual exception",
     "warningAboveConfiguredMax": "Warning: {{people}} people is above configured max ({{max}}). Manual frontend override applied.",
     "askForDeposit": "Ask for a deposit to confirm",
     "depositPerPerson": "Amount per person",
@@ -224,7 +224,9 @@
     "depositHelp": "A payment link will be sent by WhatsApp. The booking is confirmed once it is paid.",
     "depositLinkSent": "Reservation created. Payment link for {{amount}} {{currency}} sent by WhatsApp.",
     "depositLinkNotSent": "Reservation created and deposit requested, but the WhatsApp could not be sent. Link: {{url}}",
-    "createdButDepositFailed": "Reservation created, but without a deposit: {{reason}}"
+    "createdButDepositFailed": "Reservation created, but without a deposit: {{reason}}",
+    "exceedsAreaCapacity": "{{people}} people do not fit in {{area}}: it holds {{seats}} seats in all.",
+    "exceedsLargestArea": "{{people}} people do not fit in any area: the largest holds {{seats}}."
   },
   "customers": {
     "title": "Customers",

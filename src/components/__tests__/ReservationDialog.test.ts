@@ -420,3 +420,34 @@ describe('ReservationDialog — capacity mode never submits table ids', () => {
     expect(body).toContain('selectedRestaurant?.tables_enabled ?? true');
   });
 });
+
+describe('ReservationDialog — the area ceiling is a separate limit', () => {
+  const body = stripComments(source);
+
+  it('measures the largest single area, never the sum of both', () => {
+    // A party is never split across areas — the engine does not combine a terrace table
+    // with an inside one — so fifteen seats inside and fifteen out does not seat thirty.
+    const line = body.match(/const reachableSeats[^;]+;/s);
+    expect(line, 'reachableSeats disappeared').not.toBeNull();
+    expect(line![0]).toContain('Math.max');
+    expect(line![0]).not.toMatch(/reduce|\+ *capacity/);
+  });
+
+  it('computes it after parsedNumPeople, not before', () => {
+    // A const read above its declaration is a TDZ ReferenceError, and this dialog has
+    // been broken exactly that way before: a query placed above the state it depended on
+    // threw before the dialog could render at all.
+    expect(body.indexOf('const parsedNumPeople'))
+      .toBeLessThan(body.indexOf('const capacityByArea'));
+  });
+
+  it('warns separately from the configured maximum', () => {
+    // Two different limits. The maximum is a policy staff may override; an area's seat
+    // count is physical and no intent gets past it, so one message cannot stand for both.
+    expect(body).toContain('exceedsAreaCapacity');
+    expect(body).toContain('exceedsLargestArea');
+    const submit = body.slice(body.indexOf('if (exceedsAreaCapacity)'),
+                              body.indexOf('updateMutation.mutate(dataToSend)'));
+    expect(submit).toContain('warningAboveConfiguredMax');
+  });
+});

@@ -701,6 +701,14 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
         })
       );
     }
+    if (exceedsAreaCapacity) {
+      toast.warning(
+        t("reservations.exceedsLargestArea", {
+          people: parsedNumPeople,
+          seats: reachableSeats,
+        })
+      );
+    }
     if (requestedPeople > maxPeoplePerBooking) {
       toast.warning(
         t("reservations.warningAboveConfiguredMax", {
@@ -739,6 +747,7 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
   const areasWithTables = Array.from(
     new Set((tables ?? []).map((table) => table.area))
   );
+
   const askForArea = tablesEnabled || areasWithTables.length > 1;
 
   const toggleTableSelection = (tableId: number, checked: boolean) => {
@@ -755,6 +764,27 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
     .filter((table) => selectedTableIds.includes(table.id))
     .reduce((sum, table) => sum + table.capacity, 0);
   const parsedNumPeople = Number.parseInt(numPeople || "0", 10) || 0;
+
+  // How many people each area could seat if it were completely empty. A party cannot be
+  // split across areas — the engine never combines a terrace table with an inside one —
+  // so the largest bookable party is the biggest single area, not the sum of both.
+  //
+  // This is the absolute ceiling, not availability: it says nothing about who is already
+  // sitting there. But asking for more than an area physically holds can never succeed at
+  // any time on any day, and saying so before submitting beats a generic "no tables
+  // available" afterwards.
+  const capacityByArea = (tables ?? []).reduce((acc: Record<string, number>, table) => {
+    acc[table.area] = (acc[table.area] || 0) + table.capacity;
+    return acc;
+  }, {});
+  const chosenArea = isWalkIn
+    ? (walkInArea === "all" ? null : walkInArea)
+    : (areaPreference === "auto" ? null : areaPreference);
+  const reachableSeats = chosenArea
+    ? (capacityByArea[chosenArea] ?? 0)
+    : Math.max(0, ...Object.values(capacityByArea));
+  const exceedsAreaCapacity =
+    parsedNumPeople > 0 && reachableSeats > 0 && parsedNumPeople > reachableSeats;
   // Gated on the mode as well: the warning lives inside the picker, so in capacity mode
   // it could be true and invisible while the ids went out anyway.
   const isManualOverCapacity =
@@ -862,6 +892,26 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
                     ? ` ${t("reservations.overrideActive", { people: parsedNumPeople })}`
                     : ""}
                 </p>
+                {/* A different limit from the one above, and the one that cannot be
+                    overridden: no amount of staff intent fits sixteen people into an area
+                    with fifteen seats. Said here rather than left to a generic "no tables
+                    available" after submitting. */}
+                {exceedsAreaCapacity && (
+                  <p className="text-xs text-destructive font-medium">
+                    {chosenArea
+                      ? t("reservations.exceedsAreaCapacity", {
+                          people: parsedNumPeople,
+                          seats: reachableSeats,
+                          area: chosenArea === "terrace"
+                            ? t("reservations.areaTerrace")
+                            : t("reservations.areaInside"),
+                        })
+                      : t("reservations.exceedsLargestArea", {
+                          people: parsedNumPeople,
+                          seats: reachableSeats,
+                        })}
+                  </p>
+                )}
               </div>
 
               {!isWalkIn && <div className="space-y-2">

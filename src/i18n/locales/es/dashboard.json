@@ -216,7 +216,7 @@
     "disabledManual": "Deshabilitada (manual)",
     "warningOverCapacity": "Advertencia: {{people}} personas para {{seats}} plazas (anulación manual, +{{over}}).",
     "configuredMax": "Máximo configurado: {{max}}",
-    "overrideActive": "(anulación activa: {{people}})",
+    "overrideActive": "— superas el máximo, se guardará como excepción manual",
     "warningAboveConfiguredMax": "Advertencia: {{people}} personas está por encima del máximo configurado ({{max}}). Se aplica anulación manual desde frontend.",
     "askForDeposit": "Pedir un depósito para confirmar",
     "depositPerPerson": "Importe por persona",
@@ -224,7 +224,9 @@
     "depositHelp": "Se enviará un enlace de pago por WhatsApp. La reserva se confirma al pagar.",
     "depositLinkSent": "Reserva creada. Enlace de pago de {{amount}} {{currency}} enviado por WhatsApp.",
     "depositLinkNotSent": "Reserva creada y depósito solicitado, pero no se pudo enviar el WhatsApp. Enlace: {{url}}",
-    "createdButDepositFailed": "Reserva creada correctamente, pero sin depósito: {{reason}}"
+    "createdButDepositFailed": "Reserva creada correctamente, pero sin depósito: {{reason}}",
+    "exceedsAreaCapacity": "{{people}} personas no caben en {{area}}: hay {{seats}} plazas en total.",
+    "exceedsLargestArea": "{{people}} personas no caben en ninguna zona: la mayor tiene {{seats}} plazas."
   },
   "customers": {
     "title": "Clientes",
