@@ -146,18 +146,22 @@ const slotSummary = (slots?: string[]) => {
                     ? <span title={day.slot_times?.lunch?.join(" · ")}>
                         🍽️ {slotSummary(day.slot_times?.lunch)}
                       </span>
-                    : day.lunch_start && (
-                        <span>🍽️ {day.lunch_start?.slice(0,5)}-{day.lunch_end?.slice(0,5)}</span>
-                      )
+                    : day.slot_mode === 'fixed'
+                      ? <span className="italic opacity-70">🍽️ {t("calendar.noSittings")}</span>
+                      : day.lunch_start && (
+                          <span>🍽️ {day.lunch_start?.slice(0,5)}-{day.lunch_end?.slice(0,5)}</span>
+                        )
                 )}
                 {(day.status === "full_day" || day.status === "dinner_only") && (
                   slotSummary(day.slot_times?.dinner)
                     ? <span title={day.slot_times?.dinner?.join(" · ")}>
                         🌙 {slotSummary(day.slot_times?.dinner)}
                       </span>
-                    : day.dinner_start && (
-                        <span>🌙 {day.dinner_start?.slice(0,5)}-{day.dinner_end?.slice(0,5)}</span>
-                      )
+                    : day.slot_mode === 'fixed'
+                      ? <span className="italic opacity-70">🌙 {t("calendar.noSittings")}</span>
+                      : day.dinner_start && (
+                          <span>🌙 {day.dinner_start?.slice(0,5)}-{day.dinner_end?.slice(0,5)}</span>
+                        )
                 )}
               </div>
             )}

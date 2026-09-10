@@ -673,6 +673,9 @@ export interface WeeklyDefault {
   /** The weekday's bookable sittings, resolved server-side through the same cascade
       minus the date level. Empty in interval mode, where the window is the answer. */
   slot_times?: { lunch?: string[]; dinner?: string[] };
+  /** Which mode produced them. An empty list means opposite things in each, and showing
+      the window for the fixed one advertises hours a booking is refused at. */
+  slot_mode?: 'fixed' | 'interval' | 'unknown';
 }
 
 export interface UpdateWeeklyDefaultData {
