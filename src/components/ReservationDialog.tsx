@@ -795,8 +795,27 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
   const reachableSeats = chosenArea
     ? (capacityByArea[chosenArea] ?? 0)
     : Math.max(0, ...Object.values(capacityByArea));
+
+  // With a chosen area the engine filters to it and cannot leave. With "auto" it does
+  // NOT: _resolve_area_filter turns auto into None and every table joins one pool, so
+  // whether an inside table can be joined to a terrace one depends entirely on how
+  // pairing was configured — not on the engine. No restaurant pairs across areas today,
+  // but if one did, the largest single area would understate what fits and this would
+  // warn about a party that is perfectly bookable. Cheaper and honester to stay quiet
+  // than to work out the real maximum from the pairing graph for a warning.
+  const areaByNumber = new Map((tables ?? []).map((t) => [t.table_number, t.area]));
+  const zonesArePaired = (tables ?? []).some((t) =>
+    (t.pairing ?? []).some((n: number) => {
+      const other = areaByNumber.get(n);
+      return other !== undefined && other !== t.area;
+    })
+  );
+
   const exceedsAreaCapacity =
-    parsedNumPeople > 0 && reachableSeats > 0 && parsedNumPeople > reachableSeats;
+    parsedNumPeople > 0 &&
+    reachableSeats > 0 &&
+    parsedNumPeople > reachableSeats &&
+    (chosenArea !== null || !zonesArePaired);
   // Gated on the mode as well: the warning lives inside the picker, so in capacity mode
   // it could be true and invisible while the ids went out anyway.
   const isManualOverCapacity =

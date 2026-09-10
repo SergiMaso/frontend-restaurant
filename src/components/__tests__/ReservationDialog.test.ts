@@ -451,3 +451,18 @@ describe('ReservationDialog — the area ceiling is a separate limit', () => {
     expect(submit).toContain('warningAboveConfiguredMax');
   });
 });
+
+describe('ReservationDialog — auto is not the same as a chosen area', () => {
+  const body = stripComments(source);
+
+  it('stays quiet in auto mode when areas are paired to each other', () => {
+    // _resolve_area_filter turns "auto" into None, so every table joins one pool and
+    // whether an inside table can be joined to a terrace one is decided by pairing, not
+    // by the engine. With a chosen area it does filter and cannot leave. Warning off the
+    // largest single area is only sound while nothing bridges the two.
+    const guard = body.slice(body.indexOf('const exceedsAreaCapacity'),
+                             body.indexOf('const overCapacityBy'));
+    expect(guard).toContain('zonesArePaired');
+    expect(guard).toContain('chosenArea !== null');
+  });
+});
