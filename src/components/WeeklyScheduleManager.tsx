@@ -33,6 +33,16 @@ const WeeklyScheduleManager = () => {
   const { t } = useTranslation("dashboard");
   const { t: tCommon } = useTranslation("common");
 
+// Two sittings then a count. These weekday buttons are narrower than a month cell, and a
+// restaurant with six lunch sittings would push the times outside the button.
+const slotSummary = (slots?: string[]) => {
+  if (!slots || slots.length === 0) return "";
+  const SHOWN = 2;
+  return slots.length <= SHOWN
+    ? slots.join(" ")
+    : `${slots.slice(0, SHOWN).join(" ")} +${slots.length - SHOWN}`;
+};
+
   // Map day_of_week (0=Monday, 6=Sunday) to translation keys
   const getDayName = (dayOfWeek: number) => {
     const dayKeys = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
@@ -127,11 +137,27 @@ const WeeklyScheduleManager = () => {
             <span className="font-semibold text-xs">{getDayName(day.day_of_week)}</span>
             {day.status !== "closed" && (
               <div className="flex flex-col items-center text-[10px] opacity-80">
-                {(day.status === "full_day" || day.status === "lunch_only") && day.lunch_start && (
-                  <span>🍽️ {day.lunch_start?.slice(0,5)}-{day.lunch_end?.slice(0,5)}</span>
+                {/* In fixed mode the window is not bookable — only the sittings are — so
+                    showing "13:00-16:00" here describes hours a booking is refused at,
+                    exactly as it did in the month calendar. Three then a count, because
+                    these buttons are narrower than a calendar cell. */}
+                {(day.status === "full_day" || day.status === "lunch_only") && (
+                  slotSummary(day.slot_times?.lunch)
+                    ? <span title={day.slot_times?.lunch?.join(" · ")}>
+                        🍽️ {slotSummary(day.slot_times?.lunch)}
+                      </span>
+                    : day.lunch_start && (
+                        <span>🍽️ {day.lunch_start?.slice(0,5)}-{day.lunch_end?.slice(0,5)}</span>
+                      )
                 )}
-                {(day.status === "full_day" || day.status === "dinner_only") && day.dinner_start && (
-                  <span>🌙 {day.dinner_start?.slice(0,5)}-{day.dinner_end?.slice(0,5)}</span>
+                {(day.status === "full_day" || day.status === "dinner_only") && (
+                  slotSummary(day.slot_times?.dinner)
+                    ? <span title={day.slot_times?.dinner?.join(" · ")}>
+                        🌙 {slotSummary(day.slot_times?.dinner)}
+                      </span>
+                    : day.dinner_start && (
+                        <span>🌙 {day.dinner_start?.slice(0,5)}-{day.dinner_end?.slice(0,5)}</span>
+                      )
                 )}
               </div>
             )}

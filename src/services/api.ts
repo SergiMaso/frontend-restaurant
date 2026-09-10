@@ -670,6 +670,9 @@ export interface WeeklyDefault {
   /** null = inherits the global config. Distinct from {} , which would be an override. */
   slot_config?: SlotConfig | null;
   payment_config?: PaymentConfig | null;
+  /** The weekday's bookable sittings, resolved server-side through the same cascade
+      minus the date level. Empty in interval mode, where the window is the answer. */
+  slot_times?: { lunch?: string[]; dinner?: string[] };
 }
 
 export interface UpdateWeeklyDefaultData {

@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths, isSameDay, parseISO } from "date-fns";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { ChevronLeft, ChevronRight, Clock, Eye, Edit, PenLine } from "lucide-react";
+import { ChevronLeft, ChevronRight, Eye, Edit, PenLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getOpeningHoursRange } from "@/services/api";
@@ -237,6 +237,16 @@ const OpeningHoursCalendar = ({ onViewDay }: OpeningHoursCalendarProps) => {
             // nothing instead — the day dialog still has the truth.
             const booksBySlot = hours?.slot_mode === 'fixed';
 
+            // A month cell is square and small. Six lunch sittings at 10px wrap to two
+            // lines, and with dinner underneath the times push past the bottom of the
+            // box. Three plus a count keeps the cell scannable — which is the only thing
+            // a month view is good at — and the tooltip carries the full list.
+            const SHOWN = 3;
+            const summarise = (slots: string[]) =>
+              slots.length <= SHOWN
+                ? slots.join(" ")
+                : `${slots.slice(0, SHOWN).join(" ")} +${slots.length - SHOWN}`;
+
             return (
               <div
                 key={day.toISOString()}
@@ -289,8 +299,8 @@ const OpeningHoursCalendar = ({ onViewDay }: OpeningHoursCalendarProps) => {
                         lunchSlots.length > 0 ? (
                           <div className="text-[10px] leading-tight flex items-start gap-1"
                                title={lunchSlots.join(" · ")}>
-                            <Clock className="h-3 w-3 shrink-0 mt-px" />
-                            <span className="break-words">{lunchSlots.join(" ")}</span>
+                            <span className="shrink-0">🍽️</span>
+                            <span className="break-words">{summarise(lunchSlots)}</span>
                           </div>
                         ) : booksBySlot ? (
                           <div className="text-[10px] text-muted-foreground italic"
@@ -299,7 +309,7 @@ const OpeningHoursCalendar = ({ onViewDay }: OpeningHoursCalendarProps) => {
                           </div>
                         ) : hours.lunch_start && (
                           <div className="text-xs flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
+                            <span>🍽️</span>
                             <span>{hours.lunch_start}-{hours.lunch_end}</span>
                           </div>
                         )
@@ -308,8 +318,8 @@ const OpeningHoursCalendar = ({ onViewDay }: OpeningHoursCalendarProps) => {
                         dinnerSlots.length > 0 ? (
                           <div className="text-[10px] leading-tight flex items-start gap-1"
                                title={dinnerSlots.join(" · ")}>
-                            <Clock className="h-3 w-3 shrink-0 mt-px" />
-                            <span className="break-words">{dinnerSlots.join(" ")}</span>
+                            <span className="shrink-0">🌙</span>
+                            <span className="break-words">{summarise(dinnerSlots)}</span>
                           </div>
                         ) : booksBySlot ? (
                           <div className="text-[10px] text-muted-foreground italic"
@@ -318,7 +328,7 @@ const OpeningHoursCalendar = ({ onViewDay }: OpeningHoursCalendarProps) => {
                           </div>
                         ) : hours.dinner_start && (
                           <div className="text-xs flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
+                            <span>🌙</span>
                             <span>{hours.dinner_start}-{hours.dinner_end}</span>
                           </div>
                         )
