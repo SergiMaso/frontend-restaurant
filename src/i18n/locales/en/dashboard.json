@@ -216,7 +216,7 @@
     "disabledManual": "Disabled (manual)",
     "warningOverCapacity": "Warning: {{people}} people for {{seats}} seats (manual override, +{{over}}).",
     "configuredMax": "Configured max: {{max}}",
-    "overrideActive": "— above the maximum, it will be saved as a manual exception",
+    "overrideActive": "— above the maximum, which staff are allowed to exceed",
     "warningAboveConfiguredMax": "Warning: {{people}} people is above configured max ({{max}}). Manual frontend override applied.",
     "askForDeposit": "Ask for a deposit to confirm",
     "depositPerPerson": "Amount per person",

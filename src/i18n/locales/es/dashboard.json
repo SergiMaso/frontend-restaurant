@@ -216,7 +216,7 @@
     "disabledManual": "Deshabilitada (manual)",
     "warningOverCapacity": "Advertencia: {{people}} personas para {{seats}} plazas (anulación manual, +{{over}}).",
     "configuredMax": "Máximo configurado: {{max}}",
-    "overrideActive": "— superas el máximo, se guardará como excepción manual",
+    "overrideActive": "— por encima del máximo, pero el personal puede superarlo",
     "warningAboveConfiguredMax": "Advertencia: {{people}} personas está por encima del máximo configurado ({{max}}). Se aplica anulación manual desde frontend.",
     "askForDeposit": "Pedir un depósito para confirmar",
     "depositPerPerson": "Importe por persona",

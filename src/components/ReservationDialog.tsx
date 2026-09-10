@@ -702,11 +702,23 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
       );
     }
     if (exceedsAreaCapacity) {
+      // The same distinction the inline message makes: reachableSeats is the chosen
+      // area's count when one is chosen, and the largest area's otherwise. Always saying
+      // "no area fits, the largest has N" got both halves wrong for a 10-seat terrace
+      // picked in a restaurant with 20 seats inside.
       toast.warning(
-        t("reservations.exceedsLargestArea", {
-          people: parsedNumPeople,
-          seats: reachableSeats,
-        })
+        chosenArea
+          ? t("reservations.exceedsAreaCapacity", {
+              people: parsedNumPeople,
+              seats: reachableSeats,
+              area: chosenArea === "terrace"
+                ? t("reservations.areaTerrace")
+                : t("reservations.areaInside"),
+            })
+          : t("reservations.exceedsLargestArea", {
+              people: parsedNumPeople,
+              seats: reachableSeats,
+            })
       );
     }
     if (requestedPeople > maxPeoplePerBooking) {

@@ -216,7 +216,7 @@
     "disabledManual": "Disabilitato (manuale)",
     "warningOverCapacity": "Avviso: {{people}} persone per {{seats}} posti (override manuale, +{{over}}).",
     "configuredMax": "Massimo configurato: {{max}}",
-    "overrideActive": "— superi il massimo, verrà salvata come eccezione manuale",
+    "overrideActive": "— sopra il massimo, che il personale può superare",
     "warningAboveConfiguredMax": "Avviso: {{people}} persone superano il massimo configurato ({{max}}). Viene applicato l'override manuale dal frontend.",
     "askForDeposit": "Richiedi un deposito per confermare",
     "depositPerPerson": "Importo a persona",
