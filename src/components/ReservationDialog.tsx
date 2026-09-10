@@ -676,10 +676,16 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
       console.log(`⏱️  Usant duració per defecte: ${defaultBookingDuration} hores`);
     }
 
-    if (selectedTableIds.length === 1) {
+    // Only in table mode. selectedTableIds is loaded from the reservation being edited,
+    // so hiding the picker was not enough: an edit still submitted the seats the booking
+    // already held, the backend read that as a deliberate manual assignment and skipped
+    // reassignment entirely. Growing a party of 2 to 4 kept its two one-person rows —
+    // and _validate_manual_table_selection checks existence and overlap but never total
+    // capacity, so nothing refused it. Four people, two seats, silently.
+    if (tablesEnabled && selectedTableIds.length === 1) {
       dataToSend.table_id = selectedTableIds[0];
       console.log(`📍 Taula seleccionada: ${selectedTableIds[0]}`);
-    } else if (selectedTableIds.length > 1) {
+    } else if (tablesEnabled && selectedTableIds.length > 1) {
       dataToSend.table_ids = selectedTableIds;
       console.log(`📍 Taules seleccionades: ${selectedTableIds.join(", ")}`);
     } else {
@@ -749,7 +755,10 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
     .filter((table) => selectedTableIds.includes(table.id))
     .reduce((sum, table) => sum + table.capacity, 0);
   const parsedNumPeople = Number.parseInt(numPeople || "0", 10) || 0;
+  // Gated on the mode as well: the warning lives inside the picker, so in capacity mode
+  // it could be true and invisible while the ids went out anyway.
   const isManualOverCapacity =
+    tablesEnabled &&
     selectedTableIds.length > 0 &&
     selectedManualCapacity > 0 &&
     parsedNumPeople > selectedManualCapacity;

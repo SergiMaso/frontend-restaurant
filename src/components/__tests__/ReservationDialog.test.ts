@@ -385,3 +385,38 @@ describe('ReservationDialog — it can actually run', () => {
     expect(mine, `\n${mine.join('\n')}`).toEqual([]);
   }, 120_000);
 });
+
+describe('ReservationDialog — capacity mode never submits table ids', () => {
+  const body = stripComments(source);
+
+  it('gates both table-id branches on the mode', () => {
+    // selectedTableIds is loaded from the reservation being edited, so hiding the picker
+    // is not enough. An edit that submits the seats a booking already holds is read by
+    // the backend as a deliberate manual assignment, and reassignment is skipped: grow a
+    // party of 2 to 4 and it keeps its two one-person rows. Nothing refuses it either —
+    // _validate_manual_table_selection checks existence and overlap, never total
+    // capacity.
+    const single = body.match(/if \([^)]*selectedTableIds\.length === 1\)/);
+    const multiple = body.match(/else if \([^)]*selectedTableIds\.length > 1\)/);
+
+    expect(single, 'the single-table branch disappeared').not.toBeNull();
+    expect(multiple, 'the multi-table branch disappeared').not.toBeNull();
+    expect(single![0]).toContain('tablesEnabled');
+    expect(multiple![0]).toContain('tablesEnabled');
+  });
+
+  it('does not raise the over-capacity warning where it cannot be seen', () => {
+    // The warning renders inside the picker, which capacity mode hides. Left ungated it
+    // could be true and invisible while the ids went out regardless.
+    const warning = body.slice(
+      body.indexOf('const isManualOverCapacity'),
+      body.indexOf('const overCapacityBy'),
+    );
+    expect(warning).toContain('tablesEnabled');
+  });
+
+  it('reads the mode from the restaurant row, not from the config endpoint', () => {
+    // /api/config is admin-only; the restaurant row reaches every authenticated user.
+    expect(body).toContain('selectedRestaurant?.tables_enabled ?? true');
+  });
+});
