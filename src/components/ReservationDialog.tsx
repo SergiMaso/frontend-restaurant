@@ -25,6 +25,7 @@ import { getTables, getCustomers, getAppointments, createAppointment, updateAppo
 import DeleteReservationDialog from "@/components/DeleteReservationDialog";
 import CustomerAutocomplete from "@/components/CustomerAutocomplete";
 import { useRestaurantConfig } from "@/hooks/useRestaurantConfig";
+import { useRestaurant } from "@/contexts/RestaurantContext";
 import { useDefaultPhoneCountry } from "@/hooks/useDefaultPhoneCountry";
 import { useTenantKey } from "@/hooks/useTenantKey";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -117,6 +118,12 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
   const [languageTouched, setLanguageTouched] = useState(false);
   const [areaPreference, setAreaPreference] = useState<"auto" | "inside" | "terrace">("auto");
   const [selectedTableIds, setSelectedTableIds] = useState<number[]>([]);
+
+  // Capacity mode models seats as one-person tables, so the picker would be a scroll of
+  // forty identical "tables" nobody chooses between — the engine assigns them. The area
+  // is the only thing left worth asking, and only when there is more than one to pick.
+  const { selectedRestaurant } = useRestaurant();
+  const tablesEnabled = selectedRestaurant?.tables_enabled ?? true;
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isWalkIn, setIsWalkIn] = useState(false);
 
@@ -723,6 +730,11 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
     }
   };
 
+  const areasWithTables = Array.from(
+    new Set((tables ?? []).map((table) => table.area))
+  );
+  const askForArea = tablesEnabled || areasWithTables.length > 1;
+
   const toggleTableSelection = (tableId: number, checked: boolean) => {
     setSelectedTableIds((prev) => {
       if (checked) {
@@ -781,7 +793,7 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
               </label>
             )}
 
-            {isWalkIn && (
+            {isWalkIn && askForArea && (
               <div className="flex gap-2">
                 {(["all", "inside", "terrace"] as const).map((area) => (
                   <button
@@ -919,7 +931,7 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
                 </Select>
               </div>}
 
-              {!isWalkIn && <div className="space-y-2">
+              {!isWalkIn && askForArea && <div className="space-y-2">
                 <Label htmlFor="areaPreference">{t("reservations.areaPreference")}</Label>
                 <Select value={areaPreference} onValueChange={(value: "auto" | "inside" | "terrace") => setAreaPreference(value)}>
                   <SelectTrigger>
@@ -933,7 +945,7 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
                 </Select>
               </div>}
 
-              <div className="space-y-2 md:col-span-2">
+              {tablesEnabled && <div className="space-y-2 md:col-span-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="tableSelection">
                     {t("reservations.table")} {reservation && (reservation.table_numbers || reservation.table_number) && t("reservations.currentTable", { number: reservation.table_numbers || reservation.table_number })}
@@ -1024,7 +1036,7 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
                 <p className="text-xs text-muted-foreground">
                   {t("reservations.staffCanSelectTables")}
                 </p>
-              </div>
+              </div>}
             </div>
 
             <div className="flex gap-2 justify-between pt-4">
