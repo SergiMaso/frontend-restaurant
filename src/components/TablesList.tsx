@@ -4,7 +4,9 @@ import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Users, Ban, Check, Edit, Trash2, Link, Plus, LayoutGrid } from "lucide-react";
-import { getTables, updateTable, deleteTable, createTable, generateCapacityTables, CapacityTablesError, type Table } from "@/services/api";
+import { getTables, updateTable, deleteTable, createTable, generateCapacityTables,
+         CapacityTablesError, type Table, type CapacityTablesResult,
+         type HomelessBooking } from "@/services/api";
 import { useTenantKey } from "@/hooks/useTenantKey";
 import { useRestaurant } from "@/contexts/RestaurantContext";
 import { Input } from "@/components/ui/input";
@@ -47,6 +49,22 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
   const [capacityOpen, setCapacityOpen] = useState(false);
   const [insideSeats, setInsideSeats] = useState("");
   const [terraceSeats, setTerraceSeats] = useState("");
+
+  // Result of the rolled-back run: what would happen if this were applied. Null means
+  // nothing has been checked yet, so the button still reads "generate".
+  const [preview, setPreview] = useState<CapacityTablesResult | null>(null);
+  // Bookings that would be left without seats. Shown in the dialog rather than as a
+  // toast: they are a list of people to phone, and a toast scrolls away while you read.
+  const [homeless, setHomeless] = useState<HomelessBooking[] | null>(null);
+
+  // Editing a number invalidates whatever was checked before it. An "Apply" button
+  // sitting next to figures computed for different seat counts is how somebody applies
+  // a layout they never actually saw.
+  const editSeats = (setter: (value: string) => void) => (value: string) => {
+    setter(value);
+    setPreview(null);
+    setHomeless(null);
+  };
 
   // Read from the restaurant row, which every authenticated user receives via
   // /api/restaurants, rather than from /api/config, which is admin-only.
@@ -141,25 +159,61 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
     }
   };
 
-  const capacityMutation = useMutation({
-    mutationFn: generateCapacityTables,
+  const capacityError = (error: CapacityTablesError) => {
+    setPreview(null);
+    // Somebody no longer fits. Not a toast: the dialog lists them, because the useful
+    // next step is phoning those people and that needs the list to stay on screen.
+    if (error.code === "would_not_fit") {
+      setHomeless(error.homeless || []);
+      return;
+    }
+    // A refusal because bookings still hold the current tables is not a failure the
+    // user caused by typing something wrong, so it gets its own message telling them
+    // what to do about it.
+    if (error.code === "future_bookings") {
+      toast.error(t("tables.capacityBlocked", { count: error.count }));
+    } else {
+      toast.error(error.message);
+    }
+  };
+
+  const applyMutation = useMutation({
+    mutationFn: (capacities: { inside: number; terrace: number }) =>
+      generateCapacityTables(capacities, { reseat: true }),
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: tablesKey });
       const total = Object.values(result.created).reduce((a, b) => a + b, 0);
-      toast.success(t("tables.capacityGenerated", { count: total }));
+      toast.success(
+        result.reseated > 0
+          ? t("tables.capacityGeneratedMoved", { count: total, moved: result.reseated })
+          : t("tables.capacityGenerated", { count: total })
+      );
       setCapacityOpen(false);
     },
-    onError: (error: CapacityTablesError) => {
-      // A refusal because bookings still hold the current tables is not a failure the
-      // user caused by typing something wrong, so it gets its own message telling them
-      // what to do about it.
-      if (error.code === "future_bookings") {
-        toast.error(t("tables.capacityBlocked", { count: error.count }));
-      } else {
-        toast.error(error.message);
-      }
-    },
+    onError: capacityError,
   });
+
+  const previewMutation = useMutation({
+    mutationFn: (capacities: { inside: number; terrace: number }) =>
+      generateCapacityTables(capacities, { reseat: true, dryRun: true }),
+    onSuccess: (result, capacities) => {
+      setHomeless(null);
+      // Nothing to move — there is nothing to confirm, so do not make them press a
+      // second button to be told so.
+      if (result.reseated === 0) {
+        applyMutation.mutate(capacities);
+        return;
+      }
+      setPreview(result);
+    },
+    onError: capacityError,
+  });
+
+  const capacityPending = previewMutation.isPending || applyMutation.isPending;
+  const capacityValues = {
+    inside: Number(insideSeats) || 0,
+    terrace: Number(terraceSeats) || 0,
+  };
 
   // What the restaurant currently holds, per area. In capacity mode the individual
   // tables are an implementation detail — a hundred cards each listing ninety-nine
@@ -173,6 +227,8 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
   const openCapacityDialog = () => {
     setInsideSeats(String(seatsByArea.inside || 0));
     setTerraceSeats(String(seatsByArea.terrace || 0));
+    setPreview(null);
+    setHomeless(null);
     setCapacityOpen(true);
   };
 
@@ -335,7 +391,7 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
                 type="number"
                 min={0}
                 value={insideSeats}
-                onChange={(e) => setInsideSeats(e.target.value)}
+                onChange={(e) => editSeats(setInsideSeats)(e.target.value)}
               />
             </div>
             <div className="grid gap-2">
@@ -345,25 +401,51 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
                 type="number"
                 min={0}
                 value={terraceSeats}
-                onChange={(e) => setTerraceSeats(e.target.value)}
+                onChange={(e) => editSeats(setTerraceSeats)(e.target.value)}
               />
             </div>
             <p className="text-sm text-muted-foreground">{t("tables.setCapacityWarning")}</p>
+
+            {preview && (
+              <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
+                <p className="font-medium">
+                  {t("tables.capacityWillMove", { count: preview.reseated })}
+                </p>
+                <p className="text-muted-foreground mt-1">
+                  {t("tables.capacityWillMoveHelp")}
+                </p>
+              </div>
+            )}
+
+            {homeless && (
+              <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm">
+                <p className="font-medium">
+                  {t("tables.capacityNoFit", { count: homeless.length })}
+                </p>
+                <ul className="mt-2 space-y-1 max-h-40 overflow-y-auto">
+                  {homeless.map((booking) => (
+                    <li key={booking.id} className="text-muted-foreground">
+                      {booking.date} {booking.time} · {booking.client_name} ·{" "}
+                      {t("tables.capacityNoFitPeople", { count: booking.num_people })}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCapacityOpen(false)}>
               {tCommon("cancel")}
             </Button>
             <Button
-              disabled={capacityMutation.isPending}
+              disabled={capacityPending}
               onClick={() =>
-                capacityMutation.mutate({
-                  inside: Number(insideSeats) || 0,
-                  terrace: Number(terraceSeats) || 0,
-                })
+                preview
+                  ? applyMutation.mutate(capacityValues)
+                  : previewMutation.mutate(capacityValues)
               }
             >
-              {t("tables.setCapacityConfirm")}
+              {preview ? t("tables.setCapacityApply") : t("tables.setCapacityConfirm")}
             </Button>
           </DialogFooter>
         </DialogContent>

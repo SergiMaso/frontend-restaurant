@@ -146,7 +146,13 @@
     "setCapacityWarning": "Se sustituirán todas las mesas actuales.",
     "setCapacityConfirm": "Generar",
     "capacityGenerated": "{{count}} plazas generadas",
-    "capacityBlocked": "Hay {{count}} reservas futuras con mesa asignada. Muévelas o cancélalas antes."
+    "capacityBlocked": "Hay {{count}} reservas futuras con mesa asignada. Muévelas o cancélalas antes.",
+    "setCapacityApply": "Aplicar",
+    "capacityGeneratedMoved": "{{count}} plazas generadas y {{moved}} reservas reubicadas",
+    "capacityWillMove": "{{count}} reservas futuras se reubicarán en las plazas nuevas",
+    "capacityWillMoveHelp": "Mantienen la fecha, la hora y el pago: solo cambian de sitio. Todavía no se ha cambiado nada.",
+    "capacityNoFit": "{{count}} reservas no caben. No se ha cambiado nada.",
+    "capacityNoFitPeople": "{{count}} personas"
   },
   "reservations": {
     "title": "Gestión de Reservas",

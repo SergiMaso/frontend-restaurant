@@ -146,7 +146,13 @@
     "setCapacityWarning": "This replaces every current table.",
     "setCapacityConfirm": "Generate",
     "capacityGenerated": "{{count}} seats generated",
-    "capacityBlocked": "{{count}} future bookings still hold a table. Move or cancel them first."
+    "capacityBlocked": "{{count}} future bookings still hold a table. Move or cancel them first.",
+    "setCapacityApply": "Apply",
+    "capacityGeneratedMoved": "{{count}} seats generated and {{moved}} bookings moved",
+    "capacityWillMove": "{{count}} future bookings will be moved onto the new seats",
+    "capacityWillMoveHelp": "They keep their date, time and payment — only where they sit changes. Nothing has been changed yet.",
+    "capacityNoFit": "{{count}} bookings do not fit. Nothing was changed.",
+    "capacityNoFitPeople": "{{count}} people"
   },
   "reservations": {
     "title": "Reservation Management",

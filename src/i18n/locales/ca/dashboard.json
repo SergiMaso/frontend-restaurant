@@ -146,7 +146,13 @@
     "setCapacityWarning": "Es substituiran totes les taules actuals.",
     "setCapacityConfirm": "Generar",
     "capacityGenerated": "{{count}} places generades",
-    "capacityBlocked": "Hi ha {{count}} reserves futures amb taula assignada. Mou-les o cancel·la-les abans."
+    "capacityBlocked": "Hi ha {{count}} reserves futures amb taula assignada. Mou-les o cancel·la-les abans.",
+    "setCapacityApply": "Aplicar",
+    "capacityGeneratedMoved": "{{count}} places generades i {{moved}} reserves reubicades",
+    "capacityWillMove": "{{count}} reserves futures es reubicaran a les places noves",
+    "capacityWillMoveHelp": "Mantenen la data, l'hora i el pagament: només canvien de lloc. Encara no s'ha canviat res.",
+    "capacityNoFit": "{{count}} reserves no hi caben. No s'ha canviat res.",
+    "capacityNoFitPeople": "{{count}} persones"
   },
   "reservations": {
     "title": "Gestió de Reserves",

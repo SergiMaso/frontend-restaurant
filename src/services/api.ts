@@ -427,16 +427,42 @@ export async function deleteTable(tableId: number): Promise<void> {
  * needs a different message from a plain validation error — the user has something to do
  * about the first and nothing to do about the second.
  */
+/** A future booking that no longer fits, named so the restaurant can call them. */
+export interface HomelessBooking {
+  id: number;
+  date: string;
+  time: string;
+  num_people: number;
+  client_name: string;
+  area: string;
+}
+
 export class CapacityTablesError extends Error {
   code?: string;
   count?: number;
+  /** Set only for code 'would_not_fit': who could not be placed. */
+  homeless?: HomelessBooking[];
+  total?: number;
 
-  constructor(message: string, code?: string, count?: number) {
+  constructor(message: string, code?: string, count?: number,
+              homeless?: HomelessBooking[], total?: number) {
     super(message);
     this.name = 'CapacityTablesError';
     this.code = code;
     this.count = count;
+    this.homeless = homeless;
+    this.total = total;
   }
+}
+
+export interface CapacityTablesResult {
+  success: boolean;
+  created: Record<string, number>;
+  removed: number;
+  /** Future bookings moved onto the new seats. */
+  reseated: number;
+  /** True when nothing was written — the answer came from a rolled-back run. */
+  dry_run: boolean;
 }
 
 /**
@@ -445,20 +471,31 @@ export class CapacityTablesError extends Error {
  * Only valid while tables_enabled is false; the backend enforces that as well, because
  * this deletes the restaurant's whole table plan and a stale tab must not be able to
  * wipe one that is still in use.
+ *
+ * With `reseat` the future bookings are moved onto the new seats rather than blocking
+ * the change; with `dryRun` the same work is done and rolled back, so the dashboard can
+ * show what would happen. Both run the identical backend path — a preview that took a
+ * different route could disagree with the apply.
  */
 export async function generateCapacityTables(
-  capacities: { inside?: number; terrace?: number }
-): Promise<{ success: boolean; created: Record<string, number>; removed: number }> {
+  capacities: { inside?: number; terrace?: number },
+  options: { reseat?: boolean; dryRun?: boolean } = {}
+): Promise<CapacityTablesResult> {
   const response = await fetch(`${API_URL}/api/tables/capacity`, {
     method: 'POST',
     credentials: 'include',
     headers: { ...getRestaurantHeaders(), 'Content-Type': 'application/json' },
-    body: JSON.stringify(capacities),
+    body: JSON.stringify({
+      ...capacities,
+      reseat: options.reseat ?? false,
+      dry_run: options.dryRun ?? false,
+    }),
   });
 
   const body = await response.json();
   if (!response.ok) {
-    throw new CapacityTablesError(body.error || 'Error generant taules', body.code, body.count);
+    throw new CapacityTablesError(body.error || 'Error generant taules', body.code,
+                                  body.count, body.homeless, body.total);
   }
   return body;
 }

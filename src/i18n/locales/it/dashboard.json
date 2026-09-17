@@ -146,7 +146,13 @@
     "setCapacityWarning": "Sostituirà tutti i tavoli attuali.",
     "setCapacityConfirm": "Genera",
     "capacityGenerated": "{{count}} posti generati",
-    "capacityBlocked": "Ci sono {{count}} prenotazioni future con un tavolo assegnato. Spostale o annullale prima."
+    "capacityBlocked": "Ci sono {{count}} prenotazioni future con un tavolo assegnato. Spostale o annullale prima.",
+    "setCapacityApply": "Applica",
+    "capacityGeneratedMoved": "{{count}} posti generati e {{moved}} prenotazioni spostate",
+    "capacityWillMove": "{{count}} prenotazioni future verranno spostate sui nuovi posti",
+    "capacityWillMoveHelp": "Mantengono data, ora e pagamento: cambia solo dove siedono. Non è stato ancora modificato nulla.",
+    "capacityNoFit": "{{count}} prenotazioni non ci stanno. Non è stato modificato nulla.",
+    "capacityNoFitPeople": "{{count}} persone"
   },
   "reservations": {
     "title": "Gestione Prenotazioni",
