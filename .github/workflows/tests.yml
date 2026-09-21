@@ -32,18 +32,13 @@ jobs:
       - name: Run tests
         run: npx vitest run
 
-      - name: Type check (informational)
-        # tsconfig.json is a solution file: "files": [] plus references, so
-        # `tsc -p tsconfig.json` checks ZERO files and passes no matter what is
-        # broken. This step was written that way and was pure decoration — it
-        # reported success while 148 files went unchecked.
+      - name: Type check
+        # tsconfig.app.json, NOT tsconfig.json. The latter is a solution file —
+        # "files": [] plus references — so `tsc -p tsconfig.json` checks zero
+        # files and passes no matter what is broken. This step was written that
+        # way once and reported success while 148 files went unchecked.
         #
-        # tsconfig.app.json is the one that compiles src. It has 5 errors, all
-        # present on aws_multitenant too (same errors, shifted line numbers), so
-        # this cannot gate yet without being red from the start. Promote it to a
-        # gate once those five are fixed: 3 in UserManagement.tsx, 1 in
-        # DayCalendar.tsx, 1 in WeeklyScheduleManager.tsx.
-        continue-on-error: true
+        # A real gate: 0 errors as of this commit.
         run: npx tsc --noEmit -p tsconfig.app.json
 
       - name: Build

@@ -466,3 +466,25 @@ describe('ReservationDialog — auto is not the same as a chosen area', () => {
     expect(guard).toContain('chosenArea !== null');
   });
 });
+
+describe('ReservationDialog — walk-in table occupancy', () => {
+  const walkInBlock = stripComments(
+    source.slice(source.indexOf('const occupied = new Set<number>()'),
+                 source.indexOf('const occupied = new Set<number>()') + 1400),
+  );
+
+  it('treats a booking with unreadable times as occupying its table', () => {
+    // It used to be an empty `catch {}`: a booking whose start_time could not be
+    // read left overlaps false, the table looked free, and a walk-in could be
+    // seated on top of a real reservation with nothing logged. Failing the other
+    // way costs one wrongly-blocked table; failing this way double-books.
+    expect(walkInBlock).not.toMatch(/catch\s*\{\s*\}/);
+    expect(walkInBlock).toMatch(/if \(!rStart \|\| !rEnd\)\s*\{\s*overlaps = true/);
+  });
+
+  it('does not rely on Invalid Date comparing sensibly', () => {
+    // new Date("nonsense") returns Invalid Date instead of throwing, and every
+    // comparison with it is false — so parsing must be checked, not caught.
+    expect(source).toMatch(/Number\.isNaN\(parsed\.getTime\(\)\)/);
+  });
+});

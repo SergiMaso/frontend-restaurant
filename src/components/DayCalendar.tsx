@@ -899,7 +899,7 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
                   </Badge>
                 )}
                 {selectedReservation.seated_at && (
-                  <Badge variant="success" className="bg-green-100 text-green-700 border-green-300">
+                  <Badge variant="success">
                     🪑 {format(parseAsLocalTime(selectedReservation.seated_at), "HH:mm")}
                     {selectedReservation.delay_minutes && (
                       <span className="ml-1">

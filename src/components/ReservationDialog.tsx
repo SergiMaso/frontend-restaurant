@@ -60,6 +60,20 @@ const generateTimeSlots = (mode: string, intervalMinutes: number, fixedLunch: st
   }
 };
 
+/**
+ * A booking timestamp as a Date, or null when it cannot be read.
+ *
+ * Strips the timezone suffix so the value is compared in the restaurant's own
+ * wall-clock terms, like the rest of this dialog. Returns null rather than an
+ * Invalid Date, because Invalid Date compares false against everything and so
+ * reads silently as "does not overlap".
+ */
+const parseBookingInstant = (value?: string | null): Date | null => {
+  if (!value) return null;
+  const parsed = new Date(String(value).split("+")[0].split("Z")[0]);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
 const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defaultTableId, defaultDate }: ReservationDialogProps) => {
   const { t } = useTranslation("dashboard");
   const { t: tCommon } = useTranslation("common");
@@ -323,11 +337,20 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
       // Has a confirmed reservation overlapping the walk-in window (now → now + defaultDuration)
       let overlaps = false;
       if (!isSeated && (appt.status === "confirmed" || appt.status === "pending_payment")) {
-        try {
-          const rStart = new Date(appt.start_time.split("+")[0].split("Z")[0]);
-          const rEnd = new Date(appt.end_time.split("+")[0].split("Z")[0]);
+        const rStart = parseBookingInstant(appt.start_time);
+        const rEnd = parseBookingInstant(appt.end_time);
+        // Unreadable times mean we cannot say when this booking runs, so treat it
+        // as in the way. This was an empty `catch {}`, which left overlaps false —
+        // the table then looked free and a walk-in could be seated on top of a
+        // real reservation, with nothing logged. The catch never even fired for a
+        // malformed string: new Date("nonsense") returns Invalid Date rather than
+        // throwing, and every comparison with it is false, so that read as "free"
+        // too. Only a missing value reached the catch at all.
+        if (!rStart || !rEnd) {
+          overlaps = true;
+        } else {
           overlaps = rStart < walkInEnd && rEnd > now;
-        } catch {}
+        }
       }
       if (isSeated || overlaps) {
         (appt.table_ids || (appt.table_id ? [appt.table_id] : [])).forEach((id: number) => occupied.add(id));

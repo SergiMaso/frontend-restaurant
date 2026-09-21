@@ -737,7 +737,23 @@ export async function getWeeklyDefaults(): Promise<WeeklyDefault[]> {
   return response.json();
 }
 
-export async function updateWeeklyDefault(dayOfWeek: number, data: UpdateWeeklyDefaultData): Promise<WeeklyDefault> {
+/**
+ * What PUT /api/weekly-defaults/:day returns (utils/weekly_defaults.py:305).
+ *
+ * Not a WeeklyDefault — it is a report on the write. `days_updated` counts the
+ * future non-custom dates the new hours propagated to, `days_custom` the ones
+ * deliberately left alone. The declared type said WeeklyDefault, so reading
+ * days_updated (which the dialog shows in its confirmation) was a type error,
+ * and the fields that do come back were undocumented.
+ */
+export interface WeeklyDefaultUpdateResult {
+  success: boolean;
+  days_updated: number;
+  days_custom: number;
+  message: string;
+}
+
+export async function updateWeeklyDefault(dayOfWeek: number, data: UpdateWeeklyDefaultData): Promise<WeeklyDefaultUpdateResult> {
   const response = await fetch(`${API_URL}/api/weekly-defaults/${dayOfWeek}`, {
     method: 'PUT',
     headers: {
