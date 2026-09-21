@@ -32,9 +32,19 @@ jobs:
       - name: Run tests
         run: npx vitest run
 
-      - name: Type check
-        # Clean today (0 errors), so it is a real gate rather than decoration.
-        run: npx tsc --noEmit -p tsconfig.json
+      - name: Type check (informational)
+        # tsconfig.json is a solution file: "files": [] plus references, so
+        # `tsc -p tsconfig.json` checks ZERO files and passes no matter what is
+        # broken. This step was written that way and was pure decoration — it
+        # reported success while 148 files went unchecked.
+        #
+        # tsconfig.app.json is the one that compiles src. It has 5 errors, all
+        # present on aws_multitenant too (same errors, shifted line numbers), so
+        # this cannot gate yet without being red from the start. Promote it to a
+        # gate once those five are fixed: 3 in UserManagement.tsx, 1 in
+        # DayCalendar.tsx, 1 in WeeklyScheduleManager.tsx.
+        continue-on-error: true
+        run: npx tsc --noEmit -p tsconfig.app.json
 
       - name: Build
         # Catches what tsc does not: a broken import, a missing asset, a Vite
