@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
@@ -35,6 +35,20 @@ import {
 interface TablesListProps {
   onEdit?: (table: any) => void;
 }
+
+/**
+ * Whether a finished capacity check describes something other than what is on screen.
+ *
+ * The check runs over the network, and the reply that comes back carries the numbers it
+ * was asked about, not the numbers in the fields now. When nothing needs re-seating the
+ * dialog applies the result without asking again, so a reply that arrived late would
+ * rebuild the whole table plan to a layout the user had already changed away from — or
+ * to one they abandoned by closing the dialog.
+ */
+export const capacityReplyIsStale = (
+  live: { inside: number; terrace: number; open: boolean },
+  checked: { inside: number; terrace: number },
+) => !live.open || live.inside !== checked.inside || live.terrace !== checked.terrace;
 
 const TablesList = ({ onEdit }: TablesListProps = {}) => {
   const queryClient = useQueryClient();
@@ -159,6 +173,18 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
     }
   };
 
+  // What the dialog holds right now, readable from a callback that was armed earlier.
+  // The check runs over the network and its result arrives later; by then the numbers on
+  // screen may not be the numbers that were checked, and the dialog may be closed
+  // altogether. Reading component state in that callback is not enough — the values are
+  // captured, so it would happily apply ten seats while the field reads five.
+  const dialogStateRef = useRef({ inside: 0, terrace: 0, open: false });
+  dialogStateRef.current = {
+    inside: Number(insideSeats) || 0,
+    terrace: Number(terraceSeats) || 0,
+    open: capacityOpen,
+  };
+
   const capacityError = (error: CapacityTablesError) => {
     setPreview(null);
     // Somebody no longer fits. Not a toast: the dialog lists them, because the useful
@@ -197,6 +223,15 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
     mutationFn: (capacities: { inside: number; terrace: number }) =>
       generateCapacityTables(capacities, { reseat: true, dryRun: true }),
     onSuccess: (result, capacities) => {
+      // Answers to a question nobody is asking any more. Editing a seat count while the
+      // check is in flight, or closing the dialog, must not be overtaken by a reply
+      // describing the previous numbers — the zero-to-move branch below writes without
+      // asking, so a stale one would rebuild the table plan to a layout that is no
+      // longer on screen.
+      if (capacityReplyIsStale(dialogStateRef.current, capacities)) {
+        return;
+      }
+
       setHomeless(null);
       // Nothing to move — there is nothing to confirm, so do not make them press a
       // second button to be told so.
@@ -391,6 +426,7 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
                 type="number"
                 min={0}
                 value={insideSeats}
+                disabled={capacityPending}
                 onChange={(e) => editSeats(setInsideSeats)(e.target.value)}
               />
             </div>
@@ -401,6 +437,7 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
                 type="number"
                 min={0}
                 value={terraceSeats}
+                disabled={capacityPending}
                 onChange={(e) => editSeats(setTerraceSeats)(e.target.value)}
               />
             </div>

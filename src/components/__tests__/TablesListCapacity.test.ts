@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
+import { capacityReplyIsStale } from '../TablesList';
 import { resolve } from 'node:path';
 
 // Structural assertions over the source, same approach as ReservationDialog.test.ts:
@@ -128,5 +129,55 @@ describe('TablesList — capacity re-seating', () => {
       expect(dashboard.tables.capacityNoFit).toContain('{{count}}');
       expect(dashboard.tables.capacityNoFitPeople).toContain('{{count}}');
     }
+  });
+
+  it('drops a reply describing numbers that are no longer on screen', () => {
+    // The reproduced failure: ask to check ten, change the field to five while the
+    // request is in flight, and the reply for ten comes back with nothing to re-seat —
+    // which applies without asking. Ten seats get built while the dialog reads five.
+    const checked = { inside: 10, terrace: 0 };
+
+    expect(
+      capacityReplyIsStale({ inside: 5, terrace: 0, open: true }, checked),
+      'a reply for ten must not be acted on while the field reads five',
+    ).toBe(true);
+
+    expect(
+      capacityReplyIsStale({ inside: 10, terrace: 4, open: true }, checked),
+      'the terrace changed under it, so the reply is equally stale',
+    ).toBe(true);
+
+    // Closing the dialog abandons the change. The apply would otherwise still fire,
+    // with nothing on screen to say that it had.
+    expect(
+      capacityReplyIsStale({ inside: 10, terrace: 0, open: false }, checked),
+    ).toBe(true);
+
+    // And the ordinary case still goes through, or the button would do nothing at all.
+    expect(
+      capacityReplyIsStale({ inside: 10, terrace: 0, open: true }, checked),
+    ).toBe(false);
+  });
+
+  it('guards the auto-apply with that check', () => {
+    // The rule is only worth anything if the branch that writes without asking is the
+    // branch behind it.
+    const block = mutationBlock('previewMutation');
+    const guardAt = block.indexOf('capacityReplyIsStale');
+    const applyAt = block.indexOf('applyMutation.mutate');
+    expect(guardAt, 'previewMutation does not consult capacityReplyIsStale').toBeGreaterThan(-1);
+    expect(applyAt).toBeGreaterThan(-1);
+    expect(guardAt, 'the staleness check must come before the auto-apply').toBeLessThan(applyAt);
+  });
+
+  it('will not let the fields change mid-check either', () => {
+    // Belt and braces with the guard above: the common way to produce a stale reply is
+    // simply typing while it is in flight.
+    const inside = source.slice(source.indexOf('id="inside-seats"'),
+                               source.indexOf('id="inside-seats"') + 320);
+    const terrace = source.slice(source.indexOf('id="terrace-seats"'),
+                                source.indexOf('id="terrace-seats"') + 320);
+    expect(inside).toContain('disabled={capacityPending}');
+    expect(terrace).toContain('disabled={capacityPending}');
   });
 });
