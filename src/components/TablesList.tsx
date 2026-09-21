@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { capacityReplyIsStale } from "@/lib/capacity";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
@@ -35,20 +36,6 @@ import {
 interface TablesListProps {
   onEdit?: (table: any) => void;
 }
-
-/**
- * Whether a finished capacity check describes something other than what is on screen.
- *
- * The check runs over the network, and the reply that comes back carries the numbers it
- * was asked about, not the numbers in the fields now. When nothing needs re-seating the
- * dialog applies the result without asking again, so a reply that arrived late would
- * rebuild the whole table plan to a layout the user had already changed away from — or
- * to one they abandoned by closing the dialog.
- */
-export const capacityReplyIsStale = (
-  live: { inside: number; terrace: number; open: boolean },
-  checked: { inside: number; terrace: number },
-) => !live.open || live.inside !== checked.inside || live.terrace !== checked.terrace;
 
 const TablesList = ({ onEdit }: TablesListProps = {}) => {
   const queryClient = useQueryClient();

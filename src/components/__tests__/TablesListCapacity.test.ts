@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { capacityReplyIsStale } from '../TablesList';
+import { capacityReplyIsStale } from '../../lib/capacity';
 import { resolve } from 'node:path';
 
 // Structural assertions over the source, same approach as ReservationDialog.test.ts:
