@@ -26,7 +26,7 @@ describe('ClientConfigManager — voice provider', () => {
       source.indexOf('const TIMEZONE_OPTIONS'),
     );
     const offered = [...block.matchAll(/value: '([a-z_]+)'/g)].map(m => m[1]);
-    expect(offered).toEqual(['openai', 'google']);
+    expect(offered).toEqual(['openai', 'openai_live', 'google']);
   });
 
   it('is chosen from a list, not typed', () => {

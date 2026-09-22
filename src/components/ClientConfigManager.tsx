@@ -43,13 +43,8 @@ import {
  */
 const VOICE_PROVIDER_OPTIONS = [
   { value: 'openai', label: 'OpenAI Realtime' },
+  { value: 'openai_live', label: 'OpenAI GPT-Live' },
   { value: 'google', label: 'Google Gemini Live' },
-  // 'openai_live' is deliberately absent until the bridge exists. The settings
-  // for it are already in the Configuration tab, which made it tempting to offer
-  // the provider too — but voice_incoming has no branch for it yet, so choosing
-  // it reaches `Unknown voice_provider`, the call falls through to the error
-  // TwiML, and the restaurant's phone line stops working. The option goes in
-  // with the code that can answer a call, not before.
 ];
 
 const TIMEZONE_OPTIONS = [
