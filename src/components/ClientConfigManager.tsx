@@ -29,6 +29,24 @@ import {
 
 // IANA timezones we explicitly support. Anything else can be typed in via
 // the manual override at the bottom of the dropdown.
+/**
+ * The voice providers the backend knows how to connect to.
+ *
+ * `openai` is the Realtime API: one model hears, thinks and speaks. `openai_live`
+ * is GPT-Live, which splits those — the voice model talks and a separate backend
+ * model reasons and books, configured under gpt_live_backend_model. `google` is
+ * Gemini Live.
+ *
+ * Kept in step with the branches in app.py's voice_incoming: a value that is not
+ * one of these reaches `Unknown voice_provider` and the caller hears the error
+ * message instead of the assistant.
+ */
+const VOICE_PROVIDER_OPTIONS = [
+  { value: 'openai', label: 'OpenAI Realtime' },
+  { value: 'openai_live', label: 'OpenAI GPT-Live' },
+  { value: 'google', label: 'Google Gemini Live' },
+];
+
 const TIMEZONE_OPTIONS = [
   "Europe/Madrid",
   "Europe/Lisbon",
@@ -278,6 +296,29 @@ const ClientConfigManager = () => {
                                     {String(editValue).toLowerCase() === 'true' ? 'true' : 'false'}
                                   </span>
                                 </div>
+                              ) : config.key === 'voice_provider' ? (
+                                // A typed free-text value here silently breaks voice:
+                                // the backend raises "Unknown voice_provider" and the
+                                // call falls through to the error TwiML, so a typo is
+                                // only discovered by someone phoning the restaurant.
+                                <Select value={editValue} onValueChange={setEditValue}>
+                                  <SelectTrigger className="max-w-[220px]">
+                                    <SelectValue placeholder="Select provider" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {VOICE_PROVIDER_OPTIONS.map((option) => (
+                                      <SelectItem key={option.value} value={option.value}>
+                                        {option.label}
+                                      </SelectItem>
+                                    ))}
+                                    {editValue
+                                      && !VOICE_PROVIDER_OPTIONS.some(o => o.value === editValue) && (
+                                      // Never hide what is actually stored, even if it is
+                                      // a value this build does not know about.
+                                      <SelectItem value={editValue}>{editValue} (current)</SelectItem>
+                                    )}
+                                  </SelectContent>
+                                </Select>
                               ) : config.key === 'timezone' ? (
                                 <Select value={editValue} onValueChange={setEditValue}>
                                   <SelectTrigger className="max-w-[220px]">
