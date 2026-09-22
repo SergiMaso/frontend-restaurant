@@ -16,15 +16,17 @@ const source = readFileSync(
 );
 
 describe('ClientConfigManager — voice provider', () => {
-  it('offers the three providers the backend can connect to', () => {
+  it('offers only providers that can actually answer a call', () => {
+    // The backend contract test (test_frontend_contracts.py) is what keeps this
+    // list and voice_incoming's branches in step. This one states the intent
+    // from the dashboard's side: 'openai_live' stays out until the bridge lands,
+    // because offering it breaks the restaurant's phone line.
     const block = source.slice(
       source.indexOf('const VOICE_PROVIDER_OPTIONS'),
       source.indexOf('const TIMEZONE_OPTIONS'),
     );
-    for (const provider of ['openai', 'openai_live', 'google']) {
-      expect(block, `${provider} missing from the picker`)
-        .toContain(`value: '${provider}'`);
-    }
+    const offered = [...block.matchAll(/value: '([a-z_]+)'/g)].map(m => m[1]);
+    expect(offered).toEqual(['openai', 'google']);
   });
 
   it('is chosen from a list, not typed', () => {
