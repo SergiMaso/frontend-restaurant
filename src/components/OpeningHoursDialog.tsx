@@ -26,7 +26,7 @@ import { setOpeningHours, getWeeklyDefaults, type SetOpeningHoursData, type Slot
 import { useQuery } from "@tanstack/react-query";
 import { useRestaurantConfig } from "@/hooks/useRestaurantConfig";
 import DayRulesEditor, { type DayRulesValue } from "@/components/DayRulesEditor";
-import { useTenantKey } from "@/hooks/useTenantKey";
+import { useTenantKey, DAY_RULE_DERIVED_KEYS } from "@/hooks/useTenantKey";
 import { useRestaurant } from "@/contexts/RestaurantContext";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -137,6 +137,7 @@ const OpeningHoursDialog = ({ open, onOpenChange, date, initialData }: OpeningHo
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: openingHoursKey });
+      DAY_RULE_DERIVED_KEYS.forEach((k) => queryClient.invalidateQueries({ queryKey: [k] }));
       toast.success(t("weeklySchedule.saveSuccess"));
       onOpenChange(false);
     },

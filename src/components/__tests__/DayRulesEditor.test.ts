@@ -100,7 +100,8 @@ describe('State cannot leak between days', () => {
     // Tuesday. A key is what forces the remount.
     const dialogUsage = weekday.slice(weekday.indexOf('<DayEditorDialog'));
     expect(
-      /key=\{selectedDay\.day_of_week\}/.test(dialogUsage),
+      // The weekday must be part of the key (now alongside an opening counter).
+      /key=\{`?\$?\{?selectedDay\.day_of_week\}/.test(dialogUsage),
       'without a key, one weekday’s hours and slot caps get saved onto another',
     ).toBe(true);
   });
@@ -177,5 +178,25 @@ describe('DayRulesEditor — found in review (2026-09-23)', () => {
       expect(d.dayRules.lastSlot, lang).toBeTruthy();
       expect(d.dayRules.ownerOnlyDeposits, lang).toBeTruthy();
     }
+  });
+});
+
+describe('Saving hours or rules refreshes what depends on them', () => {
+  it('invalidates the sittings, deposit terms and caps the booking dialog reads', () => {
+    // Only the hours were invalidated, so the booking dialog kept offering a day's
+    // old sittings for five minutes and the save failed. Found in review.
+    for (const dialog of [weekday, dateDialog]) {
+      expect(dialog).toMatch(/DAY_RULE_DERIVED_KEYS\.forEach/);
+    }
+    const keys = readFileSync(resolve(__dirname, '../../hooks/useTenantKey.ts'), 'utf8');
+    for (const k of ['time-slots', 'payment-terms', 'slot-capacity']) {
+      expect(keys).toContain(`"${k}"`);
+    }
+  });
+
+  it('rebuilds the weekday dialog on every opening, not only per weekday', () => {
+    // Reopening the same day after Cancel kept the discarded edits.
+    expect(weekday).toMatch(/key=\{`\$\{selectedDay\.day_of_week\}-\$\{openCount\}`\}/);
+    expect(weekday).toMatch(/setOpenCount\(\(n\) => n \+ 1\)/);
   });
 });
