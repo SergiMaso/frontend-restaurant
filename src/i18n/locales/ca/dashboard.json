@@ -296,7 +296,8 @@
     "languageLabel": "Idioma Preferit",
     "selectLanguage": "Selecciona idioma",
     "saveChanges": "Desar Canvis",
-    "yesDelete": "Sí, eliminar"
+    "yesDelete": "Sí, eliminar",
+    "storedId": "Identificador desat (no és un telèfon)"
   },
   "users": {
     "title": "Gestió d'Usuaris",

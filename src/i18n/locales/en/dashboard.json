@@ -296,7 +296,8 @@
     "languageLabel": "Preferred Language",
     "selectLanguage": "Select language",
     "saveChanges": "Save Changes",
-    "yesDelete": "Yes, delete"
+    "yesDelete": "Yes, delete",
+    "storedId": "Stored identifier (not a phone number)"
   },
   "users": {
     "title": "User Management",

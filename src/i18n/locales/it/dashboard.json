@@ -296,7 +296,8 @@
     "languageLabel": "Lingua Preferita",
     "selectLanguage": "Seleziona lingua",
     "saveChanges": "Salva Modifiche",
-    "yesDelete": "Sì, elimina"
+    "yesDelete": "Sì, elimina",
+    "storedId": "Identificativo salvato (non è un telefono)"
   },
   "users": {
     "title": "Gestione Utenti",
