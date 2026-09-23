@@ -148,7 +148,7 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
   // Only in fixed mode. Interval mode has no sitting list to resolve, and the grid
   // generated here covers hours staff are allowed to book outside opening times, so
   // replacing it would take something away.
-  const { data: daySittings } = useQuery({
+  const { data: daySittings, isFetching: sittingsLoading } = useQuery({
     queryKey: useTenantKey(["time-slots", reservationDate]),
     queryFn: () => getTimeSlots(reservationDate),
     enabled: open && timeSlotsMode === "fixed" && !!reservationDate,
@@ -160,11 +160,14 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
       ? daySittings.slots
       : configuredTimeSlots;
 
-  // Deposit controls. `depositTouched` keeps a staff-typed figure from being
-  // overwritten when the suggested amount arrives or the date/time changes.
+  // Deposit controls. Two separate "staff decided" flags: one for the box, one for the
+  // figure. A single flag meant ticking the box froze the suggested amount, so moving
+  // the booking to another day or party size kept the previous day's price — and
+  // re-ticking sent it. Only a figure staff actually typed is kept.
   const [askForDeposit, setAskForDeposit] = useState(false);
   const [depositAmount, setDepositAmount] = useState("");
-  const [depositTouched, setDepositTouched] = useState(false);
+  const [askTouched, setAskTouched] = useState(false);
+  const [amountTouched, setAmountTouched] = useState(false);
   const [walkInArea, setWalkInArea] = useState<"all" | "inside" | "terrace">("all");
 
   const tablesKey = useTenantKey(["tables"]);
@@ -183,13 +186,17 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
   // not a thing anyone wants. (They also compute their own time inside the submit
   // handler, which is not in scope here.)
   const peopleForTerms = Number.parseInt(numPeople, 10) || 1;
-  const { data: paymentTerms } = useQuery({
+  const { data: paymentTerms, isFetching: paymentTermsLoading } = useQuery({
     queryKey: useTenantKey([
       "payment-terms", reservationDate, reservationTime, String(peopleForTerms),
     ]),
     queryFn: () => getPaymentTerms(reservationDate, reservationTime, peopleForTerms),
     enabled: !reservation && !isWalkIn && open && !!reservationDate && !!reservationTime,
     staleTime: 60 * 1000,
+    // Keep the previous terms while the new ones load. Without this the deposit
+    // controls vanished for that moment, and saving then dropped a ticked deposit
+    // with a "created" toast.
+    placeholderData: (previous) => previous,
   });
 
   // Staff bookings bypass the arrival cap on purpose — the phone rings, it is a
@@ -287,18 +294,23 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
   // wonder why nothing happened.
   const depositAvailable = !isWalkIn && !reservation && !!paymentTerms?.payments_available;
 
-  // Suggest the day's amount, but never overwrite a figure staff have typed.
+  // Suggest the day's amount and whether it applies, but never overwrite what staff
+  // chose: the figure they typed, or the box they ticked or unticked.
   useEffect(() => {
-    if (!depositAvailable || depositTouched) return;
-    const suggested = paymentTerms?.amount_per_person;
-    setDepositAmount(suggested != null && suggested > 0 ? String(suggested) : "");
-    setAskForDeposit(!!paymentTerms?.would_apply);
-  }, [depositAvailable, paymentTerms?.amount_per_person, paymentTerms?.would_apply, depositTouched]);
+    if (!depositAvailable) return;
+    if (!amountTouched) {
+      const suggested = paymentTerms?.amount_per_person;
+      setDepositAmount(suggested != null && suggested > 0 ? String(suggested) : "");
+    }
+    if (!askTouched) setAskForDeposit(!!paymentTerms?.would_apply);
+  }, [depositAvailable, paymentTerms?.amount_per_person, paymentTerms?.would_apply,
+      amountTouched, askTouched]);
 
   // A fresh dialog starts from the day's rules again.
   useEffect(() => {
     if (!open) {
-      setDepositTouched(false);
+      setAskTouched(false);
+      setAmountTouched(false);
       setAskForDeposit(false);
       setDepositAmount("");
     }
@@ -483,13 +495,18 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
   // themselves is never moved. Skipped when editing: an existing booking may sit on an
   // off-slot time from before the sittings were configured, and snapping it would
   // silently reschedule somebody.
+  //
+  // Not while the new date's sittings are loading: the list then falls back to the
+  // restaurant-wide one, which may lack a time only that day offers, and the time
+  // staff had picked was reset to the default with no notice.
   useEffect(() => {
     if (!open || reservation || configLoading) return;
+    if (timeSlotsMode === "fixed" && sittingsLoading) return;
     if (!availableTimeSlots.length) return;
     if (availableTimeSlots.includes(reservationTime)) return;
     setReservationTime(defaultTime || availableTimeSlots[0]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, reservation, configLoading, availableTimeSlots.join(','), defaultTime]);
+  }, [open, reservation, configLoading, sittingsLoading, availableTimeSlots.join(','), defaultTime]);
 
   // Fill in the language only once, and only if nothing is set yet — covers the
   // dialog opening before the restaurant config query resolves. Never overwrites
@@ -1177,7 +1194,7 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
                       checked={askForDeposit}
                       onCheckedChange={(checked) => {
                         setAskForDeposit(checked === true);
-                        setDepositTouched(true);
+                        setAskTouched(true);
                       }}
                     />
                     <Label htmlFor="ask-deposit" className="cursor-pointer">
@@ -1210,7 +1227,7 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
                           value={depositAmount}
                           onChange={(e) => {
                             setDepositAmount(e.target.value);
-                            setDepositTouched(true);
+                            setAmountTouched(true);
                           }}
                           className="max-w-[140px]"
                         />
@@ -1256,7 +1273,11 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
                     arrives the language box can still be empty, and saving would
                     send language:"" — which the backend resolves to the customer's
                     language or a hardcoded "es", never the restaurant's. */}
-                <Button type="submit" disabled={updateMutation.isPending || configLoading}>
+                {/* Not while a ticked deposit's terms are still loading: the amount on
+                    screen may be the previous day's suggestion. */}
+                <Button type="submit"
+                        disabled={updateMutation.isPending || configLoading
+                                  || (depositAvailable && askForDeposit && paymentTermsLoading)}>
                   {updateMutation.isPending ? tCommon("saving") : reservation ? t("tables.saveChanges") : t("reservations.create")}
                 </Button>
               </div>

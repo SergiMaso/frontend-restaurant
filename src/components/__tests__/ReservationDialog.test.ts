@@ -62,8 +62,24 @@ describe('ReservationDialog — deposit controls', () => {
   });
 
   it('does not overwrite an amount staff have typed', () => {
-    expect(source).toContain('depositTouched');
-    expect(source).toMatch(/if \(!depositAvailable \|\| depositTouched\) return;/);
+    expect(source).toMatch(/if \(!amountTouched\)\s*\{\s*const suggested/);
+  });
+
+  it('keeps suggesting the amount after staff tick or untick the box', () => {
+    // One "touched" flag for both froze the suggested amount the moment the box was
+    // ticked: moving the booking to another day or party size kept the old price.
+    // Found in review. The box and the figure are separate decisions now.
+    expect(source).toMatch(/if \(!askTouched\) setAskForDeposit/);
+    const onTick = source.slice(source.indexOf('id="ask-deposit"'),
+                                source.indexOf('id="ask-deposit"') + 300);
+    expect(onTick).toContain('setAskTouched(true)');
+    expect(onTick).not.toContain('setAmountTouched');
+  });
+
+  it('keeps the deposit controls while new terms load, and waits for them to save', () => {
+    // They vanished while the terms refetched; saving then dropped a ticked deposit.
+    expect(source).toMatch(/placeholderData: \(previous\) => previous/);
+    expect(source).toMatch(/depositAvailable && askForDeposit && paymentTermsLoading/);
   });
 
   it('reports a failed deposit separately from a created booking', () => {
@@ -95,7 +111,9 @@ describe('ReservationDialog — arrival cap warning', () => {
     const footer = clean.slice(clean.indexOf('type="submit"') - 400,
                                clean.indexOf('type="submit"') + 200);
     expect(footer).not.toContain('capWarning &&  disabled');
-    expect(clean).toMatch(/disabled=\{updateMutation\.isPending \|\| configLoading\}/);
+    // The submit is disabled only while saving, loading config, or loading the terms
+    // of a ticked deposit — never because of the cap warning.
+    expect(clean).toMatch(/disabled=\{updateMutation\.isPending \|\| configLoading/);
     expect(clean).not.toMatch(/disabled=\{[^}]*capWarning/);
   });
 
@@ -328,16 +346,16 @@ describe('ReservationDialog — the dropdown follows the date', () => {
 
   it('re-asks when the date changes', () => {
     // The date is in the key, or picking another day keeps the first day's sittings.
-    const block = clean.slice(clean.indexOf('const { data: daySittings }'),
-                              clean.indexOf('const { data: daySittings }') + 500);
+    const block = clean.slice(clean.indexOf('const { data: daySittings'),
+                              clean.indexOf('const { data: daySittings') + 500);
     expect(block).toContain('reservationDate');
   });
 
   it('only asks in fixed mode', () => {
     // Interval mode has no sitting list, and the generated grid covers hours staff are
     // allowed to book outside opening times.
-    const block = clean.slice(clean.indexOf('const { data: daySittings }'),
-                              clean.indexOf('const { data: daySittings }') + 500);
+    const block = clean.slice(clean.indexOf('const { data: daySittings'),
+                              clean.indexOf('const { data: daySittings') + 500);
     expect(block).toContain('timeSlotsMode === "fixed"');
   });
 
@@ -486,5 +504,32 @@ describe('ReservationDialog — walk-in table occupancy', () => {
     // new Date("nonsense") returns Invalid Date instead of throwing, and every
     // comparison with it is false — so parsing must be checked, not caught.
     expect(source).toMatch(/Number\.isNaN\(parsed\.getTime\(\)\)/);
+  });
+});
+
+describe('ReservationDialog — every message is translated', () => {
+  it('has each inline-default key in all four languages', () => {
+    // The capacity and walk-in warnings existed only as inline Catalan defaults, so
+    // Spanish, English and Italian staff read them in Catalan. Found in review.
+    const src = readFileSync(resolve(__dirname, '../ReservationDialog.tsx'), 'utf8');
+    const keys = [...src.matchAll(/t\(\s*["']([a-zA-Z0-9_.]+)["']\s*,\s*["'`]/g)].map(m => m[1]);
+    expect(keys.length).toBeGreaterThan(0);
+    for (const lang of ['ca', 'es', 'en', 'it']) {
+      const d = JSON.parse(readFileSync(
+        resolve(__dirname, `../../i18n/locales/${lang}/dashboard.json`), 'utf8'));
+      for (const key of keys) {
+        const value = key.split('.').reduce((o: any, k) => (o ? o[k] : undefined), d);
+        expect(value, `${lang}: ${key}`).toBeTruthy();
+      }
+    }
+  });
+});
+
+describe('ReservationDialog — the chosen time survives a date change', () => {
+  it('does not snap the time while the new date\'s sittings are loading', () => {
+    // The list fell back to the restaurant-wide one while loading, which may lack a
+    // time only that day offers, and staff's pick was reset. Found in review.
+    const src = readFileSync(resolve(__dirname, '../ReservationDialog.tsx'), 'utf8');
+    expect(src).toMatch(/if \(timeSlotsMode === "fixed" && sittingsLoading\) return;/);
   });
 });

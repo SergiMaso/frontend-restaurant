@@ -232,7 +232,12 @@
     "depositLinkNotSent": "Reservation created and deposit requested, but the WhatsApp could not be sent. Link: {{url}}",
     "createdButDepositFailed": "Reservation created, but without a deposit: {{reason}}",
     "exceedsAreaCapacity": "{{people}} people do not fit in {{area}}: it holds {{seats}} seats in all.",
-    "exceedsLargestArea": "{{people}} people do not fit in any area: the largest holds {{seats}}."
+    "exceedsLargestArea": "{{people}} people do not fit in any area: the largest holds {{seats}}.",
+    "walkInSnappedOver": "It will be booked into the {{slot}} sitting, which will be {{n}} people over.",
+    "walkInSnapped": "It will be booked into the {{slot}} sitting.",
+    "capNotASitting": "This time is not one of the sittings ({{sittings}}), so it will not be saved.",
+    "capOverflow": "This time is not one of the sittings and neither neighbouring sitting has room. It can be done, but the {{slot}} sitting will be {{n}} people over.",
+    "capExceeded": "The {{slot}} sitting only has {{left}} places left."
   },
   "customers": {
     "title": "Customers",

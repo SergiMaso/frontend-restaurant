@@ -232,7 +232,12 @@
     "depositLinkNotSent": "Reserva creada y depósito solicitado, pero no se pudo enviar el WhatsApp. Enlace: {{url}}",
     "createdButDepositFailed": "Reserva creada correctamente, pero sin depósito: {{reason}}",
     "exceedsAreaCapacity": "{{people}} personas no caben en {{area}}: hay {{seats}} plazas en total.",
-    "exceedsLargestArea": "{{people}} personas no caben en ninguna zona: la mayor tiene {{seats}} plazas."
+    "exceedsLargestArea": "{{people}} personas no caben en ninguna zona: la mayor tiene {{seats}} plazas.",
+    "walkInSnappedOver": "Se apuntará al turno de las {{slot}}, que quedará {{n}} personas por encima.",
+    "walkInSnapped": "Se apuntará al turno de las {{slot}}.",
+    "capNotASitting": "Esta hora no es ninguno de los turnos ({{sittings}}) y el sistema no la guardará.",
+    "capOverflow": "Esta hora no es ninguno de los turnos y ninguno de los dos contiguos tiene sitio. Se puede hacer, pero el turno de las {{slot}} quedará {{n}} personas por encima.",
+    "capExceeded": "El turno de las {{slot}} solo tiene {{left}} plazas libres."
   },
   "customers": {
     "title": "Clientes",

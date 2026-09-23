@@ -232,7 +232,12 @@
     "depositLinkNotSent": "Prenotazione creata e deposito richiesto, ma non è stato possibile inviare il WhatsApp. Link: {{url}}",
     "createdButDepositFailed": "Prenotazione creata, ma senza deposito: {{reason}}",
     "exceedsAreaCapacity": "{{people}} persone non entrano in {{area}}: ci sono {{seats}} posti in tutto.",
-    "exceedsLargestArea": "{{people}} persone non entrano in nessuna zona: la più grande ha {{seats}} posti."
+    "exceedsLargestArea": "{{people}} persone non entrano in nessuna zona: la più grande ha {{seats}} posti.",
+    "walkInSnappedOver": "Verrà registrato nel turno delle {{slot}}, che sarà {{n}} persone oltre il limite.",
+    "walkInSnapped": "Verrà registrato nel turno delle {{slot}}.",
+    "capNotASitting": "Quest'ora non è nessuno dei turni ({{sittings}}) e il sistema non la salverà.",
+    "capOverflow": "Quest'ora non è nessuno dei turni e nessuno dei due vicini ha posto. Si può fare, ma il turno delle {{slot}} sarà {{n}} persone oltre il limite.",
+    "capExceeded": "Il turno delle {{slot}} ha solo {{left}} posti liberi."
   },
   "customers": {
     "title": "Clienti",

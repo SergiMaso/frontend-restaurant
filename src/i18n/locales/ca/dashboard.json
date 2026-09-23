@@ -232,7 +232,12 @@
     "depositLinkNotSent": "Reserva creada i dipòsit demanat, però no s'ha pogut enviar el WhatsApp. Enllaç: {{url}}",
     "createdButDepositFailed": "Reserva creada correctament, però sense dipòsit: {{reason}}",
     "exceedsAreaCapacity": "{{people}} persones no caben a {{area}}: hi ha {{seats}} places en total.",
-    "exceedsLargestArea": "{{people}} persones no caben en cap zona: la més gran té {{seats}} places."
+    "exceedsLargestArea": "{{people}} persones no caben en cap zona: la més gran té {{seats}} places.",
+    "walkInSnappedOver": "S'apuntarà al torn de les {{slot}}, que quedarà {{n}} persones per sobre.",
+    "walkInSnapped": "S'apuntarà al torn de les {{slot}}.",
+    "capNotASitting": "Aquesta hora no és cap dels torns ({{sittings}}), i el sistema no la desarà.",
+    "capOverflow": "Aquesta hora no és cap dels torns i cap dels dos del costat té lloc. Es pot fer, però el torn de les {{slot}} quedarà {{n}} persones per sobre.",
+    "capExceeded": "El torn de les {{slot}} només té {{left}} places lliures."
   },
   "customers": {
     "title": "Clients",
