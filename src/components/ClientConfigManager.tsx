@@ -27,8 +27,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-// IANA timezones we explicitly support. Anything else can be typed in via
-// the manual override at the bottom of the dropdown.
 /**
  * How much the WhatsApp bot thinks before answering.
  *
@@ -67,6 +65,8 @@ const VOICE_PROVIDER_OPTIONS = [
   { value: 'google', label: 'Google Gemini Live' },
 ];
 
+// IANA timezones we explicitly support. Anything else can be typed in via
+// the manual override at the bottom of the dropdown.
 const TIMEZONE_OPTIONS = [
   "Europe/Madrid",
   "Europe/Lisbon",

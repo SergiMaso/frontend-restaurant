@@ -16,10 +16,9 @@ const source = readFileSync(
 
 describe('ClientConfigManager — reasoning effort', () => {
   it('offers exactly the values the backend accepts', () => {
-    const block = source.slice(
-      source.indexOf('const REASONING_EFFORT_OPTIONS'),
-      source.indexOf('const VOICE_PROVIDER_OPTIONS'),
-    );
+    // The array literal itself, not "everything up to the next constant": that
+    // depended on the order of declarations in the file (found in review).
+    const block = source.match(/const REASONING_EFFORT_OPTIONS = \[([\s\S]*?)\];/)?.[1] ?? '';
     const offered = [...block.matchAll(/value: '([a-z_]+)'/g)].map(m => m[1]);
     expect(offered).toEqual(['none', 'low', 'medium', 'high']);
   });
@@ -36,5 +35,11 @@ describe('ClientConfigManager — reasoning effort', () => {
       source.indexOf('const TIMEZONE_OPTIONS'),
     );
     expect(voice).not.toContain("'medium'");
+  });
+
+  it('leaves the timezone comment on the timezones', () => {
+    // Inserting this list once pushed "IANA timezones we explicitly support"
+    // above the wrong constant (found in review).
+    expect(source).toMatch(/\/\/ IANA timezones[^\n]*\n\/\/[^\n]*\nconst TIMEZONE_OPTIONS/);
   });
 });
