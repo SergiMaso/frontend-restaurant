@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { capacityReplyIsStale } from "@/lib/capacity";
+import { capacityReplyIsStale, isGeneratedCapacityPlan } from "@/lib/capacity";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
@@ -245,8 +245,9 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
   // Blank boxes are 0 + 0, and generating that deleted every table (the API now
   // refuses it too).
   const noSeats = capacityValues.inside + capacityValues.terrace === 0;
-  // Generated capacity seats are all one-seat tables; anything else is a real plan.
-  const hasRealPlan = (tables || []).some((table: Table) => (table.capacity || 0) !== 1);
+  // Anything that is not exactly what capacity generation creates is a real plan —
+  // including hand-made, paired one-seat tables (see isGeneratedCapacityPlan).
+  const hasRealPlan = (tables || []).length > 0 && !isGeneratedCapacityPlan(tables || []);
 
   // What the restaurant currently holds, per area. In capacity mode the individual
   // tables are an implementation detail — a hundred cards each listing ninety-nine

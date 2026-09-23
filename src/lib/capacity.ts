@@ -22,3 +22,31 @@ export const capacityReplyIsStale = (
   live: { inside: number; terrace: number; open: boolean },
   checked: { inside: number; terrace: number },
 ) => !live.open || live.inside !== checked.inside || live.terrace !== checked.terrace;
+
+/**
+ * Whether the current tables are exactly what capacity generation creates: in every
+ * area, one-seat tables each paired with every other table of that area. Anything
+ * else — a table made by hand, even a one-seat one, or a pairing someone edited — is
+ * a real plan, and replacing it must show the preview first.
+ *
+ * "Any table with more than one seat" was the first version of this test, and it let
+ * a hand-made plan of paired one-seat tables be replaced on the first click. Found by
+ * the review gate, 2026-09-24.
+ */
+export const isGeneratedCapacityPlan = (
+  tables: ReadonlyArray<{ table_number: number; capacity: number; pairing?: number[] | null;
+                           area?: string | null }>,
+): boolean => {
+  const byArea = new Map<string, number[]>();
+  for (const table of tables) {
+    const area = table.area || "inside";
+    byArea.set(area, [...(byArea.get(area) || []), table.table_number]);
+  }
+  return tables.every((table) => {
+    if (table.capacity !== 1) return false;
+    const others = (byArea.get(table.area || "inside") || [])
+      .filter((n) => n !== table.table_number).sort((a, b) => a - b);
+    const paired = [...(table.pairing || [])].sort((a, b) => a - b);
+    return others.length === paired.length && others.every((n, i) => n === paired[i]);
+  });
+};
