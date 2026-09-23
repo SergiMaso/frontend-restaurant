@@ -152,7 +152,9 @@
     "capacityWillMove": "{{count}} reservas futuras se reubicarán en las plazas nuevas",
     "capacityWillMoveHelp": "Mantienen la fecha, la hora y el pago: solo cambian de sitio. Todavía no se ha cambiado nada.",
     "capacityNoFit": "{{count}} reservas no caben. No se ha cambiado nada.",
-    "capacityNoFitPeople": "{{count}} personas"
+    "capacityNoFitPeople": "{{count}} personas",
+    "capacityNoSeats": "Hace falta al menos una plaza en alguna zona. Para cerrar, hazlo desde el horario.",
+    "capacityReplacesPlan": "Esto sustituirá el plano de mesas actual ({{count}} mesas, con sus combinaciones). No hay reservas que mover."
   },
   "reservations": {
     "title": "Gestión de Reservas",

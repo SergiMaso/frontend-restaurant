@@ -152,7 +152,9 @@
     "capacityWillMove": "{{count}} reserves futures es reubicaran a les places noves",
     "capacityWillMoveHelp": "Mantenen la data, l'hora i el pagament: només canvien de lloc. Encara no s'ha canviat res.",
     "capacityNoFit": "{{count}} reserves no hi caben. No s'ha canviat res.",
-    "capacityNoFitPeople": "{{count}} persones"
+    "capacityNoFitPeople": "{{count}} persones",
+    "capacityNoSeats": "Cal almenys un lloc en alguna zona. Per tancar, fes-ho des de l'horari.",
+    "capacityReplacesPlan": "Això substituirà el pla de taules actual ({{count}} taules, amb les seves combinacions). No hi ha reserves a moure."
   },
   "reservations": {
     "title": "Gestió de Reserves",

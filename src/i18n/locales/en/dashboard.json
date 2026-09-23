@@ -152,7 +152,9 @@
     "capacityWillMove": "{{count}} future bookings will be moved onto the new seats",
     "capacityWillMoveHelp": "They keep their date, time and payment — only where they sit changes. Nothing has been changed yet.",
     "capacityNoFit": "{{count}} bookings do not fit. Nothing was changed.",
-    "capacityNoFitPeople": "{{count}} people"
+    "capacityNoFitPeople": "{{count}} people",
+    "capacityNoSeats": "At least one seat is needed in some area. To close, use the opening hours.",
+    "capacityReplacesPlan": "This replaces the current table plan ({{count}} tables, with their pairings). No bookings need to move."
   },
   "reservations": {
     "title": "Reservation Management",

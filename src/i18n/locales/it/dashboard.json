@@ -152,7 +152,9 @@
     "capacityWillMove": "{{count}} prenotazioni future verranno spostate sui nuovi posti",
     "capacityWillMoveHelp": "Mantengono data, ora e pagamento: cambia solo dove siedono. Non è stato ancora modificato nulla.",
     "capacityNoFit": "{{count}} prenotazioni non ci stanno. Non è stato modificato nulla.",
-    "capacityNoFitPeople": "{{count}} persone"
+    "capacityNoFitPeople": "{{count}} persone",
+    "capacityNoSeats": "Serve almeno un posto in qualche zona. Per chiudere, usa gli orari.",
+    "capacityReplacesPlan": "Questo sostituirà la piantina attuale ({{count}} tavoli, con le loro combinazioni). Nessuna prenotazione da spostare."
   },
   "reservations": {
     "title": "Gestione Prenotazioni",
