@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
+import type { SlotConfig } from '@/services/api';
 
 export interface Restaurant {
   id: number;
@@ -14,6 +15,9 @@ export interface Restaurant {
    *  a table plan the restaurant does not use. Undefined means the backend predates the
    *  column, which reads as true. */
   tables_enabled?: boolean;
+  /** Global per-sitting caps — the level a weekday inherits from. A customised
+   *  service is seeded from these; without them every inherited cap became "no limit". */
+  slot_config?: SlotConfig | null;
 }
 
 interface RestaurantContextType {

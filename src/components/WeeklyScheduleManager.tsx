@@ -23,6 +23,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { getWeeklyDefaults, updateWeeklyDefault, type WeeklyDefault } from "@/services/api";
 import { useRestaurantConfig } from "@/hooks/useRestaurantConfig";
+import { useRestaurant } from "@/contexts/RestaurantContext";
+import { useAuth } from "@/contexts/AuthContext";
 import DayRulesEditor, { type DayRulesValue } from "@/components/DayRulesEditor";
 import { useTenantKey } from "@/hooks/useTenantKey";
 
@@ -222,6 +224,8 @@ const DayEditorDialog = ({ day, open, onOpenChange, onSave, isLoading }: DayEdit
     timeSlotsMode, fixedTimeSlotsLunch, fixedTimeSlotsDinner,
     paymentEnabled, getConfigNumber, getConfigValue,
   } = useRestaurantConfig();
+  const { selectedRestaurant } = useRestaurant();
+  const { isOwner } = useAuth();
 
   // Map day_of_week (0=Monday, 6=Sunday) to translation keys
   const getDayName = (dayOfWeek: number) => {
@@ -357,6 +361,11 @@ const DayEditorDialog = ({ day, open, onOpenChange, onSave, isLoading }: DayEdit
               /* Global config has a single deposit for the whole restaurant, so both
                  services legitimately inherit the same figure here. The per-service
                  shape matters one level down, where a weekday CAN differ. */
+              // A weekday inherits the restaurant-wide caps.
+              inheritedSlotCaps={{
+                lunch: selectedRestaurant?.slot_config?.lunch ?? {},
+                dinner: selectedRestaurant?.slot_config?.dinner ?? {},
+              }}
               inheritedPayment={(() => {
                 const global = {
                   amount: getConfigNumber("payment_deposit_amount", 0),
@@ -366,6 +375,7 @@ const DayEditorDialog = ({ day, open, onOpenChange, onSave, isLoading }: DayEdit
                 return { lunch: global, dinner: global };
               })()}
               paymentsAvailable={paymentEnabled}
+              canEditDeposits={isOwner}
               openServices={
                 status === "lunch_only" ? ["lunch"]
                   : status === "dinner_only" ? ["dinner"]

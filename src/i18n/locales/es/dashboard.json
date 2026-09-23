@@ -665,6 +665,8 @@
     "ownDeposit": "{{amount}} {{currency}} · a partir de {{people}}",
     "depositRequired": "Pedir depósito",
     "amountPerPerson": "Importe por persona",
-    "fromPeople": "A partir de"
+    "fromPeople": "A partir de",
+    "lastSlot": "No se puede quitar el último turno. Para cerrar este servicio, hazlo desde el horario.",
+    "ownerOnlyDeposits": "Solo el propietario puede cambiar los depósitos."
   }
 }

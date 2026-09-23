@@ -665,6 +665,8 @@
     "ownDeposit": "{{amount}} {{currency}} · from {{people}}",
     "depositRequired": "Ask for a deposit",
     "amountPerPerson": "Amount per person",
-    "fromPeople": "From"
+    "fromPeople": "From",
+    "lastSlot": "The last sitting can't be removed. To close this service, do it from the opening hours.",
+    "ownerOnlyDeposits": "Only the owner can change deposits."
   }
 }

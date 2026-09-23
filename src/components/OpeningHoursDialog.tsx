@@ -27,6 +27,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useRestaurantConfig } from "@/hooks/useRestaurantConfig";
 import DayRulesEditor, { type DayRulesValue } from "@/components/DayRulesEditor";
 import { useTenantKey } from "@/hooks/useTenantKey";
+import { useRestaurant } from "@/contexts/RestaurantContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface OpeningHoursDialogProps {
   open: boolean;
@@ -74,6 +76,13 @@ const OpeningHoursDialog = ({ open, onOpenChange, date, initialData }: OpeningHo
   const weekdayIndex = (date.getDay() + 6) % 7;
   const weekday = weeklyDefaults?.find((d) => d.day_of_week === weekdayIndex);
 
+  const { selectedRestaurant } = useRestaurant();
+  const { isOwner } = useAuth();
+
+  // The caps the inherited sittings carry: the weekday's own, else the global ones.
+  const inheritedSlotCapsFor = (service: "lunch" | "dinner") =>
+    weekday?.slot_config?.[service] ?? selectedRestaurant?.slot_config?.[service] ?? {};
+
   const inheritedSlotsFor = (service: "lunch" | "dinner") => {
     const fromWeekday = weekday?.slot_config?.[service];
     if (fromWeekday) return Object.keys(fromWeekday).sort();
@@ -90,6 +99,8 @@ const OpeningHoursDialog = ({ open, onOpenChange, date, initialData }: OpeningHo
       amount: wd?.amount ?? getConfigNumber("payment_deposit_amount", 0),
       minPeople: wd?.min_people ?? getConfigNumber("payment_min_people", 1),
       currency: getConfigValue("payment_currency", "EUR"),
+      // A weekday can switch deposits off for a service; the date inherits that.
+      required: wd?.required ?? true,
     };
   };
   const inheritedPayment = {
@@ -270,8 +281,13 @@ const OpeningHoursDialog = ({ open, onOpenChange, date, initialData }: OpeningHo
                 lunch: inheritedSlotsFor("lunch"),
                 dinner: inheritedSlotsFor("dinner"),
               }}
+              inheritedSlotCaps={{
+                lunch: inheritedSlotCapsFor("lunch"),
+                dinner: inheritedSlotCapsFor("dinner"),
+              }}
               inheritedPayment={inheritedPayment}
               paymentsAvailable={paymentEnabled}
+              canEditDeposits={isOwner}
               openServices={
                 status === "lunch_only" ? ["lunch"]
                   : status === "dinner_only" ? ["dinner"]

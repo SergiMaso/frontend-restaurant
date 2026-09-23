@@ -665,6 +665,8 @@
     "ownDeposit": "{{amount}} {{currency}} · a partir de {{people}}",
     "depositRequired": "Demanar dipòsit",
     "amountPerPerson": "Import per persona",
-    "fromPeople": "A partir de"
+    "fromPeople": "A partir de",
+    "lastSlot": "No es pot treure l'últim torn. Per tancar aquest servei, fes-ho des de l'horari.",
+    "ownerOnlyDeposits": "Només el propietari pot canviar els dipòsits."
   }
 }
