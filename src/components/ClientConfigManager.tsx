@@ -30,6 +30,26 @@ import {
 // IANA timezones we explicitly support. Anything else can be typed in via
 // the manual override at the bottom of the dropdown.
 /**
+ * How much the WhatsApp bot thinks before answering.
+ *
+ * low/medium/high send the call through OpenAI's Responses API with reasoning on;
+ * none (or empty, which is what restaurants created before this setting have)
+ * keeps the old Chat Completions call with no reasoning. Chat Completions refuses
+ * reasoning together with the booking tools, which is why it is not simply a
+ * parameter on the old call.
+ *
+ * Must match AI_REASONING_EFFORTS in the backend's app.py and the column's CHECK
+ * constraint: anything else is refused with a 400. test_frontend_contracts.py
+ * keeps the three in step.
+ */
+const REASONING_EFFORT_OPTIONS = [
+  { value: 'none', label: 'none — no reasoning' },
+  { value: 'low', label: 'low' },
+  { value: 'medium', label: 'medium (recommended)' },
+  { value: 'high', label: 'high' },
+];
+
+/**
  * The voice providers the backend knows how to connect to.
  *
  * `openai` is the Realtime API: one model hears, thinks and speaks. `openai_live`
@@ -317,6 +337,21 @@ const ClientConfigManager = () => {
                                       // a value this build does not know about.
                                       <SelectItem value={editValue}>{editValue} (current)</SelectItem>
                                     )}
+                                  </SelectContent>
+                                </Select>
+                              ) : config.key === 'ai_reasoning_effort' ? (
+                                // A list, not free text: the API refuses anything
+                                // outside these four with a 400.
+                                <Select value={editValue} onValueChange={setEditValue}>
+                                  <SelectTrigger className="max-w-[220px]">
+                                    <SelectValue placeholder="none — no reasoning" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {REASONING_EFFORT_OPTIONS.map((option) => (
+                                      <SelectItem key={option.value} value={option.value}>
+                                        {option.label}
+                                      </SelectItem>
+                                    ))}
                                   </SelectContent>
                                 </Select>
                               ) : config.key === 'timezone' ? (
