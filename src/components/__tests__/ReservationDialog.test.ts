@@ -518,7 +518,8 @@ describe('ReservationDialog — every message is translated', () => {
       const d = JSON.parse(readFileSync(
         resolve(__dirname, `../../i18n/locales/${lang}/dashboard.json`), 'utf8'));
       for (const key of keys) {
-        const value = key.split('.').reduce((o: any, k) => (o ? o[k] : undefined), d);
+        const value = key.split('.').reduce<unknown>(
+          (o, k) => (o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined), d);
         expect(value, `${lang}: ${key}`).toBeTruthy();
       }
     }
