@@ -29,6 +29,7 @@ import { useRestaurant } from "@/contexts/RestaurantContext";
 import { useDefaultPhoneCountry } from "@/hooks/useDefaultPhoneCountry";
 import { useTenantKey } from "@/hooks/useTenantKey";
 import { Checkbox } from "@/components/ui/checkbox";
+import { pickOfferedTime } from "@/lib/reservationTime";
 
 interface ReservationDialogProps {
   open: boolean;
@@ -504,7 +505,8 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
     if (timeSlotsMode === "fixed" && sittingsLoading) return;
     if (!availableTimeSlots.length) return;
     if (availableTimeSlots.includes(reservationTime)) return;
-    setReservationTime(defaultTime || availableTimeSlots[0]);
+    // The clicked cell's time only if the day offers it; otherwise the nearest sitting.
+    setReservationTime(pickOfferedTime(availableTimeSlots, defaultTime));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, reservation, configLoading, sittingsLoading, availableTimeSlots.join(','), defaultTime]);
 
