@@ -191,8 +191,12 @@ describe('Capacity dialog — found in review (2026-09-23)', () => {
     expect(src).toMatch(/disabled=\{capacityPending \|\| noSeats\}/);
   });
 
-  it('never replaces a real table plan without showing the preview', () => {
-    expect(src).toMatch(/if \(result\.reseated === 0 && !hasRealPlan\)/);
+  it('never replaces existing tables without showing the preview', () => {
+    // Telling a real plan from generated seats is not reliable (paired one-seat tables
+    // look identical, and generation resets seat status), so any existing table means
+    // the preview comes first.
+    expect(src).toMatch(/const hasTables = \(tables \|\| \[\]\)\.length > 0;/);
+    expect(src).toMatch(/if \(result\.reseated === 0 && !hasTables\)/);
     expect(src).toContain('capacityReplacesPlan');
   });
 
@@ -208,30 +212,5 @@ describe('Capacity dialog — found in review (2026-09-23)', () => {
       expect(d.tables.capacityNoSeats, lang).toBeTruthy();
       expect(d.tables.capacityReplacesPlan, lang).toContain('{{count}}');
     }
-  });
-});
-
-import { isGeneratedCapacityPlan } from '../../lib/capacity';
-
-describe('isGeneratedCapacityPlan', () => {
-  const seat = (n: number, others: number[], area = 'inside') =>
-    ({ table_number: n, capacity: 1, pairing: others, area });
-
-  it('recognises exactly what generation creates', () => {
-    expect(isGeneratedCapacityPlan([seat(1, [2, 3]), seat(2, [1, 3]), seat(3, [1, 2]),
-                                    seat(4, [5], 'terrace'), seat(5, [4], 'terrace')])).toBe(true);
-  });
-
-  it('treats hand-made paired one-seat tables as a real plan', () => {
-    // 1 and 2 paired, 3 on its own: all one-seaters, but not a generated plan.
-    expect(isGeneratedCapacityPlan([seat(1, [2]), seat(2, [1]), seat(3, [])])).toBe(false);
-  });
-
-  it('treats any table bigger than one seat as a real plan', () => {
-    expect(isGeneratedCapacityPlan([seat(1, [2]), { ...seat(2, [1]), capacity: 4 }])).toBe(false);
-  });
-
-  it('treats a pairing across areas as a real plan', () => {
-    expect(isGeneratedCapacityPlan([seat(1, [2]), seat(2, [1], 'terrace')])).toBe(false);
   });
 });

@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { capacityReplyIsStale, isGeneratedCapacityPlan } from "@/lib/capacity";
+import { capacityReplyIsStale } from "@/lib/capacity";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
@@ -224,11 +224,10 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
       }
 
       setHomeless(null);
-      // Nothing to move — there is nothing to confirm, so do not make them press a
-      // second button to be told so. Unless it replaces a REAL table plan (tables
-      // that are not one-seat capacity seats): that went on the first click too,
-      // pairings and all, with nothing on screen saying so.
-      if (result.reseated === 0 && !hasRealPlan) {
+      // Applied on the first click only when there is nothing to lose: no bookings
+      // to move AND no tables to delete. Any existing table — whatever it is — gets
+      // the preview first.
+      if (result.reseated === 0 && !hasTables) {
         applyMutation.mutate(capacities);
         return;
       }
@@ -245,9 +244,12 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
   // Blank boxes are 0 + 0, and generating that deleted every table (the API now
   // refuses it too).
   const noSeats = capacityValues.inside + capacityValues.terrace === 0;
-  // Anything that is not exactly what capacity generation creates is a real plan —
-  // including hand-made, paired one-seat tables (see isGeneratedCapacityPlan).
-  const hasRealPlan = (tables || []).length > 0 && !isGeneratedCapacityPlan(tables || []);
+  // Whether anything exists that generating would delete. Not "is it a real plan":
+  // a hand-made plan of paired one-seat tables is indistinguishable from generated
+  // seats, and generating also resets every seat to available, so a seat staff had
+  // marked unavailable would be lost too. Two earlier attempts to tell the plans
+  // apart both let one be replaced on the first click (review gate, 2026-09-24).
+  const hasTables = (tables || []).length > 0;
 
   // What the restaurant currently holds, per area. In capacity mode the individual
   // tables are an implementation detail — a hundred cards each listing ninety-nine
