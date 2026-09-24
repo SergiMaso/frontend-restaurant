@@ -29,7 +29,7 @@ import { useRestaurant } from "@/contexts/RestaurantContext";
 import { useDefaultPhoneCountry } from "@/hooks/useDefaultPhoneCountry";
 import { useTenantKey } from "@/hooks/useTenantKey";
 import { Checkbox } from "@/components/ui/checkbox";
-import { pickOfferedTime } from "@/lib/reservationTime";
+import { pickOfferedTime, stayMinutes } from "@/lib/reservationTime";
 
 interface ReservationDialogProps {
   open: boolean;
@@ -227,11 +227,9 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
   // sitting a shorter one does not.
   const capStayMinutes = (() => {
     if (autoEndTime || !endTime || !capTime) return undefined;
-    const [startH, startM] = capTime.split(":").map(Number);
-    const [endH, endM] = endTime.split(":").map(Number);
-    if ([startH, startM, endH, endM].some(Number.isNaN)) return undefined;
-    const minutes = (endH * 60 + endM) - (startH * 60 + startM);
-    return minutes > 0 ? minutes : undefined;
+    // The same measure the save uses, so a stay past midnight is not previewed as
+    // the default length while it is stored as three hours.
+    return stayMinutes(capTime, endTime);
   })();
 
   const { data: slotCapacity } = useQuery({
@@ -687,21 +685,10 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
       dataToSend.duration_hours = defaultBookingDuration;
     } else if (endTime && reservationTime) {
       try {
-        // Parsejar les hores
-        const [startHour, startMin] = reservationTime.split(':').map(Number);
-        const [endHour, endMin] = endTime.split(':').map(Number);
-
-        // Calcular minuts totals
-        const startMinutes = startHour * 60 + startMin;
-        let endMinutes = endHour * 60 + endMin;
-
-        // Si end_time és menor que start_time, assumim que és l'endemà
-        if (endMinutes <= startMinutes) {
-          endMinutes += 24 * 60;
-        }
-
-        // Calcular duració en hores (decimal)
-        const durationHours = (endMinutes - startMinutes) / 60;
+        // Si end_time és menor que start_time, és l'endemà (stayMinutes ho té en compte)
+        const minutes = stayMinutes(reservationTime, endTime);
+        if (minutes === undefined) throw new Error(`hores il·legibles: ${reservationTime} → ${endTime}`);
+        const durationHours = minutes / 60;
 
         dataToSend.duration_hours = durationHours;
         dataToSend.end_time = endTime;

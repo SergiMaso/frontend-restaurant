@@ -27,3 +27,17 @@ export function pickOfferedTime(offered: string[], preferred: string | null | un
   }
   return best;
 }
+
+/**
+ * Minutes from start to end, an end at or before the start being the next day
+ * (22:00–01:00 is three hours). The capacity preview and the save both use this, so
+ * the warning is about the same booking that gets stored. Undefined if either time
+ * cannot be read.
+ */
+export function stayMinutes(start: string | null | undefined, end: string | null | undefined): number | undefined {
+  const from = toMinutes(start);
+  let to = toMinutes(end);
+  if (from === null || to === null) return undefined;
+  if (to <= from) to += 24 * 60;
+  return to - from;
+}
