@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths, isSameDay, parseISO } from "date-fns";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { ChevronLeft, ChevronRight, Clock, Eye, Edit } from "lucide-react";
+import { ChevronLeft, ChevronRight, Eye, Edit, PenLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getOpeningHoursRange } from "@/services/api";
@@ -175,6 +175,13 @@ const OpeningHoursCalendar = ({ onViewDay }: OpeningHoursCalendarProps) => {
           <div className="w-4 h-4 rounded bg-red-500" />
           <span>{t("calendar.closed")}</span>
         </div>
+        <div className="flex items-center gap-2 sm:ml-auto sm:pl-6 sm:border-l sm:border-border/60">
+          <span className="inline-flex items-center justify-center h-5 w-5 rounded-full
+                           bg-violet-500 text-white ring-2 ring-violet-500/25 shadow-sm">
+            <PenLine className="h-3 w-3" />
+          </span>
+          <span>{t("calendar.editedDay")}</span>
+        </div>
       </div>
 
       {/* Calendari */}
@@ -206,6 +213,40 @@ const OpeningHoursCalendar = ({ onViewDay }: OpeningHoursCalendarProps) => {
             const reservationsCount = getReservationsForDay(day);
             const today = isToday(day);
 
+            // Anything this date overrides on its own, not just its hours.
+            //
+            // is_custom covers hours and status; the backend deliberately does NOT set it
+            // for a slot cap or a deposit, because doing so would freeze the schedule of
+            // every date anyone priced. Those overrides are their own columns, and a day
+            // that only carries them is still a day that stops following its weekday —
+            // which is the whole point of the mark.
+            //
+            // Days that inherit have no such keys at all, so absent reads as false.
+            const editedParts = [
+              hours?.is_custom ? t("calendar.editedHours") : null,
+              hours?.slot_config ? t("calendar.editedSlots") : null,
+              hours?.payment_config ? t("calendar.editedPayment") : null,
+            ].filter(Boolean);
+            const isEdited = editedParts.length > 0;
+
+            // Empty in interval mode, where the window itself is what can be booked.
+            const lunchSlots = hours?.slot_times?.lunch ?? [];
+            const dinnerSlots = hours?.slot_times?.dinner ?? [];
+            // In fixed mode the window is NOT bookable, so falling back to it when the
+            // sittings are missing would advertise hours a booking is refused at. Show
+            // nothing instead — the day dialog still has the truth.
+            const booksBySlot = hours?.slot_mode === 'fixed';
+
+            // A month cell is square and small. Six lunch sittings at 10px wrap to two
+            // lines, and with dinner underneath the times push past the bottom of the
+            // box. Three plus a count keeps the cell scannable — which is the only thing
+            // a month view is good at — and the tooltip carries the full list.
+            const SHOWN = 3;
+            const summarise = (slots: string[]) =>
+              slots.length <= SHOWN
+                ? slots.join(" ")
+                : `${slots.slice(0, SHOWN).join(" ")} +${slots.length - SHOWN}`;
+
             return (
               <div
                 key={day.toISOString()}
@@ -217,8 +258,23 @@ const OpeningHoursCalendar = ({ onViewDay }: OpeningHoursCalendarProps) => {
                 <div className="flex flex-col h-full">
                   {/* Header del dia */}
                   <div className="flex items-center justify-between mb-1">
-                    <span className={`text-lg font-semibold ${today ? "text-primary" : ""}`}>
-                      {format(day, "d")}
+                    <span className="flex items-center gap-1">
+                      <span className={`text-lg font-semibold ${today ? "text-primary" : ""}`}>
+                        {format(day, "d")}
+                      </span>
+                      {/* This date overrides its weekday. Without it an edited day and an
+                          inherited one look the same, so there is no way to tell which
+                          days a change to the weekly schedule will actually reach. */}
+                      {isEdited && (
+                        <span
+                          className="inline-flex items-center justify-center h-5 w-5 rounded-full
+                                     bg-violet-500 text-white ring-2 ring-white/70 shadow-sm shrink-0"
+                          title={`${t("calendar.editedDay")}: ${editedParts.join(", ")}`}
+                          aria-label={`${t("calendar.editedDay")}: ${editedParts.join(", ")}`}
+                        >
+                          <PenLine className="h-3 w-3" />
+                        </span>
+                      )}
                     </span>
                     <span className="text-xl">{getStatusIcon(status)}</span>
                   </div>
@@ -235,17 +291,47 @@ const OpeningHoursCalendar = ({ onViewDay }: OpeningHoursCalendarProps) => {
                   {/* Horaris */}
                   {hours && (status === "full_day" || status === "lunch_only" || status === "dinner_only") && (
                     <div className="mt-auto space-y-0.5">
-                      {(status === "full_day" || status === "lunch_only") && hours.lunch_start && (
-                        <div className="text-xs flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          <span>{hours.lunch_start}-{hours.lunch_end}</span>
-                        </div>
+                      {/* In fixed mode the service window is not what can be booked — only
+                          the configured sittings are — so showing "13:00-16:00" describes
+                          something the booking path will refuse. The times come from the
+                          backend, resolved through the same cascade a booking obeys. */}
+                      {(status === "full_day" || status === "lunch_only") && (
+                        lunchSlots.length > 0 ? (
+                          <div className="text-[10px] leading-tight flex items-start gap-1"
+                               title={lunchSlots.join(" · ")}>
+                            <span className="shrink-0">🍽️</span>
+                            <span className="break-words">{summarise(lunchSlots)}</span>
+                          </div>
+                        ) : booksBySlot ? (
+                          <div className="text-[10px] text-muted-foreground italic"
+                               title={t("calendar.noSittings")}>
+                            {t("calendar.noSittings")}
+                          </div>
+                        ) : hours.lunch_start && (
+                          <div className="text-xs flex items-center gap-1">
+                            <span>🍽️</span>
+                            <span>{hours.lunch_start}-{hours.lunch_end}</span>
+                          </div>
+                        )
                       )}
-                      {(status === "full_day" || status === "dinner_only") && hours.dinner_start && (
-                        <div className="text-xs flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          <span>{hours.dinner_start}-{hours.dinner_end}</span>
-                        </div>
+                      {(status === "full_day" || status === "dinner_only") && (
+                        dinnerSlots.length > 0 ? (
+                          <div className="text-[10px] leading-tight flex items-start gap-1"
+                               title={dinnerSlots.join(" · ")}>
+                            <span className="shrink-0">🌙</span>
+                            <span className="break-words">{summarise(dinnerSlots)}</span>
+                          </div>
+                        ) : booksBySlot ? (
+                          <div className="text-[10px] text-muted-foreground italic"
+                               title={t("calendar.noSittings")}>
+                            {t("calendar.noSittings")}
+                          </div>
+                        ) : hours.dinner_start && (
+                          <div className="text-xs flex items-center gap-1">
+                            <span>🌙</span>
+                            <span>{hours.dinner_start}-{hours.dinner_end}</span>
+                          </div>
+                        )
                       )}
                     </div>
                   )}

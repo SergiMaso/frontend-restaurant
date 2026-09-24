@@ -12,6 +12,12 @@ const badgeVariants = cva(
         secondary: "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
         destructive: "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
         outline: "text-foreground",
+        // Used for "this already happened and it went fine" markers — a seated
+        // reservation, so far. It existed as `variant="success"` at the call site
+        // with the colours repeated inline, which typechecked as an error and
+        // silently applied no variant classes at all; the inline ones were doing
+        // all the work. Same colours, now declared where the others are.
+        success: "border-green-300 bg-green-100 text-green-700",
       },
     },
     defaultVariants: {

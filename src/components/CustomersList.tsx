@@ -4,7 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Users, Phone, PhoneCall, Calendar, MessageCircle, X, Search, Send, Edit, UtensilsCrossed } from "lucide-react";
+import { Users, PhoneCall, Calendar, MessageCircle, X, Search, Send, Edit, UtensilsCrossed } from "lucide-react";
+import { CustomerIdentifier } from "@/components/CustomerIdentifier";
 import { getCustomers, getConversations, sendMessage, type Conversation } from "@/services/api";
 import { format, parseISO } from "date-fns";
 import { useState, useMemo, useEffect, useRef } from "react";
@@ -222,10 +223,7 @@ const CustomersList = () => {
                 )}
               </div>
               <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <Phone className="h-3 w-3" />
-                  {customer.phone}
-                </span>
+                <CustomerIdentifier phone={customer.phone} bsuid={customer.bsuid} />
               </div>
             </div>
             <div className="flex items-center gap-2 flex-wrap">

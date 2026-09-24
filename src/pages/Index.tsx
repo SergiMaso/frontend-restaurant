@@ -91,6 +91,16 @@ const Index = () => {
   const { dateLocale } = useLanguage();
 
   const restaurantName = selectedRestaurant?.name || tCommon("loading");
+  const tablesEnabled = selectedRestaurant?.tables_enabled ?? true;
+
+  // Hiding the trigger is not enough: activeTab is controlled, so someone sitting on the
+  // layout when the mode is switched off would keep its content rendered with no tab to
+  // leave by. Move them to the tables tab, which is where the seats now live.
+  useEffect(() => {
+    if (!tablesEnabled && activeTab === "layout") {
+      setActiveTab("tables");
+    }
+  }, [tablesEnabled, activeTab]);
   const lazyContentFallback = (
     <div className="py-8 text-center text-muted-foreground">{tCommon("loading")}</div>
   );
@@ -250,10 +260,15 @@ const Index = () => {
                 <Clock className="h-4 w-4 mr-2" />
                 {t("tabs.schedule")}
               </TabsTrigger>
-              <TabsTrigger value="layout">
-                <LayoutGrid className="h-4 w-4 mr-2" />
-                {t("tabs.layout")}
-              </TabsTrigger>
+              {/* A floor plan of forty one-seat tables is not a floor plan. In capacity
+                  mode the seats are an implementation detail and there is nothing to
+                  arrange, so the tab goes rather than showing an unreadable grid. */}
+              {tablesEnabled && (
+                <TabsTrigger value="layout">
+                  <LayoutGrid className="h-4 w-4 mr-2" />
+                  {t("tabs.layout")}
+                </TabsTrigger>
+              )}
               <TabsTrigger value="tables">{t("tabs.tables")}</TabsTrigger>
               <TabsTrigger value="reservations">{t("tabs.reservations")}</TabsTrigger>
               <TabsTrigger value="customers">
@@ -408,7 +423,7 @@ const Index = () => {
           </TabsContent>
 
           {/* LAYOUT TAB */}
-          <TabsContent value="layout" className="space-y-4">
+          {tablesEnabled && <TabsContent value="layout" className="space-y-4">
             <Card className="border-border/50 shadow-card">
               <CardContent className="pt-6">
                 <Suspense fallback={lazyContentFallback}>
@@ -416,7 +431,7 @@ const Index = () => {
                 </Suspense>
               </CardContent>
             </Card>
-          </TabsContent>
+          </TabsContent>}
 
           {/* TABLES TAB */}
           <TabsContent value="tables" className="space-y-4">

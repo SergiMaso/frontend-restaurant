@@ -141,7 +141,23 @@ export async function setup(data: SetupData): Promise<{ message: string; user_id
   return response.json();
 }
 
-export async function sendInvitation(data: InviteData): Promise<{ message: string }> {
+/**
+ * What POST /auth/invite actually returns (utils/auth.py:629).
+ *
+ * `register_link` and `warning` are present only when the email could not be
+ * sent — the dialog shows the link so the invitation can be passed on by hand.
+ * The declared type used to be just `{ message: string }`, which made every
+ * read of the other three a type error and left the shape undocumented.
+ */
+export interface InvitationResult {
+  message: string;
+  email_sent: boolean;
+  expires_at: string;
+  register_link?: string;
+  warning?: string;
+}
+
+export async function sendInvitation(data: InviteData): Promise<InvitationResult> {
   const response = await fetch(`${API_URL}/auth/invite`, {
     method: 'POST',
     headers: {

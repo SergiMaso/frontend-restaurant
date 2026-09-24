@@ -22,14 +22,30 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { getWeeklyDefaults, updateWeeklyDefault, type WeeklyDefault } from "@/services/api";
-import { useTenantKey } from "@/hooks/useTenantKey";
+import { useRestaurantConfig } from "@/hooks/useRestaurantConfig";
+import { useRestaurant } from "@/contexts/RestaurantContext";
+import { useAuth } from "@/contexts/AuthContext";
+import DayRulesEditor, { type DayRulesValue } from "@/components/DayRulesEditor";
+import { useTenantKey, DAY_RULE_DERIVED_KEYS } from "@/hooks/useTenantKey";
 
 const WeeklyScheduleManager = () => {
   const queryClient = useQueryClient();
   const [selectedDay, setSelectedDay] = useState<WeeklyDefault | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  // Bumped on every open, so the dialog is rebuilt from the saved day each time.
+  const [openCount, setOpenCount] = useState(0);
   const { t } = useTranslation("dashboard");
   const { t: tCommon } = useTranslation("common");
+
+// Two sittings then a count. These weekday buttons are narrower than a month cell, and a
+// restaurant with six lunch sittings would push the times outside the button.
+const slotSummary = (slots?: string[]) => {
+  if (!slots || slots.length === 0) return "";
+  const SHOWN = 2;
+  return slots.length <= SHOWN
+    ? slots.join(" ")
+    : `${slots.slice(0, SHOWN).join(" ")} +${slots.length - SHOWN}`;
+};
 
   // Map day_of_week (0=Monday, 6=Sunday) to translation keys
   const getDayName = (dayOfWeek: number) => {
@@ -52,6 +68,7 @@ const WeeklyScheduleManager = () => {
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: weeklyDefaultsKey });
       queryClient.invalidateQueries({ queryKey: openingHoursKey });
+      DAY_RULE_DERIVED_KEYS.forEach((k) => queryClient.invalidateQueries({ queryKey: [k] }));
       toast.success(`✅ ${t("weeklySchedule.configUpdated")}! ${response.days_updated || 0} ${t("weeklySchedule.daysAffected")}.`);
       setDialogOpen(false);
     },
@@ -62,6 +79,7 @@ const WeeklyScheduleManager = () => {
 
   const handleDayClick = (day: WeeklyDefault) => {
     setSelectedDay(day);
+    setOpenCount((n) => n + 1);
     setDialogOpen(true);
   };
 
@@ -125,11 +143,31 @@ const WeeklyScheduleManager = () => {
             <span className="font-semibold text-xs">{getDayName(day.day_of_week)}</span>
             {day.status !== "closed" && (
               <div className="flex flex-col items-center text-[10px] opacity-80">
-                {(day.status === "full_day" || day.status === "lunch_only") && day.lunch_start && (
-                  <span>🍽️ {day.lunch_start?.slice(0,5)}-{day.lunch_end?.slice(0,5)}</span>
+                {/* In fixed mode the window is not bookable — only the sittings are — so
+                    showing "13:00-16:00" here describes hours a booking is refused at,
+                    exactly as it did in the month calendar. Three then a count, because
+                    these buttons are narrower than a calendar cell. */}
+                {(day.status === "full_day" || day.status === "lunch_only") && (
+                  slotSummary(day.slot_times?.lunch)
+                    ? <span title={day.slot_times?.lunch?.join(" · ")}>
+                        🍽️ {slotSummary(day.slot_times?.lunch)}
+                      </span>
+                    : day.slot_mode === 'fixed'
+                      ? <span className="italic opacity-70">🍽️ {t("calendar.noSittings")}</span>
+                      : day.lunch_start && (
+                          <span>🍽️ {day.lunch_start?.slice(0,5)}-{day.lunch_end?.slice(0,5)}</span>
+                        )
                 )}
-                {(day.status === "full_day" || day.status === "dinner_only") && day.dinner_start && (
-                  <span>🌙 {day.dinner_start?.slice(0,5)}-{day.dinner_end?.slice(0,5)}</span>
+                {(day.status === "full_day" || day.status === "dinner_only") && (
+                  slotSummary(day.slot_times?.dinner)
+                    ? <span title={day.slot_times?.dinner?.join(" · ")}>
+                        🌙 {slotSummary(day.slot_times?.dinner)}
+                      </span>
+                    : day.slot_mode === 'fixed'
+                      ? <span className="italic opacity-70">🌙 {t("calendar.noSittings")}</span>
+                      : day.dinner_start && (
+                          <span>🌙 {day.dinner_start?.slice(0,5)}-{day.dinner_end?.slice(0,5)}</span>
+                        )
                 )}
               </div>
             )}
@@ -144,6 +182,19 @@ const WeeklyScheduleManager = () => {
       {/* Modal d'edició */}
       {selectedDay && (
         <DayEditorDialog
+          /* Remount per weekday. selectedDay changes without this component ever
+             unmounting — it is never set back to null — so its useState initial
+             values stay frozen at whichever weekday was opened FIRST. Clicking
+             Monday, closing, then clicking Tuesday showed Monday's hours and
+             Monday's slot caps, and saving wrote them onto Tuesday.
+
+             Pre-existing for the hour fields; adding slot and deposit state made it
+             a great deal more destructive.
+
+             And per OPENING, not only per weekday: reopening the same day after
+             Cancel kept the discarded edits, and a later save of just the hours
+             wrote them too. */
+          key={`${selectedDay.day_of_week}-${openCount}`}
           day={selectedDay}
           open={dialogOpen}
           onOpenChange={setDialogOpen}
@@ -169,8 +220,20 @@ const DayEditorDialog = ({ day, open, onOpenChange, onSave, isLoading }: DayEdit
   const [lunchEnd, setLunchEnd] = useState(day.lunch_end || "15:00");
   const [dinnerStart, setDinnerStart] = useState(day.dinner_start || "19:00");
   const [dinnerEnd, setDinnerEnd] = useState(day.dinner_end || "22:30");
+  // Slot caps and deposits for this weekday. Undefined stays undefined: sending a key
+  // the user never touched would record this level as overriding it.
+  const [dayRules, setDayRules] = useState<DayRulesValue>({
+    slot_config: day.slot_config ?? null,
+    payment_config: day.payment_config ?? null,
+  });
   const { t } = useTranslation("dashboard");
   const { t: tCommon } = useTranslation("common");
+  const {
+    timeSlotsMode, fixedTimeSlotsLunch, fixedTimeSlotsDinner,
+    paymentEnabled, getConfigNumber, getConfigValue,
+  } = useRestaurantConfig();
+  const { selectedRestaurant } = useRestaurant();
+  const { isOwner } = useAuth();
 
   // Map day_of_week (0=Monday, 6=Sunday) to translation keys
   const getDayName = (dayOfWeek: number) => {
@@ -185,7 +248,11 @@ const DayEditorDialog = ({ day, open, onOpenChange, onSave, isLoading }: DayEdit
       lunch_start: lunchStart,
       lunch_end: lunchEnd,
       dinner_start: dinnerStart,
-      dinner_end: dinnerEnd
+      dinner_end: dinnerEnd,
+      // null clears the override so this weekday inherits global again — that is what
+      // the reset control produces, and the backend treats null and {} differently.
+      slot_config: dayRules.slot_config ?? null,
+      payment_config: dayRules.payment_config ?? null,
     };
 
     onSave(data);
@@ -203,7 +270,11 @@ const DayEditorDialog = ({ day, open, onOpenChange, onSave, isLoading }: DayEdit
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      {/* Bounded and scrollable, matching OpeningHoursDialog. Expanding the slot
+          list made this taller than the viewport, and with no limit the save and
+          close buttons simply went off the bottom of the screen with no way to
+          reach them. */}
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5" />
@@ -283,6 +354,42 @@ const DayEditorDialog = ({ day, open, onOpenChange, onSave, isLoading }: DayEdit
                 </div>
               </div>
             </div>
+          )}
+          {/* Slot caps and deposits for every Monday. Collapsed by default so someone
+              who only came to change the hours never has to look at it. */}
+          {status !== "closed" && (
+            <DayRulesEditor
+              value={dayRules}
+              onChange={setDayRules}
+              timeSlotsMode={timeSlotsMode}
+              inheritedSlots={{
+                lunch: fixedTimeSlotsLunch.split(",").map((x) => x.trim()).filter(Boolean),
+                dinner: fixedTimeSlotsDinner.split(",").map((x) => x.trim()).filter(Boolean),
+              }}
+              /* Global config has a single deposit for the whole restaurant, so both
+                 services legitimately inherit the same figure here. The per-service
+                 shape matters one level down, where a weekday CAN differ. */
+              // A weekday inherits the restaurant-wide caps.
+              inheritedSlotCaps={{
+                lunch: selectedRestaurant?.slot_config?.lunch ?? {},
+                dinner: selectedRestaurant?.slot_config?.dinner ?? {},
+              }}
+              inheritedPayment={(() => {
+                const global = {
+                  amount: getConfigNumber("payment_deposit_amount", 0),
+                  minPeople: getConfigNumber("payment_min_people", 1),
+                  currency: getConfigValue("payment_currency", "EUR"),
+                };
+                return { lunch: global, dinner: global };
+              })()}
+              paymentsAvailable={paymentEnabled}
+              canEditDeposits={isOwner}
+              openServices={
+                status === "lunch_only" ? ["lunch"]
+                  : status === "dinner_only" ? ["dinner"]
+                  : ["lunch", "dinner"]
+              }
+            />
           )}
         </div>
 

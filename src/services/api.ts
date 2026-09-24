@@ -112,6 +112,10 @@ export interface CreateAppointmentData {
   table_ids?: number[];
   language?: string;
   notes?: string | null;
+  /** Staff ticked "ask for a deposit". Overrides the day's rules and min_people. */
+  send_payment_link?: boolean;
+  /** Per person. Pre-filled from the day's rules, then whatever staff types. */
+  deposit_amount_per_person?: number;
 }
 
 export interface UpdateAppointmentData {
@@ -129,10 +133,116 @@ export interface AppointmentMutationResult {
   table_ids: number[];
   manual_override: boolean;
   message?: string;
+  /** Present when a deposit was requested and created. */
+  requires_payment?: boolean;
+  checkout_url?: string;
+  payment_short_url?: string;
+  payment_amount?: number;
+  payment_currency?: string;
+  payment_expiry_minutes?: number;
+  /** False when the link exists but the WhatsApp message did not go out. */
+  payment_link_sent?: boolean;
+  /**
+   * The booking WAS created; only the deposit failed. Comes back with a 201, not an
+   * error status, so staff are never left thinking the reservation did not save.
+   */
+  payment_error?: string;
+}
+
+export interface PaymentTerms {
+  /** False when the restaurant has no Stripe set up — hide the deposit controls. */
+  payments_available: boolean;
+  /** True when the day's own rules would charge this party automatically. */
+  would_apply?: boolean;
+  amount_per_person?: number | null;
+  min_people?: number;
+  currency?: string;
+  /** The rules could not be resolved; the dialog opens but cannot suggest a figure. */
+  terms_unavailable?: boolean;
+}
+
+/** What the day's rules would charge, for pre-filling the deposit box. */
+export interface DaySittings {
+  mode: string;
+  slots: string[];
+}
+
+export async function getTimeSlots(date: string): Promise<DaySittings> {
+  const params = new URLSearchParams({ date });
+  const response = await fetch(`${API_URL}/api/time-slots?${params}`, {
+    headers: { ...getRestaurantHeaders() },
+    credentials: 'include',
+  });
+  if (!response.ok) {
+    // Never block the dialog: the caller falls back to the list it builds itself.
+    return { mode: 'interval', slots: [] };
+  }
+  return response.json();
+}
+
+export interface SlotCapacity {
+  applies: boolean;
+  bookable?: boolean;
+  sittings?: string[];
+  snapped_from?: string | null;
+  unavailable?: boolean;
+  overflow?: boolean;
+  over_by?: number | null;
+  would_exceed?: boolean;
+  assigned?: string | null;
+  how?: string;
+  cap?: number | null;
+  taken?: number;
+  remaining?: number | null;
+}
+
+export async function getSlotCapacity(
+  date: string, time: string, numPeople: number, excludeAppointmentId?: number,
+  walkIn?: boolean, durationMinutes?: number,
+): Promise<SlotCapacity> {
+  const params = new URLSearchParams({ date, time, num_people: String(numPeople) });
+  // The length this booking will actually be saved with. The save honours it, so a
+  // preview using the restaurant's default disagrees for any booking that sets its own.
+  if (durationMinutes && durationMinutes > 0) {
+    params.set('duration_minutes', String(durationMinutes));
+  }
+  // A walk-in is moved onto a real sitting when it is saved, so the answer has to be
+  // about that sitting rather than about the clock time nobody will store.
+  if (walkIn) params.set('walk_in', 'true');
+  // Editing: the booking must not be counted against itself.
+  if (excludeAppointmentId) {
+    params.set('exclude_appointment_id', String(excludeAppointmentId));
+  }
+  const response = await fetch(`${API_URL}/api/slot-capacity?${params}`, {
+    headers: { ...getRestaurantHeaders() },
+    credentials: 'include',
+  });
+  if (!response.ok) {
+    // Never block the dialog over this: staff may exceed the cap deliberately, so a
+    // failure to warn must not become a failure to book.
+    return { applies: false };
+  }
+  return response.json();
+}
+
+export async function getPaymentTerms(
+  date: string, time: string, numPeople: number,
+): Promise<PaymentTerms> {
+  const params = new URLSearchParams({ date, time, num_people: String(numPeople) });
+  const response = await fetch(`${API_URL}/api/payment-terms?${params}`, {
+    headers: { ...getRestaurantHeaders() },
+    credentials: 'include',
+  });
+  if (!response.ok) {
+    // Never block the dialog over this: it only supplies a suggested figure.
+    return { payments_available: false };
+  }
+  return response.json();
 }
 
 export interface Customer {
   phone: string;
+  bsuid?: string | null;
   name: string;
   language: string;
   visit_count: number;
@@ -310,6 +420,121 @@ export async function deleteTable(tableId: number): Promise<void> {
   }
 }
 
+/**
+ * A refusal from the capacity generator.
+ *
+ * `code` matters to the caller: a refusal because bookings still hold the current tables
+ * needs a different message from a plain validation error — the user has something to do
+ * about the first and nothing to do about the second.
+ */
+/** A future booking that no longer fits, named so the restaurant can call them. */
+export interface HomelessBooking {
+  id: number;
+  date: string;
+  time: string;
+  num_people: number;
+  client_name: string;
+  area: string;
+}
+
+export class CapacityTablesError extends Error {
+  code?: string;
+  count?: number;
+  /** Set only for code 'would_not_fit': who could not be placed. */
+  homeless?: HomelessBooking[];
+  total?: number;
+
+  constructor(message: string, code?: string, count?: number,
+              homeless?: HomelessBooking[], total?: number) {
+    super(message);
+    this.name = 'CapacityTablesError';
+    this.code = code;
+    this.count = count;
+    this.homeless = homeless;
+    this.total = total;
+  }
+}
+
+export interface CapacityTablesResult {
+  success: boolean;
+  created: Record<string, number>;
+  removed: number;
+  /** Future bookings moved onto the new seats. */
+  reseated: number;
+  /** True when nothing was written — the answer came from a rolled-back run. */
+  dry_run: boolean;
+}
+
+/**
+ * Replace every table with one-seat rows generated from a per-area capacity.
+ *
+ * Only valid while tables_enabled is false; the backend enforces that as well, because
+ * this deletes the restaurant's whole table plan and a stale tab must not be able to
+ * wipe one that is still in use.
+ *
+ * With `reseat` the future bookings are moved onto the new seats rather than blocking
+ * the change; with `dryRun` the same work is done and rolled back, so the dashboard can
+ * show what would happen. Both run the identical backend path — a preview that took a
+ * different route could disagree with the apply.
+ */
+export async function generateCapacityTables(
+  capacities: { inside?: number; terrace?: number },
+  options: { reseat?: boolean; dryRun?: boolean } = {}
+): Promise<CapacityTablesResult> {
+  const response = await fetch(`${API_URL}/api/tables/capacity`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { ...getRestaurantHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      ...capacities,
+      reseat: options.reseat ?? false,
+      dry_run: options.dryRun ?? false,
+    }),
+  });
+
+  const body = await response.json();
+  if (!response.ok) {
+    throw new CapacityTablesError(body.error || 'Error generant taules', body.code,
+                                  body.count, body.homeless, body.total);
+  }
+  return body;
+}
+
+/**
+ * Download future bookings as a CSV file.
+ *
+ * Fetched rather than linked because the API is a different origin from the dashboard in
+ * development, and a plain <a href> would not carry the session cookie.
+ */
+export async function exportFutureAppointments(): Promise<void> {
+  const response = await fetch(`${API_URL}/api/appointments/export`, {
+    credentials: 'include',
+    headers: getRestaurantHeaders(),
+  });
+
+  if (!response.ok) {
+    let message = 'Error exportant reserves';
+    try {
+      message = (await response.json()).error || message;
+    } catch {
+      // A 403 from the decorator has a JSON body; other failures may not.
+    }
+    throw new Error(message);
+  }
+
+  const disposition = response.headers.get('Content-Disposition') || '';
+  const named = /filename="?([^"]+)"?/.exec(disposition);
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = named ? named[1] : 'reserves-futures.csv';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 // ========================================
 // CUSTOMERS
 // ========================================
@@ -343,11 +568,30 @@ export async function getConversations(phone: string): Promise<Conversation[]> {
 export interface OpeningHours {
   date: string;
   status: 'closed' | 'lunch_only' | 'dinner_only' | 'full_day';
+  /** true when this date was edited on its own, false when it simply follows its
+      weekday. The backend has always sent it for every day in a range; nothing read it,
+      so an overridden day looked identical to an inherited one. */
+  is_custom?: boolean;
+  /** The bookable sitting times for this date, per service, when the restaurant is in
+      fixed mode — {} otherwise, where the window itself is the answer. Resolved by the
+      backend through the same cascade the booking path enforces, so the calendar cannot
+      drift from what a booking will actually accept. */
+  slot_times?: { lunch?: string[]; dinner?: string[] };
+  /** Which mode produced slot_times. An empty map means "the window is the answer" in
+      interval mode and "the sittings could not be resolved" in fixed mode — opposite
+      meanings the map alone cannot express, and showing the window for the second
+      advertises hours the booking path will refuse. 'unknown' when even the mode could
+      not be read, where the caller keeps the pre-existing behaviour. */
+  slot_mode?: 'fixed' | 'interval' | 'unknown';
   lunch_start?: string | null;
   lunch_end?: string | null;
   dinner_start?: string | null;
   dinner_end?: string | null;
   notes?: string | null;
+  /** null = this date inherits its weekday. The backend returns these; without them
+      declared here the date dialog cannot show what it is currently overriding. */
+  slot_config?: SlotConfig | null;
+  payment_config?: PaymentConfig | null;
 }
 
 export interface SetOpeningHoursData {
@@ -358,6 +602,9 @@ export interface SetOpeningHoursData {
   dinner_start?: string;
   dinner_end?: string;
   notes?: string;
+  /** Send null to clear the override and inherit the weekday again. */
+  slot_config?: SlotConfig | null;
+  payment_config?: PaymentConfig | null;
 }
 
 export async function getOpeningHours(date: string): Promise<OpeningHours> {
@@ -424,6 +671,31 @@ export async function updateOpeningHours(date: string, data: Partial<SetOpeningH
 // WEEKLY DEFAULTS
 // ========================================
 
+/**
+ * Per-day overrides. NULL means INHERIT — a level that has not been customised follows
+ * the one above automatically, which is why clearing a value is how you reset it.
+ *
+ * slot_config keys ARE the slots that exist for that service; a null cap means the slot
+ * exists with no people limit. Defining a service takes ownership of its whole list, so
+ * slots added globally afterwards do not appear there — the reset control is the way back.
+ */
+export interface SlotConfig {
+  lunch?: Record<string, number | null>;
+  dinner?: Record<string, number | null>;
+}
+
+export interface ServicePaymentConfig {
+  required?: boolean;
+  /** Per person. Omit to inherit the amount from the level above. */
+  amount?: number;
+  min_people?: number;
+}
+
+export interface PaymentConfig {
+  lunch?: ServicePaymentConfig;
+  dinner?: ServicePaymentConfig;
+}
+
 export interface WeeklyDefault {
   day_of_week: number;
   day_name: string;
@@ -432,6 +704,15 @@ export interface WeeklyDefault {
   lunch_end?: string | null;
   dinner_start?: string | null;
   dinner_end?: string | null;
+  /** null = inherits the global config. Distinct from {} , which would be an override. */
+  slot_config?: SlotConfig | null;
+  payment_config?: PaymentConfig | null;
+  /** The weekday's bookable sittings, resolved server-side through the same cascade
+      minus the date level. Empty in interval mode, where the window is the answer. */
+  slot_times?: { lunch?: string[]; dinner?: string[] };
+  /** Which mode produced them. An empty list means opposite things in each, and showing
+      the window for the fixed one advertises hours a booking is refused at. */
+  slot_mode?: 'fixed' | 'interval' | 'unknown';
 }
 
 export interface UpdateWeeklyDefaultData {
@@ -440,6 +721,9 @@ export interface UpdateWeeklyDefaultData {
   lunch_end?: string;
   dinner_start?: string;
   dinner_end?: string;
+  /** Send null to clear the override and inherit global again. */
+  slot_config?: SlotConfig | null;
+  payment_config?: PaymentConfig | null;
 }
 
 export async function getWeeklyDefaults(): Promise<WeeklyDefault[]> {
@@ -453,7 +737,23 @@ export async function getWeeklyDefaults(): Promise<WeeklyDefault[]> {
   return response.json();
 }
 
-export async function updateWeeklyDefault(dayOfWeek: number, data: UpdateWeeklyDefaultData): Promise<WeeklyDefault> {
+/**
+ * What PUT /api/weekly-defaults/:day returns (utils/weekly_defaults.py:305).
+ *
+ * Not a WeeklyDefault — it is a report on the write. `days_updated` counts the
+ * future non-custom dates the new hours propagated to, `days_custom` the ones
+ * deliberately left alone. The declared type said WeeklyDefault, so reading
+ * days_updated (which the dialog shows in its confirmation) was a type error,
+ * and the fields that do come back were undocumented.
+ */
+export interface WeeklyDefaultUpdateResult {
+  success: boolean;
+  days_updated: number;
+  days_custom: number;
+  message: string;
+}
+
+export async function updateWeeklyDefault(dayOfWeek: number, data: UpdateWeeklyDefaultData): Promise<WeeklyDefaultUpdateResult> {
   const response = await fetch(`${API_URL}/api/weekly-defaults/${dayOfWeek}`, {
     method: 'PUT',
     headers: {

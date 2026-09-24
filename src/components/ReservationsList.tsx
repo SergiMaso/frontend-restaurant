@@ -2,7 +2,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Pencil, Trash2, Users, Phone, Clock } from "lucide-react";
+import { Pencil, Trash2, Users, Clock } from "lucide-react";
+import { CustomerIdentifier } from "@/components/CustomerIdentifier";
 import { toast } from "sonner";
 import { useState } from "react";
 import { format } from "date-fns";
@@ -157,8 +158,7 @@ const ReservationsList = ({ selectedDate, onEdit }: ReservationsListProps) => {
 
             <div className="space-y-2 mb-3 text-sm">
               <div className="flex items-center gap-2 text-muted-foreground">
-                <Phone className="h-3 w-3" />
-                {reservation.phone}
+                <CustomerIdentifier phone={reservation.phone} bsuid={(reservation as any).bsuid} />
               </div>
               <div className="flex items-center gap-2 flex-wrap">
                 {reservation.table_ids && reservation.table_ids.length > 1 ? (

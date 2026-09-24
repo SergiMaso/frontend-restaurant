@@ -22,8 +22,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { setOpeningHours, type SetOpeningHoursData } from "@/services/api";
-import { useTenantKey } from "@/hooks/useTenantKey";
+import { setOpeningHours, getWeeklyDefaults, type SetOpeningHoursData, type SlotConfig, type PaymentConfig } from "@/services/api";
+import { useQuery } from "@tanstack/react-query";
+import { useRestaurantConfig } from "@/hooks/useRestaurantConfig";
+import DayRulesEditor, { type DayRulesValue } from "@/components/DayRulesEditor";
+import { useTenantKey, DAY_RULE_DERIVED_KEYS } from "@/hooks/useTenantKey";
+import { useRestaurant } from "@/contexts/RestaurantContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface OpeningHoursDialogProps {
   open: boolean;
@@ -36,6 +41,8 @@ interface OpeningHoursDialogProps {
     dinner_start?: string | null;
     dinner_end?: string | null;
     notes?: string | null;
+    slot_config?: SlotConfig | null;
+    payment_config?: PaymentConfig | null;
   };
 }
 
@@ -48,9 +55,58 @@ const OpeningHoursDialog = ({ open, onOpenChange, date, initialData }: OpeningHo
   const [dinnerStart, setDinnerStart] = useState("19:00");
   const [dinnerEnd, setDinnerEnd] = useState("22:30");
   const [notes, setNotes] = useState("");
+  const [dayRules, setDayRules] = useState<DayRulesValue>({});
   const { t } = useTranslation("dashboard");
   const { t: tCommon } = useTranslation("common");
   const { dateLocale } = useLanguage();
+  const {
+    timeSlotsMode, fixedTimeSlotsLunch, fixedTimeSlotsDinner,
+    paymentEnabled, getConfigNumber, getConfigValue,
+  } = useRestaurantConfig();
+
+  // A specific date inherits from its weekday, which may itself be inheriting global.
+  // Fetching the weekday here is what makes the placeholders show what this date would
+  // actually do if left alone, rather than the global default.
+  const { data: weeklyDefaults } = useQuery({
+    queryKey: useTenantKey(["weekly-defaults"]),
+    queryFn: getWeeklyDefaults,
+    enabled: open,
+  });
+  // JS getDay(): 0=Sunday. The API uses 0=Monday.
+  const weekdayIndex = (date.getDay() + 6) % 7;
+  const weekday = weeklyDefaults?.find((d) => d.day_of_week === weekdayIndex);
+
+  const { selectedRestaurant } = useRestaurant();
+  const { isOwner } = useAuth();
+
+  // The caps the inherited sittings carry: the weekday's own, else the global ones.
+  const inheritedSlotCapsFor = (service: "lunch" | "dinner") =>
+    weekday?.slot_config?.[service] ?? selectedRestaurant?.slot_config?.[service] ?? {};
+
+  const inheritedSlotsFor = (service: "lunch" | "dinner") => {
+    const fromWeekday = weekday?.slot_config?.[service];
+    if (fromWeekday) return Object.keys(fromWeekday).sort();
+    const global = service === "lunch" ? fixedTimeSlotsLunch : fixedTimeSlotsDinner;
+    return global.split(",").map((x) => x.trim()).filter(Boolean);
+  };
+
+  // Resolved per service. `lunch || dinner` collapsed them into one figure, so a
+  // weekday charging 10 for lunch and 25 for dinner suggested 10 for both — and
+  // accepting that suggestion would have written the wrong price for dinner.
+  const inheritedPaymentFor = (service: "lunch" | "dinner") => {
+    const wd = weekday?.payment_config?.[service];
+    return {
+      amount: wd?.amount ?? getConfigNumber("payment_deposit_amount", 0),
+      minPeople: wd?.min_people ?? getConfigNumber("payment_min_people", 1),
+      currency: getConfigValue("payment_currency", "EUR"),
+      // A weekday can switch deposits off for a service; the date inherits that.
+      required: wd?.required ?? true,
+    };
+  };
+  const inheritedPayment = {
+    lunch: inheritedPaymentFor("lunch"),
+    dinner: inheritedPaymentFor("dinner"),
+  };
 
   useEffect(() => {
     if (initialData) {
@@ -60,6 +116,10 @@ const OpeningHoursDialog = ({ open, onOpenChange, date, initialData }: OpeningHo
       setDinnerStart(initialData.dinner_start || "19:00");
       setDinnerEnd(initialData.dinner_end || "22:30");
       setNotes(initialData.notes || "");
+      setDayRules({
+        slot_config: initialData.slot_config ?? null,
+        payment_config: initialData.payment_config ?? null,
+      });
     } else {
       setStatus("full_day");
       setLunchStart("12:00");
@@ -67,6 +127,7 @@ const OpeningHoursDialog = ({ open, onOpenChange, date, initialData }: OpeningHo
       setDinnerStart("19:00");
       setDinnerEnd("22:30");
       setNotes("");
+      setDayRules({});
     }
   }, [initialData, open]);
 
@@ -76,6 +137,7 @@ const OpeningHoursDialog = ({ open, onOpenChange, date, initialData }: OpeningHo
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: openingHoursKey });
+      DAY_RULE_DERIVED_KEYS.forEach((k) => queryClient.invalidateQueries({ queryKey: [k] }));
       toast.success(t("weeklySchedule.saveSuccess"));
       onOpenChange(false);
     },
@@ -106,6 +168,10 @@ const OpeningHoursDialog = ({ open, onOpenChange, date, initialData }: OpeningHo
     if (notes) {
       data.notes = notes;
     }
+
+    // null clears the override so this date inherits its weekday again.
+    data.slot_config = dayRules.slot_config ?? null;
+    data.payment_config = dayRules.payment_config ?? null;
 
     mutation.mutate(data);
   };
@@ -204,6 +270,31 @@ const OpeningHoursDialog = ({ open, onOpenChange, date, initialData }: OpeningHo
                 </div>
               </div>
             </div>
+          )}
+
+          {/* Slot caps and deposits for THIS date only, overriding the weekday. */}
+          {status !== "closed" && (
+            <DayRulesEditor
+              value={dayRules}
+              onChange={setDayRules}
+              timeSlotsMode={timeSlotsMode}
+              inheritedSlots={{
+                lunch: inheritedSlotsFor("lunch"),
+                dinner: inheritedSlotsFor("dinner"),
+              }}
+              inheritedSlotCaps={{
+                lunch: inheritedSlotCapsFor("lunch"),
+                dinner: inheritedSlotCapsFor("dinner"),
+              }}
+              inheritedPayment={inheritedPayment}
+              paymentsAvailable={paymentEnabled}
+              canEditDeposits={isOwner}
+              openServices={
+                status === "lunch_only" ? ["lunch"]
+                  : status === "dinner_only" ? ["dinner"]
+                  : ["lunch", "dinner"]
+              }
+            />
           )}
 
           {/* Notes */}

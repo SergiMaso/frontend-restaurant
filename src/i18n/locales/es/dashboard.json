@@ -140,7 +140,21 @@
     "deleteError": "Error eliminando mesa",
     "saveSuccess": "Mesa guardada",
     "saveError": "Error guardando mesa",
-    "saveChanges": "Guardar Cambios"
+    "saveChanges": "Guardar Cambios",
+    "setCapacity": "Capacidad por zona",
+    "setCapacityHelp": "Indica cuántas personas caben en cada zona. Las mesas se generan solas.",
+    "setCapacityWarning": "Se sustituirán todas las mesas actuales.",
+    "setCapacityConfirm": "Generar",
+    "capacityGenerated": "{{count}} plazas generadas",
+    "capacityBlocked": "Hay {{count}} reservas futuras con mesa asignada. Muévelas o cancélalas antes.",
+    "setCapacityApply": "Aplicar",
+    "capacityGeneratedMoved": "{{count}} plazas generadas y {{moved}} reservas reubicadas",
+    "capacityWillMove": "{{count}} reservas futuras se reubicarán en las plazas nuevas",
+    "capacityWillMoveHelp": "Mantienen la fecha, la hora y el pago: solo cambian de sitio. Todavía no se ha cambiado nada.",
+    "capacityNoFit": "{{count}} reservas no caben. No se ha cambiado nada.",
+    "capacityNoFitPeople": "{{count}} personas",
+    "capacityNoSeats": "Hace falta al menos una plaza en alguna zona. Para cerrar, hazlo desde el horario.",
+    "capacityReplacesPlan": "Esto sustituirá el plano de mesas actual ({{count}} mesas, con sus combinaciones). No hay reservas que mover."
   },
   "reservations": {
     "title": "Gestión de Reservas",
@@ -210,8 +224,22 @@
     "disabledManual": "Deshabilitada (manual)",
     "warningOverCapacity": "Advertencia: {{people}} personas para {{seats}} plazas (anulación manual, +{{over}}).",
     "configuredMax": "Máximo configurado: {{max}}",
-    "overrideActive": "(anulación activa: {{people}})",
-    "warningAboveConfiguredMax": "Advertencia: {{people}} personas está por encima del máximo configurado ({{max}}). Se aplica anulación manual desde frontend."
+    "overrideActive": "— por encima del máximo, pero el personal puede superarlo",
+    "warningAboveConfiguredMax": "Advertencia: {{people}} personas está por encima del máximo configurado ({{max}}). Se aplica anulación manual desde frontend.",
+    "askForDeposit": "Pedir un depósito para confirmar",
+    "depositPerPerson": "Importe por persona",
+    "depositTotal": "= {{total}} {{currency}} para {{people}} personas",
+    "depositHelp": "Se enviará un enlace de pago por WhatsApp. La reserva se confirma al pagar.",
+    "depositLinkSent": "Reserva creada. Enlace de pago de {{amount}} {{currency}} enviado por WhatsApp.",
+    "depositLinkNotSent": "Reserva creada y depósito solicitado, pero no se pudo enviar el WhatsApp. Enlace: {{url}}",
+    "createdButDepositFailed": "Reserva creada correctamente, pero sin depósito: {{reason}}",
+    "exceedsAreaCapacity": "{{people}} personas no caben en {{area}}: hay {{seats}} plazas en total.",
+    "exceedsLargestArea": "{{people}} personas no caben en ninguna zona: la mayor tiene {{seats}} plazas.",
+    "walkInSnappedOver": "Se apuntará al turno de las {{slot}}, que quedará {{n}} personas por encima.",
+    "walkInSnapped": "Se apuntará al turno de las {{slot}}.",
+    "capNotASitting": "Esta hora no es ninguno de los turnos ({{sittings}}) y el sistema no la guardará.",
+    "capOverflow": "Esta hora no es ninguno de los turnos y ninguno de los dos contiguos tiene sitio. Se puede hacer, pero el turno de las {{slot}} quedará {{n}} personas por encima.",
+    "capExceeded": "El turno de las {{slot}} solo tiene {{left}} plazas libres."
   },
   "customers": {
     "title": "Clientes",
@@ -268,7 +296,8 @@
     "languageLabel": "Idioma Preferido",
     "selectLanguage": "Selecciona idioma",
     "saveChanges": "Guardar Cambios",
-    "yesDelete": "Sí, eliminar"
+    "yesDelete": "Sí, eliminar",
+    "storedId": "Identificador guardado (no es un teléfono)"
   },
   "users": {
     "title": "Gestión de Usuarios",
@@ -310,7 +339,7 @@
     "userReactivatedDesc": "El usuario ha sido reactivado correctamente",
     "userDeletedDesc": "El usuario ha sido eliminado permanentemente",
     "deactivateError": "No se ha podido desactivar el usuario",
-    "reactivateError": "No se ha podido reactivar el usuario",
+    "reactivateError": "Error reactivando usuario",
     "linkCopiedDesc": "El link ha sido copiado al portapapeles",
     "emailRequired": "El email es obligatorio",
     "registerLink": "Link de registro",
@@ -323,7 +352,6 @@
     "deleteSuccess": "Usuario eliminado",
     "deleteError": "Error eliminando usuario",
     "reactivateSuccess": "Usuario reactivado",
-    "reactivateError": "Error reactivando usuario",
     "confirmDelete": "¿Estás seguro de que quieres eliminar este usuario?",
     "confirmReactivate": "¿Quieres reactivar este usuario?",
     "loadingUsers": "Cargando usuarios...",
@@ -396,7 +424,7 @@
   "config": {
     "title": "Configuración del Cliente",
     "subtitle": "Gestiona las variables configurables del sistema en tiempo real",
-    "description": "Gestiona las variables configurables del sistema en tiempo real",
+    "description": "Descripción",
     "save": "Guardar",
     "saveSuccess": "Configuración actualizada",
     "saveError": "Error guardando configuración",
@@ -404,7 +432,6 @@
     "updateSuccessDesc": "Los cambios se han guardado correctamente",
     "key": "Clave",
     "value": "Valor",
-    "description": "Descripción",
     "descriptionCol": "Descripción",
     "actions": "Acciones",
     "categoryRestaurant": "Restaurante",
@@ -460,7 +487,8 @@
       "google_api_key": "Google API Key (dejar vacío para usar compartido)",
       "ai_model": "Modelo de IA (ej: gpt-4o-mini)",
       "ai_temperature": "Temperatura IA (0.0-1.0, menor=más consistente)",
-      "ai_max_tokens": "Máximo tokens de respuesta IA",
+      "ai_max_tokens": "Máximo tokens de respuesta IA (no se aplica cuando la IA razona)",
+      "ai_reasoning_effort": "Razonamiento del bot de WhatsApp: none (no razona), low, medium (recomendado) o high. Vacío = no razona",
       "ai_system_prompt": "Prompt del sistema para IA",
       "whatsapp_enabled": "WhatsApp habilitado",
       "voice_enabled": "Llamadas de voz habilitadas",
@@ -481,8 +509,14 @@
       "widget_enabled": "Widget de reservas habilitado",
       "widget_website_url": "URL de tu web (para CORS, ej: https://turestaurante.com)",
       "widget_primary_color": "Color principal del widget (hex, ej: #2563eb)",
-      "widget_title": "Título del widget (por defecto: nombre del restaurante)"
-    }
+      "widget_title": "Título del widget (por defecto: nombre del restaurante)",
+      "tables_enabled": "Escribe true o false. true: cada reserva recibe una mesa concreta y las gestionas en el panel de mesas. false: se reserva por capacidad de cada zona (interior y terraza), no se asigna ninguna mesa y el cliente no ve ninguna."
+    },
+    "exportTitle": "Exportar reservas futuras",
+    "exportSubtitle": "Copia de seguridad antes de cambiar la configuración de mesas",
+    "exportButton": "Descargar CSV",
+    "exportError": "Error exportando",
+    "exportWarning": "Contiene nombres y teléfonos de clientes. Es un registro, no una forma de restaurar: si vuelves a crear una reserva recibirá un identificador nuevo y el depósito ya cobrado quedaría ligado a la reserva antigua. El fichero incluye los identificadores de Stripe para poder reconectarlo."
   },
   "calendar": {
     "today": "Hoy",
@@ -512,7 +546,12 @@
     "infoViewDay": "Ver el horario detallado de reservas de ese día",
     "infoDefault": "Los días sin configuración utilizarán el horario por defecto (12:00-15:00 y 19:00-22:30)",
     "reservation": "reserva",
-    "reservations_plural": "reservas"
+    "reservations_plural": "reservas",
+    "editedDay": "Día editado individualmente",
+    "editedHours": "horario",
+    "editedSlots": "límites de franja",
+    "editedPayment": "pago",
+    "noSittings": "sin franjas"
   },
   "weeklySchedule": {
     "title": "Configuración Semanal",
@@ -615,5 +654,27 @@
       "expired": "Expirado",
       "bypassed": "Omitido"
     }
+  },
+  "dayRules": {
+    "lunch": "Comida",
+    "dinner": "Cena",
+    "slots": "Franjas",
+    "payment": "Pago",
+    "reset": "Volver a heredar",
+    "inheritedSlots": "hereda ({{count}} franjas)",
+    "ownSlots": "{{count}} franjas · {{caps}}",
+    "customiseSlots": "Personalizar las franjas de este día",
+    "noLimit": "sin límite",
+    "people": "personas",
+    "addSlot": "Añadir franja",
+    "inheritedDeposit": "hereda ({{amount}} {{currency}}, {{people}}+)",
+    "inheritedNoDeposit": "hereda (sin depósito)",
+    "noDepositHere": "sin depósito este día",
+    "ownDeposit": "{{amount}} {{currency}} · a partir de {{people}}",
+    "depositRequired": "Pedir depósito",
+    "amountPerPerson": "Importe por persona",
+    "fromPeople": "A partir de",
+    "lastSlot": "No se puede quitar el último turno. Para cerrar este servicio, hazlo desde el horario.",
+    "ownerOnlyDeposits": "Solo el propietario puede cambiar los depósitos."
   }
 }

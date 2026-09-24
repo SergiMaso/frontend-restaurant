@@ -1,0 +1,56 @@
+name: Tests
+
+# Runs on every pull request and on pushes to the branches that matter. Deploy
+# lives in deploy.yml and is triggered separately — this workflow never deploys,
+# so a red run blocks nothing on its own. Making it required is a branch
+# protection setting, deliberately left to a human.
+on:
+  pull_request:
+  push:
+    branches:
+      - development
+      - aws_multitenant
+
+jobs:
+  test:
+    name: Tests, types and build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npx vitest run
+
+      - name: Type check
+        # tsconfig.app.json, NOT tsconfig.json. The latter is a solution file —
+        # "files": [] plus references — so `tsc -p tsconfig.json` checks zero
+        # files and passes no matter what is broken. This step was written that
+        # way once and reported success while 148 files went unchecked.
+        #
+        # A real gate: 0 errors as of this commit.
+        run: npx tsc --noEmit -p tsconfig.app.json
+
+      - name: Build
+        # Catches what tsc does not: a broken import, a missing asset, a Vite
+        # config that only fails when it actually bundles.
+        run: npm run build
+
+      - name: Lint (informational)
+        # NOT a gate. The repository currently has 84 eslint errors and 15
+        # warnings, all pre-existing; failing on them would make this workflow
+        # red from its first run and train everyone to ignore it. Printed so the
+        # number is visible and can be driven down, and this step should become
+        # a gate once it reaches zero.
+        continue-on-error: true
+        run: npm run lint

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getClientConfigs, updateClientConfig, createStripeConnectAccount, getStripeConnectStatus } from "@/services/api";
+import { getClientConfigs, updateClientConfig, createStripeConnectAccount, getStripeConnectStatus, exportFutureAppointments } from "@/services/api";
 import {
   Card,
   CardContent,
@@ -27,6 +27,44 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+/**
+ * How much the WhatsApp bot thinks before answering.
+ *
+ * low/medium/high send the call through OpenAI's Responses API with reasoning on;
+ * none (or empty, which is what restaurants created before this setting have)
+ * keeps the old Chat Completions call with no reasoning. Chat Completions refuses
+ * reasoning together with the booking tools, which is why it is not simply a
+ * parameter on the old call.
+ *
+ * Must match AI_REASONING_EFFORTS in the backend's app.py and the column's CHECK
+ * constraint: anything else is refused with a 400. test_frontend_contracts.py
+ * keeps the three in step.
+ */
+const REASONING_EFFORT_OPTIONS = [
+  { value: 'none', label: 'none — no reasoning' },
+  { value: 'low', label: 'low' },
+  { value: 'medium', label: 'medium (recommended)' },
+  { value: 'high', label: 'high' },
+];
+
+/**
+ * The voice providers the backend knows how to connect to.
+ *
+ * `openai` is the Realtime API: one model hears, thinks and speaks. `openai_live`
+ * is GPT-Live, which splits those — the voice model talks and a separate backend
+ * model reasons and books, configured under gpt_live_backend_model. `google` is
+ * Gemini Live.
+ *
+ * Kept in step with the branches in app.py's voice_incoming: a value that is not
+ * one of these reaches `Unknown voice_provider` and the caller hears the error
+ * message instead of the assistant.
+ */
+const VOICE_PROVIDER_OPTIONS = [
+  { value: 'openai', label: 'OpenAI Realtime' },
+  { value: 'openai_live', label: 'OpenAI GPT-Live' },
+  { value: 'google', label: 'Google Gemini Live' },
+];
+
 // IANA timezones we explicitly support. Anything else can be typed in via
 // the manual override at the bottom of the dropdown.
 const TIMEZONE_OPTIONS = [
@@ -46,7 +84,8 @@ const TIMEZONE_OPTIONS = [
   "America/Argentina/Buenos_Aires",
 ];
 import { useToast } from "@/hooks/use-toast";
-import { Settings, Save, Pencil, ExternalLink, CheckCircle, AlertCircle, Copy, Check } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Settings, Save, Pencil, ExternalLink, CheckCircle, AlertCircle, Copy, Check, Download } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRestaurantConfig } from "@/hooks/useRestaurantConfig";
@@ -60,10 +99,11 @@ const ClientConfigManager = () => {
   const queryClient = useQueryClient();
   const { user, isSuperadmin } = useAuth();
   const { paymentEnabled, restaurantName } = useRestaurantConfig();
-  const { selectedRestaurant } = useRestaurant();
+  const { selectedRestaurant , refreshRestaurants } = useRestaurant();
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [connectingStripe, setConnectingStripe] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [snippetCopied, setSnippetCopied] = useState<'js'|'iframe'|null>(null);
   const [snippetTab, setSnippetTab] = useState<'js'|'iframe'>('js');
 
@@ -84,13 +124,20 @@ const ClientConfigManager = () => {
   const updateMutation = useMutation({
     mutationFn: ({ key, value }: { key: string; value: string }) =>
       updateClientConfig(key, value),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       toast({
         title: t("config.updateSuccess"),
         description: t("config.updateSuccessDesc"),
       });
       // Force immediate refetch instead of just invalidating
       refetch();
+      // tables_enabled also lives on the restaurant row, which is where the tables tab
+      // and the day schedule read it from — /api/config is admin-only, so they cannot.
+      // Without this the mode would look changed here and stale everywhere else until
+      // the next page load.
+      if (variables.key === 'tables_enabled') {
+        refreshRestaurants();
+      }
       setEditingKey(null);
     },
     onError: (error: Error) => {
@@ -136,8 +183,14 @@ const ClientConfigManager = () => {
     }
   };
 
-  // Agrupar configuracions per categoria (widget only visible to superadmins)
-  const visibleConfigs = isSuperadmin ? configs : configs.filter(c => c.category !== 'widget');
+  // Agrupar configuracions per categoria.
+  // Superadmin-only: the widget category, and tables_enabled — that one decides whether
+  // the restaurant seats by table at all, and the backend refuses it from anyone else, so
+  // showing an admin a control that always 403s would be worse than not showing it.
+  const SUPERADMIN_ONLY_KEYS = ['tables_enabled'];
+  const visibleConfigs = isSuperadmin
+    ? configs
+    : configs.filter(c => c.category !== 'widget' && !SUPERADMIN_ONLY_KEYS.includes(c.key));
   const groupedConfigs = visibleConfigs.reduce((acc, config) => {
     if (!acc[config.category]) {
       acc[config.category] = [];
@@ -245,7 +298,63 @@ const ClientConfigManager = () => {
                           </TableCell>
                           <TableCell>
                             {editingKey === config.key ? (
-                              config.key === 'timezone' ? (
+                              // A boolean is a switch, not a text box. The backend coerces
+                              // whatever it receives with `value.lower() in ('true','1','yes')`,
+                              // so typing "activat" or "Activado" — the obvious thing to
+                              // write next to a description in your own language — saved
+                              // False and silently turned the setting off.
+                              config.value_type === 'bool' ? (
+                                <div className="flex items-center gap-2">
+                                  <Switch
+                                    // Stored as Python's 'True'/'False', typed as
+                                    // 'true'/'false' by this switch — compare loosely so
+                                    // the toggle does not start in the wrong position.
+                                    checked={String(editValue).toLowerCase() === 'true'}
+                                    onCheckedChange={(checked) => setEditValue(checked ? 'true' : 'false')}
+                                  />
+                                  <span className="text-sm text-muted-foreground">
+                                    {String(editValue).toLowerCase() === 'true' ? 'true' : 'false'}
+                                  </span>
+                                </div>
+                              ) : config.key === 'voice_provider' ? (
+                                // A typed free-text value here silently breaks voice:
+                                // the backend raises "Unknown voice_provider" and the
+                                // call falls through to the error TwiML, so a typo is
+                                // only discovered by someone phoning the restaurant.
+                                <Select value={editValue} onValueChange={setEditValue}>
+                                  <SelectTrigger className="max-w-[220px]">
+                                    <SelectValue placeholder="Select provider" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {VOICE_PROVIDER_OPTIONS.map((option) => (
+                                      <SelectItem key={option.value} value={option.value}>
+                                        {option.label}
+                                      </SelectItem>
+                                    ))}
+                                    {editValue
+                                      && !VOICE_PROVIDER_OPTIONS.some(o => o.value === editValue) && (
+                                      // Never hide what is actually stored, even if it is
+                                      // a value this build does not know about.
+                                      <SelectItem value={editValue}>{editValue} (current)</SelectItem>
+                                    )}
+                                  </SelectContent>
+                                </Select>
+                              ) : config.key === 'ai_reasoning_effort' ? (
+                                // A list, not free text: the API refuses anything
+                                // outside these four with a 400.
+                                <Select value={editValue} onValueChange={setEditValue}>
+                                  <SelectTrigger className="max-w-[220px]">
+                                    <SelectValue placeholder="none — no reasoning" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {REASONING_EFFORT_OPTIONS.map((option) => (
+                                      <SelectItem key={option.value} value={option.value}>
+                                        {option.label}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              ) : config.key === 'timezone' ? (
                                 <Select value={editValue} onValueChange={setEditValue}>
                                   <SelectTrigger className="max-w-[220px]">
                                     <SelectValue placeholder="Select timezone" />
@@ -475,6 +584,48 @@ const ClientConfigManager = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Superadmin only: this file leaves the system carrying customer names and phone
+          numbers, and it is trivially forwardable once downloaded. */}
+      {isSuperadmin && (
+        <Card className="border-border/50 shadow-card">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Download className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <CardTitle>{t("config.exportTitle")}</CardTitle>
+                <CardDescription>{t("config.exportSubtitle")}</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">{t("config.exportWarning")}</p>
+            <Button
+              variant="outline"
+              disabled={exporting}
+              onClick={async () => {
+                setExporting(true);
+                try {
+                  await exportFutureAppointments();
+                } catch (error) {
+                  toast({
+                    title: t("config.exportError"),
+                    description: (error as Error).message,
+                    variant: "destructive",
+                  });
+                } finally {
+                  setExporting(false);
+                }
+              }}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              {t("config.exportButton")}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

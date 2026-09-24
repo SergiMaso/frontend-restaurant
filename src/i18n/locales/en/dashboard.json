@@ -140,7 +140,21 @@
     "deleteError": "Error deleting table",
     "saveSuccess": "Table saved",
     "saveError": "Error saving table",
-    "saveChanges": "Save Changes"
+    "saveChanges": "Save Changes",
+    "setCapacity": "Capacity per area",
+    "setCapacityHelp": "Set how many people each area holds. The tables are generated for you.",
+    "setCapacityWarning": "This replaces every current table.",
+    "setCapacityConfirm": "Generate",
+    "capacityGenerated": "{{count}} seats generated",
+    "capacityBlocked": "{{count}} future bookings still hold a table. Move or cancel them first.",
+    "setCapacityApply": "Apply",
+    "capacityGeneratedMoved": "{{count}} seats generated and {{moved}} bookings moved",
+    "capacityWillMove": "{{count}} future bookings will be moved onto the new seats",
+    "capacityWillMoveHelp": "They keep their date, time and payment — only where they sit changes. Nothing has been changed yet.",
+    "capacityNoFit": "{{count}} bookings do not fit. Nothing was changed.",
+    "capacityNoFitPeople": "{{count}} people",
+    "capacityNoSeats": "At least one seat is needed in some area. To close, use the opening hours.",
+    "capacityReplacesPlan": "This replaces the current table plan ({{count}} tables, with their pairings). No bookings need to move."
   },
   "reservations": {
     "title": "Reservation Management",
@@ -210,8 +224,22 @@
     "disabledManual": "Disabled (manual)",
     "warningOverCapacity": "Warning: {{people}} people for {{seats}} seats (manual override, +{{over}}).",
     "configuredMax": "Configured max: {{max}}",
-    "overrideActive": "(override active: {{people}})",
-    "warningAboveConfiguredMax": "Warning: {{people}} people is above configured max ({{max}}). Manual frontend override applied."
+    "overrideActive": "— above the maximum, which staff are allowed to exceed",
+    "warningAboveConfiguredMax": "Warning: {{people}} people is above configured max ({{max}}). Manual frontend override applied.",
+    "askForDeposit": "Ask for a deposit to confirm",
+    "depositPerPerson": "Amount per person",
+    "depositTotal": "= {{total}} {{currency}} for {{people}} people",
+    "depositHelp": "A payment link will be sent by WhatsApp. The booking is confirmed once it is paid.",
+    "depositLinkSent": "Reservation created. Payment link for {{amount}} {{currency}} sent by WhatsApp.",
+    "depositLinkNotSent": "Reservation created and deposit requested, but the WhatsApp could not be sent. Link: {{url}}",
+    "createdButDepositFailed": "Reservation created, but without a deposit: {{reason}}",
+    "exceedsAreaCapacity": "{{people}} people do not fit in {{area}}: it holds {{seats}} seats in all.",
+    "exceedsLargestArea": "{{people}} people do not fit in any area: the largest holds {{seats}}.",
+    "walkInSnappedOver": "It will be booked into the {{slot}} sitting, which will be {{n}} people over.",
+    "walkInSnapped": "It will be booked into the {{slot}} sitting.",
+    "capNotASitting": "This time is not one of the sittings ({{sittings}}), so it will not be saved.",
+    "capOverflow": "This time is not one of the sittings and neither neighbouring sitting has room. It can be done, but the {{slot}} sitting will be {{n}} people over.",
+    "capExceeded": "The {{slot}} sitting only has {{left}} places left."
   },
   "customers": {
     "title": "Customers",
@@ -268,7 +296,8 @@
     "languageLabel": "Preferred Language",
     "selectLanguage": "Select language",
     "saveChanges": "Save Changes",
-    "yesDelete": "Yes, delete"
+    "yesDelete": "Yes, delete",
+    "storedId": "Stored identifier (not a phone number)"
   },
   "users": {
     "title": "User Management",
@@ -310,7 +339,7 @@
     "userReactivatedDesc": "User has been reactivated successfully",
     "userDeletedDesc": "User has been permanently deleted",
     "deactivateError": "Could not deactivate user",
-    "reactivateError": "Could not reactivate user",
+    "reactivateError": "Error reactivating user",
     "linkCopiedDesc": "Link has been copied to clipboard",
     "emailRequired": "Email is required",
     "registerLink": "Registration link",
@@ -323,7 +352,6 @@
     "deleteSuccess": "User deleted",
     "deleteError": "Error deleting user",
     "reactivateSuccess": "User reactivated",
-    "reactivateError": "Error reactivating user",
     "confirmDelete": "Are you sure you want to delete this user?",
     "confirmReactivate": "Do you want to reactivate this user?",
     "loadingUsers": "Loading users...",
@@ -459,7 +487,8 @@
       "google_api_key": "Google API Key (leave empty to use shared)",
       "ai_model": "AI model (e.g., gpt-4o-mini)",
       "ai_temperature": "AI temperature (0.0-1.0, lower=more consistent)",
-      "ai_max_tokens": "Maximum AI response tokens",
+      "ai_max_tokens": "Maximum AI response tokens (not applied when the AI reasons)",
+      "ai_reasoning_effort": "WhatsApp bot reasoning: none (no reasoning), low, medium (recommended) or high. Empty = no reasoning",
       "ai_system_prompt": "AI system prompt",
       "whatsapp_enabled": "WhatsApp enabled",
       "voice_enabled": "Voice calls enabled",
@@ -480,8 +509,14 @@
       "widget_enabled": "Booking widget enabled",
       "widget_website_url": "Your website URL (for CORS, e.g. https://yourrestaurant.com)",
       "widget_primary_color": "Widget primary colour (hex, e.g. #2563eb)",
-      "widget_title": "Widget title (default: restaurant name)"
-    }
+      "widget_title": "Widget title (default: restaurant name)",
+      "tables_enabled": "Write true or false. true: every booking gets a specific table, managed in the tables panel. false: booking goes by the capacity of each area (inside and terrace), no table is assigned and the guest is never shown one."
+    },
+    "exportTitle": "Export future bookings",
+    "exportSubtitle": "A copy to keep before changing the table configuration",
+    "exportButton": "Download CSV",
+    "exportError": "Export failed",
+    "exportWarning": "Contains customer names and phone numbers. It is a record, not a way to restore: re-entering a booking gives it a new id, and a deposit already taken would stay tied to the old one. The file includes the Stripe ids so that link can be repointed."
   },
   "calendar": {
     "today": "Today",
@@ -511,7 +546,12 @@
     "infoViewDay": "View detailed reservation schedule for this day",
     "infoDefault": "Days without configuration will use default hours (12:00-15:00 and 19:00-22:30)",
     "reservation": "reservation",
-    "reservations_plural": "reservations"
+    "reservations_plural": "reservations",
+    "editedDay": "Edited on its own",
+    "editedHours": "hours",
+    "editedSlots": "slot limits",
+    "editedPayment": "payment",
+    "noSittings": "no sittings"
   },
   "weeklySchedule": {
     "title": "Weekly Configuration",
@@ -614,5 +654,27 @@
       "expired": "Expired",
       "bypassed": "Bypassed"
     }
+  },
+  "dayRules": {
+    "lunch": "Lunch",
+    "dinner": "Dinner",
+    "slots": "Slots",
+    "payment": "Payment",
+    "reset": "Back to inherited",
+    "inheritedSlots": "inherited ({{count}} slots)",
+    "ownSlots": "{{count}} slots · {{caps}}",
+    "customiseSlots": "Customise this day's slots",
+    "noLimit": "no limit",
+    "people": "people",
+    "addSlot": "Add slot",
+    "inheritedDeposit": "inherited ({{amount}} {{currency}}, {{people}}+)",
+    "inheritedNoDeposit": "inherited (no deposit)",
+    "noDepositHere": "no deposit on this day",
+    "ownDeposit": "{{amount}} {{currency}} · from {{people}}",
+    "depositRequired": "Ask for a deposit",
+    "amountPerPerson": "Amount per person",
+    "fromPeople": "From",
+    "lastSlot": "The last sitting can't be removed. To close this service, do it from the opening hours.",
+    "ownerOnlyDeposits": "Only the owner can change deposits."
   }
 }

@@ -21,13 +21,15 @@ import {
 import { toast } from "sonner";
 import { Trash2, Loader2 } from "lucide-react";
 import { format, addHours, parse } from "date-fns";
-import { getTables, getCustomers, getAppointments, createAppointment, updateAppointment, deleteAppointment, updateCustomer, markAppointmentSeated } from "@/services/api";
+import { getTables, getCustomers, getAppointments, createAppointment, updateAppointment, deleteAppointment, updateCustomer, markAppointmentSeated, getPaymentTerms, getSlotCapacity, getTimeSlots } from "@/services/api";
 import DeleteReservationDialog from "@/components/DeleteReservationDialog";
 import CustomerAutocomplete from "@/components/CustomerAutocomplete";
 import { useRestaurantConfig } from "@/hooks/useRestaurantConfig";
+import { useRestaurant } from "@/contexts/RestaurantContext";
 import { useDefaultPhoneCountry } from "@/hooks/useDefaultPhoneCountry";
 import { useTenantKey } from "@/hooks/useTenantKey";
 import { Checkbox } from "@/components/ui/checkbox";
+import { pickOfferedTime, stayMinutes } from "@/lib/reservationTime";
 
 interface ReservationDialogProps {
   open: boolean;
@@ -59,6 +61,20 @@ const generateTimeSlots = (mode: string, intervalMinutes: number, fixedLunch: st
   }
 };
 
+/**
+ * A booking timestamp as a Date, or null when it cannot be read.
+ *
+ * Strips the timezone suffix so the value is compared in the restaurant's own
+ * wall-clock terms, like the rest of this dialog. Returns null rather than an
+ * Invalid Date, because Invalid Date compares false against everything and so
+ * reads silently as "does not overlap".
+ */
+const parseBookingInstant = (value?: string | null): Date | null => {
+  if (!value) return null;
+  const parsed = new Date(String(value).split("+")[0].split("Z")[0]);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
 const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defaultTableId, defaultDate }: ReservationDialogProps) => {
   const { t } = useTranslation("dashboard");
   const { t: tCommon } = useTranslation("common");
@@ -77,7 +93,7 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
   const defaultCountry = useDefaultPhoneCountry();
 
   // Generar time slots disponibles
-  const availableTimeSlots = generateTimeSlots(
+  const configuredTimeSlots = generateTimeSlots(
     timeSlotsMode,
     timeSlotIntervalMinutes,
     fixedTimeSlotsLunch,
@@ -89,14 +105,18 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
     maxPeoplePerBooking,
     defaultBookingDuration,
     timeSlotsMode,
-    availableTimeSlots: availableTimeSlots.length
+    availableTimeSlots: configuredTimeSlots.length
   });
 
   const [clientName, setClientName] = useState("");
   const [phone, setPhone] = useState("");
   const [numPeople, setNumPeople] = useState("");
   const [reservationDate, setReservationDate] = useState(format(new Date(), "yyyy-MM-dd"));
-  const [reservationTime, setReservationTime] = useState(availableTimeSlots[0] || "20:00");
+  // The configured list, not the day's: the day's sittings are fetched for a date that
+  // does not exist yet at this point, and the effect below snaps the time onto them the
+  // moment they arrive. Reaching for them here is a temporal dead zone — the whole
+  // dialog throws before it renders, which no source-reading test can see.
+  const [reservationTime, setReservationTime] = useState(configuredTimeSlots[0] || "20:00");
   const [endTime, setEndTime] = useState("");
   const [autoEndTime, setAutoEndTime] = useState(true);
   const [language, setLanguage] = useState("");
@@ -113,8 +133,42 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
   const [languageTouched, setLanguageTouched] = useState(false);
   const [areaPreference, setAreaPreference] = useState<"auto" | "inside" | "terrace">("auto");
   const [selectedTableIds, setSelectedTableIds] = useState<number[]>([]);
+
+  // Capacity mode models seats as one-person tables, so the picker would be a scroll of
+  // forty identical "tables" nobody chooses between — the engine assigns them. The area
+  // is the only thing left worth asking, and only when there is more than one to pick.
+  const { selectedRestaurant } = useRestaurant();
+  const tablesEnabled = selectedRestaurant?.tables_enabled ?? true;
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isWalkIn, setIsWalkIn] = useState(false);
+
+  // The sittings for the DATE, not the restaurant's global list. A date or weekday can
+  // set its own, and the save resolves that cascade — so building the dropdown from the
+  // global config listed times the save would reject and hid the ones it would accept.
+  //
+  // Only in fixed mode. Interval mode has no sitting list to resolve, and the grid
+  // generated here covers hours staff are allowed to book outside opening times, so
+  // replacing it would take something away.
+  const { data: daySittings, isFetching: sittingsLoading } = useQuery({
+    queryKey: useTenantKey(["time-slots", reservationDate]),
+    queryFn: () => getTimeSlots(reservationDate),
+    enabled: open && timeSlotsMode === "fixed" && !!reservationDate,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const availableTimeSlots =
+    timeSlotsMode === "fixed" && daySittings?.slots?.length
+      ? daySittings.slots
+      : configuredTimeSlots;
+
+  // Deposit controls. Two separate "staff decided" flags: one for the box, one for the
+  // figure. A single flag meant ticking the box froze the suggested amount, so moving
+  // the booking to another day or party size kept the previous day's price — and
+  // re-ticking sent it. Only a figure staff actually typed is kept.
+  const [askForDeposit, setAskForDeposit] = useState(false);
+  const [depositAmount, setDepositAmount] = useState("");
+  const [askTouched, setAskTouched] = useState(false);
+  const [amountTouched, setAmountTouched] = useState(false);
   const [walkInArea, setWalkInArea] = useState<"all" | "inside" | "terrace">("all");
 
   const tablesKey = useTenantKey(["tables"]);
@@ -124,6 +178,142 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
     queryKey: tablesKey,
     queryFn: getTables,
   });
+
+  // What the day's rules would charge for this booking. Only used to suggest a figure
+  // and to decide whether the deposit controls exist at all — staff can type anything
+  // over it. Editing an existing reservation is out of scope: this is for new bookings.
+  // Walk-ins are excluded on purpose: the customer is already standing at the door,
+  // so a deposit link they would have to open on their phone before being seated is
+  // not a thing anyone wants. (They also compute their own time inside the submit
+  // handler, which is not in scope here.)
+  const peopleForTerms = Number.parseInt(numPeople, 10) || 1;
+  const { data: paymentTerms, isFetching: paymentTermsLoading } = useQuery({
+    queryKey: useTenantKey([
+      "payment-terms", reservationDate, reservationTime, String(peopleForTerms),
+    ]),
+    queryFn: () => getPaymentTerms(reservationDate, reservationTime, peopleForTerms),
+    enabled: !reservation && !isWalkIn && open && !!reservationDate && !!reservationTime,
+    staleTime: 60 * 1000,
+    // Keep the previous terms while the new ones load. Without this the deposit
+    // controls vanished for that moment, and saving then dropped a ticked deposit
+    // with a "created" toast.
+    placeholderData: (previous) => previous,
+  });
+
+  // Staff bookings bypass the arrival cap on purpose — the phone rings, it is a
+  // regular — so the create call will not refuse and there is nothing to react to
+  // afterwards. This is the only moment the cap can be mentioned at all.
+  //
+  // A walk-in does NOT book reservationTime: the submit handler builds its own date and
+  // time from the clock, so asking about reservationTime would warn about a slot the
+  // booking never touches. Mirrored here, and re-read while the dialog sits open so a
+  // walk-in typed at 13:29 and confirmed at 13:31 is judged on the right slot.
+  const [walkInNow, setWalkInNow] = useState(() => new Date());
+  useEffect(() => {
+    if (!open || !isWalkIn) return;
+    setWalkInNow(new Date());
+    const tick = setInterval(() => setWalkInNow(new Date()), 60 * 1000);
+    return () => clearInterval(tick);
+  }, [open, isWalkIn]);
+
+  const capDate = isWalkIn ? format(walkInNow, "yyyy-MM-dd") : reservationDate;
+  const capTime = isWalkIn
+    ? `${String(walkInNow.getHours()).padStart(2, "0")}:${String(walkInNow.getMinutes()).padStart(2, "0")}`
+    : reservationTime;
+
+  // What the save will use: an explicit end time when staff set one, otherwise the
+  // restaurant's default. Previewing with the default while the booking carries its own
+  // puts the warning and the booking on different lengths — and a longer table reaches a
+  // sitting a shorter one does not.
+  const capStayMinutes = (() => {
+    if (autoEndTime || !endTime || !capTime) return undefined;
+    // The same measure the save uses, so a stay past midnight is not previewed as
+    // the default length while it is stored as three hours.
+    return stayMinutes(capTime, endTime);
+  })();
+
+  const { data: slotCapacity } = useQuery({
+    queryKey: useTenantKey([
+      "slot-capacity", capDate, capTime, String(peopleForTerms),
+      String(reservation?.id ?? ""), String(isWalkIn), String(capStayMinutes ?? ""),
+    ]),
+    queryFn: () => getSlotCapacity(capDate, capTime, peopleForTerms, reservation?.id,
+                                   isWalkIn, capStayMinutes),
+    enabled: open && !!capDate && !!capTime,
+    staleTime: 30 * 1000,
+  });
+
+  // Only worth a word when this booking is the one going over. A slot that is merely
+  // busy is the restaurant's normal state and saying so every time trains staff to
+  // click past the warning that matters.
+  const capWarning = (() => {
+    if (!slotCapacity?.applies || slotCapacity.unavailable) return null;
+    // A walk-in is moved onto a real sitting, so say where they are actually going —
+    // staff are looking at 13:20 on screen and the booking will read 13:30.
+    if (slotCapacity.snapped_from) {
+      if (slotCapacity.overflow) {
+        return t(
+          "reservations.walkInSnappedOver",
+          "S'apuntarà al torn de les {{slot}}, que quedarà {{n}} persones per sobre.",
+        )
+          .replace("{{slot}}", slotCapacity.assigned ?? capTime)
+          .replace("{{n}}", String(slotCapacity.over_by ?? 0));
+      }
+      return t("reservations.walkInSnapped", "S'apuntarà al torn de les {{slot}}.")
+        .replace("{{slot}}", slotCapacity.assigned ?? capTime);
+    }
+
+    // Said before the capacity messages because it is not a warning at all: the save
+    // will fail. How full a sitting is has nothing to say about a time that is not one.
+    if (slotCapacity.bookable === false) {
+      return t(
+        "reservations.capNotASitting",
+        "Aquesta hora no és cap dels torns ({{sittings}}), i el sistema no la desarà.",
+      ).replace("{{sittings}}", (slotCapacity.sittings || []).join(", "));
+    }
+    if (slotCapacity.overflow) {
+      return t(
+        "reservations.capOverflow",
+        "Aquesta hora no és cap dels torns i cap dels dos del costat té lloc. Es pot fer, però el torn de les {{slot}} quedarà {{n}} persones per sobre.",
+      )
+        .replace("{{slot}}", slotCapacity.assigned ?? capTime)
+        .replace("{{n}}", String(slotCapacity.over_by ?? 0));
+    }
+    if (slotCapacity.would_exceed) {
+      const left = slotCapacity.remaining ?? 0;
+      return t("reservations.capExceeded", "El torn de les {{slot}} només té {{left}} places lliures.")
+        .replace("{{slot}}", slotCapacity.assigned ?? capTime)
+        .replace("{{left}}", String(left));
+    }
+    return null;
+  })();
+
+  // Every deposit control hangs off this. Nothing about payments is rendered when the
+  // restaurant has no Stripe set up — an unusable box invites staff to tick it and then
+  // wonder why nothing happened.
+  const depositAvailable = !isWalkIn && !reservation && !!paymentTerms?.payments_available;
+
+  // Suggest the day's amount and whether it applies, but never overwrite what staff
+  // chose: the figure they typed, or the box they ticked or unticked.
+  useEffect(() => {
+    if (!depositAvailable) return;
+    if (!amountTouched) {
+      const suggested = paymentTerms?.amount_per_person;
+      setDepositAmount(suggested != null && suggested > 0 ? String(suggested) : "");
+    }
+    if (!askTouched) setAskForDeposit(!!paymentTerms?.would_apply);
+  }, [depositAvailable, paymentTerms?.amount_per_person, paymentTerms?.would_apply,
+      amountTouched, askTouched]);
+
+  // A fresh dialog starts from the day's rules again.
+  useEffect(() => {
+    if (!open) {
+      setAskTouched(false);
+      setAmountTouched(false);
+      setAskForDeposit(false);
+      setDepositAmount("");
+    }
+  }, [open]);
 
   // DEBUG: Mostrar taules disponibles
   console.log("🔍 [ReservationDialog] Taules disponibles:", {
@@ -158,11 +348,20 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
       // Has a confirmed reservation overlapping the walk-in window (now → now + defaultDuration)
       let overlaps = false;
       if (!isSeated && (appt.status === "confirmed" || appt.status === "pending_payment")) {
-        try {
-          const rStart = new Date(appt.start_time.split("+")[0].split("Z")[0]);
-          const rEnd = new Date(appt.end_time.split("+")[0].split("Z")[0]);
+        const rStart = parseBookingInstant(appt.start_time);
+        const rEnd = parseBookingInstant(appt.end_time);
+        // Unreadable times mean we cannot say when this booking runs, so treat it
+        // as in the way. This was an empty `catch {}`, which left overlaps false —
+        // the table then looked free and a walk-in could be seated on top of a
+        // real reservation, with nothing logged. The catch never even fired for a
+        // malformed string: new Date("nonsense") returns Invalid Date rather than
+        // throwing, and every comparison with it is false, so that read as "free"
+        // too. Only a missing value reached the catch at all.
+        if (!rStart || !rEnd) {
+          overlaps = true;
+        } else {
           overlaps = rStart < walkInEnd && rEnd > now;
-        } catch {}
+        }
       }
       if (isSeated || overlaps) {
         (appt.table_ids || (appt.table_id ? [appt.table_id] : [])).forEach((id: number) => occupied.add(id));
@@ -260,7 +459,12 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
       setNumPeople("");
       setSelectedTableIds(defaultTableId ? [defaultTableId] : []);
       setReservationDate(defaultDate ? format(defaultDate, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd"));
-      setReservationTime(defaultTime || "20:00");
+      // The first slot the restaurant actually offers, not a hardcoded 20:00. In fixed
+      // mode the dropdown lists only the configured sittings, so a restaurant whose
+      // lunch is 13:00/14:30 opened this dialog showing a time absent from its own
+      // list — and saving without touching it booked off-slot, which is precisely the
+      // case the arrival cap then has to treat as a deliberate override.
+      setReservationTime(defaultTime || availableTimeSlots[0] || "20:00");
       setEndTime("");
       setAutoEndTime(true);
       // New reservation, customer not yet known: the restaurant's configured
@@ -278,6 +482,31 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
     // tables, date, time and languageTouched while staff are typing. The late
     // config is handled by the narrow effect below instead.
   }, [reservation, open, defaultTime, defaultTableId, defaultDate]);
+
+  // The restaurant's config arrives asynchronously, and the reset above does not wait
+  // for it: opening the dialog first computes availableTimeSlots from whatever the hook
+  // returns while loading, so the time can settle on a provisional 12:00 (interval
+  // default) or 20:00 and stay there once the real slots arrive. In fixed mode the
+  // backend rejects any time outside the configured sittings, so that provisional value
+  // is not merely odd — the save fails with "l'hora no està disponible".
+  //
+  // Only ever corrects a value the dropdown does not offer, so a time staff picked
+  // themselves is never moved. Skipped when editing: an existing booking may sit on an
+  // off-slot time from before the sittings were configured, and snapping it would
+  // silently reschedule somebody.
+  //
+  // Not while the new date's sittings are loading: the list then falls back to the
+  // restaurant-wide one, which may lack a time only that day offers, and the time
+  // staff had picked was reset to the default with no notice.
+  useEffect(() => {
+    if (!open || reservation || configLoading) return;
+    if (timeSlotsMode === "fixed" && sittingsLoading) return;
+    if (!availableTimeSlots.length) return;
+    if (availableTimeSlots.includes(reservationTime)) return;
+    // The clicked cell's time only if the day offers it; otherwise the nearest sitting.
+    setReservationTime(pickOfferedTime(availableTimeSlots, defaultTime));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, reservation, configLoading, sittingsLoading, availableTimeSlots.join(','), defaultTime]);
 
   // Fill in the language only once, and only if nothing is set yet — covers the
   // dialog opening before the restaurant config query resolves. Never overwrites
@@ -347,6 +576,26 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
       queryClient.invalidateQueries({ queryKey: customersKey });
       if (seatingFailed) {
         toast.warning(t("reservations.walkInSeatingFailed"));
+      } else if (response?.payment_error) {
+        // The booking saved; only the deposit failed. Said explicitly and left on
+        // screen, because "reservation created" alone would hide it and staff would
+        // believe a deposit was requested when none was.
+        toast.warning(
+          t("reservations.createdButDepositFailed", { reason: response.payment_error }),
+          { duration: 12000 },
+        );
+      } else if (response?.requires_payment) {
+        toast.success(
+          response.payment_link_sent
+            ? t("reservations.depositLinkSent", {
+                amount: response.payment_amount,
+                currency: response.payment_currency,
+              })
+            // The link is real either way — staff can read it out — so this is a
+            // warning, not an error, and it must not claim delivery.
+            : t("reservations.depositLinkNotSent", { url: response.payment_short_url }),
+          { duration: response.payment_link_sent ? 6000 : 20000 },
+        );
       } else {
         toast.success(reservation ? t("reservations.updateSuccess") : t("reservations.createSuccess"));
       }
@@ -414,7 +663,20 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
       // value would overwrite a newer customer preference.
       ...(!reservation || languageTouched ? { language } : {}),
       area_preference: isWalkIn ? (walkInArea === "all" ? "auto" : walkInArea) : areaPreference,
+      // Told explicitly rather than inferred from the "Walk-in" name and "walkin"
+      // phone: the backend moves the arrival onto the nearest sitting, and deciding
+      // that from a name a person could type themselves is not a rule anyone can rely
+      // on. In fixed mode this is also what lets the booking through at all.
+      ...(isWalkIn ? { walk_in: true } : {}),
     };
+
+    // Only sent when the box is both available and ticked. The amount goes as typed;
+    // the server refuses a blank or zero rather than reading it as "no deposit",
+    // because ticking the box says a deposit IS wanted — unticking is how you say no.
+    if (depositAvailable && askForDeposit) {
+      dataToSend.send_payment_link = true;
+      dataToSend.deposit_amount_per_person = Number.parseFloat(depositAmount);
+    }
 
     // IMPORTANT: Calcular duration_hours per al backend
     // Walk-ins always use the default duration — endTime/reservationTime are stale state values
@@ -423,21 +685,10 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
       dataToSend.duration_hours = defaultBookingDuration;
     } else if (endTime && reservationTime) {
       try {
-        // Parsejar les hores
-        const [startHour, startMin] = reservationTime.split(':').map(Number);
-        const [endHour, endMin] = endTime.split(':').map(Number);
-
-        // Calcular minuts totals
-        const startMinutes = startHour * 60 + startMin;
-        let endMinutes = endHour * 60 + endMin;
-
-        // Si end_time és menor que start_time, assumim que és l'endemà
-        if (endMinutes <= startMinutes) {
-          endMinutes += 24 * 60;
-        }
-
-        // Calcular duració en hores (decimal)
-        const durationHours = (endMinutes - startMinutes) / 60;
+        // Si end_time és menor que start_time, és l'endemà (stayMinutes ho té en compte)
+        const minutes = stayMinutes(reservationTime, endTime);
+        if (minutes === undefined) throw new Error(`hores il·legibles: ${reservationTime} → ${endTime}`);
+        const durationHours = minutes / 60;
 
         dataToSend.duration_hours = durationHours;
         dataToSend.end_time = endTime;
@@ -454,10 +705,16 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
       console.log(`⏱️  Usant duració per defecte: ${defaultBookingDuration} hores`);
     }
 
-    if (selectedTableIds.length === 1) {
+    // Only in table mode. selectedTableIds is loaded from the reservation being edited,
+    // so hiding the picker was not enough: an edit still submitted the seats the booking
+    // already held, the backend read that as a deliberate manual assignment and skipped
+    // reassignment entirely. Growing a party of 2 to 4 kept its two one-person rows —
+    // and _validate_manual_table_selection checks existence and overlap but never total
+    // capacity, so nothing refused it. Four people, two seats, silently.
+    if (tablesEnabled && selectedTableIds.length === 1) {
       dataToSend.table_id = selectedTableIds[0];
       console.log(`📍 Taula seleccionada: ${selectedTableIds[0]}`);
-    } else if (selectedTableIds.length > 1) {
+    } else if (tablesEnabled && selectedTableIds.length > 1) {
       dataToSend.table_ids = selectedTableIds;
       console.log(`📍 Taules seleccionades: ${selectedTableIds.join(", ")}`);
     } else {
@@ -471,6 +728,26 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
           seats: selectedManualCapacity, 
           over: overCapacityBy 
         })
+      );
+    }
+    if (exceedsAreaCapacity) {
+      // The same distinction the inline message makes: reachableSeats is the chosen
+      // area's count when one is chosen, and the largest area's otherwise. Always saying
+      // "no area fits, the largest has N" got both halves wrong for a 10-seat terrace
+      // picked in a restaurant with 20 seats inside.
+      toast.warning(
+        chosenArea
+          ? t("reservations.exceedsAreaCapacity", {
+              people: parsedNumPeople,
+              seats: reachableSeats,
+              area: chosenArea === "terrace"
+                ? t("reservations.areaTerrace")
+                : t("reservations.areaInside"),
+            })
+          : t("reservations.exceedsLargestArea", {
+              people: parsedNumPeople,
+              seats: reachableSeats,
+            })
       );
     }
     if (requestedPeople > maxPeoplePerBooking) {
@@ -508,6 +785,12 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
     }
   };
 
+  const areasWithTables = Array.from(
+    new Set((tables ?? []).map((table) => table.area))
+  );
+
+  const askForArea = tablesEnabled || areasWithTables.length > 1;
+
   const toggleTableSelection = (tableId: number, checked: boolean) => {
     setSelectedTableIds((prev) => {
       if (checked) {
@@ -522,7 +805,50 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
     .filter((table) => selectedTableIds.includes(table.id))
     .reduce((sum, table) => sum + table.capacity, 0);
   const parsedNumPeople = Number.parseInt(numPeople || "0", 10) || 0;
+
+  // How many people each area could seat if it were completely empty. A party cannot be
+  // split across areas — the engine never combines a terrace table with an inside one —
+  // so the largest bookable party is the biggest single area, not the sum of both.
+  //
+  // This is the absolute ceiling, not availability: it says nothing about who is already
+  // sitting there. But asking for more than an area physically holds can never succeed at
+  // any time on any day, and saying so before submitting beats a generic "no tables
+  // available" afterwards.
+  const capacityByArea = (tables ?? []).reduce((acc: Record<string, number>, table) => {
+    acc[table.area] = (acc[table.area] || 0) + table.capacity;
+    return acc;
+  }, {});
+  const chosenArea = isWalkIn
+    ? (walkInArea === "all" ? null : walkInArea)
+    : (areaPreference === "auto" ? null : areaPreference);
+  const reachableSeats = chosenArea
+    ? (capacityByArea[chosenArea] ?? 0)
+    : Math.max(0, ...Object.values(capacityByArea));
+
+  // With a chosen area the engine filters to it and cannot leave. With "auto" it does
+  // NOT: _resolve_area_filter turns auto into None and every table joins one pool, so
+  // whether an inside table can be joined to a terrace one depends entirely on how
+  // pairing was configured — not on the engine. No restaurant pairs across areas today,
+  // but if one did, the largest single area would understate what fits and this would
+  // warn about a party that is perfectly bookable. Cheaper and honester to stay quiet
+  // than to work out the real maximum from the pairing graph for a warning.
+  const areaByNumber = new Map((tables ?? []).map((t) => [t.table_number, t.area]));
+  const zonesArePaired = (tables ?? []).some((t) =>
+    (t.pairing ?? []).some((n: number) => {
+      const other = areaByNumber.get(n);
+      return other !== undefined && other !== t.area;
+    })
+  );
+
+  const exceedsAreaCapacity =
+    parsedNumPeople > 0 &&
+    reachableSeats > 0 &&
+    parsedNumPeople > reachableSeats &&
+    (chosenArea !== null || !zonesArePaired);
+  // Gated on the mode as well: the warning lives inside the picker, so in capacity mode
+  // it could be true and invisible while the ids went out anyway.
   const isManualOverCapacity =
+    tablesEnabled &&
     selectedTableIds.length > 0 &&
     selectedManualCapacity > 0 &&
     parsedNumPeople > selectedManualCapacity;
@@ -566,7 +892,7 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
               </label>
             )}
 
-            {isWalkIn && (
+            {isWalkIn && askForArea && (
               <div className="flex gap-2">
                 {(["all", "inside", "terrace"] as const).map((area) => (
                   <button
@@ -626,6 +952,26 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
                     ? ` ${t("reservations.overrideActive", { people: parsedNumPeople })}`
                     : ""}
                 </p>
+                {/* A different limit from the one above, and the one that cannot be
+                    overridden: no amount of staff intent fits sixteen people into an area
+                    with fifteen seats. Said here rather than left to a generic "no tables
+                    available" after submitting. */}
+                {exceedsAreaCapacity && (
+                  <p className="text-xs text-destructive font-medium">
+                    {chosenArea
+                      ? t("reservations.exceedsAreaCapacity", {
+                          people: parsedNumPeople,
+                          seats: reachableSeats,
+                          area: chosenArea === "terrace"
+                            ? t("reservations.areaTerrace")
+                            : t("reservations.areaInside"),
+                        })
+                      : t("reservations.exceedsLargestArea", {
+                          people: parsedNumPeople,
+                          seats: reachableSeats,
+                        })}
+                  </p>
+                )}
               </div>
 
               {!isWalkIn && <div className="space-y-2">
@@ -704,7 +1050,7 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
                 </Select>
               </div>}
 
-              {!isWalkIn && <div className="space-y-2">
+              {!isWalkIn && askForArea && <div className="space-y-2">
                 <Label htmlFor="areaPreference">{t("reservations.areaPreference")}</Label>
                 <Select value={areaPreference} onValueChange={(value: "auto" | "inside" | "terrace") => setAreaPreference(value)}>
                   <SelectTrigger>
@@ -718,7 +1064,7 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
                 </Select>
               </div>}
 
-              <div className="space-y-2 md:col-span-2">
+              {tablesEnabled && <div className="space-y-2 md:col-span-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="tableSelection">
                     {t("reservations.table")} {reservation && (reservation.table_numbers || reservation.table_number) && t("reservations.currentTable", { number: reservation.table_numbers || reservation.table_number })}
@@ -809,7 +1155,7 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
                 <p className="text-xs text-muted-foreground">
                   {t("reservations.staffCanSelectTables")}
                 </p>
-              </div>
+              </div>}
             </div>
 
             <div className="flex gap-2 justify-between pt-4">
@@ -826,6 +1172,87 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
                 </Button>
               )}
 
+              {/* Deposit. Rendered ONLY when the restaurant can actually take one —
+                  payments enabled AND Stripe onboarding finished. A box that cannot
+                  work invites staff to tick it and then wonder why nothing happened. */}
+              {depositAvailable && (
+                <div className="w-full space-y-3 rounded-lg border border-border/50 p-3 mb-2">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="ask-deposit"
+                      checked={askForDeposit}
+                      onCheckedChange={(checked) => {
+                        setAskForDeposit(checked === true);
+                        setAskTouched(true);
+                      }}
+                    />
+                    <Label htmlFor="ask-deposit" className="cursor-pointer">
+                      {t("reservations.askForDeposit")}
+                    </Label>
+                  </div>
+
+                  {askForDeposit && (
+                    <div className="space-y-2">
+                      <Label htmlFor="deposit-amount">
+                        {t("reservations.depositPerPerson")}
+                      </Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          id="deposit-amount"
+                          type="number"
+                          /* Per person, but Stripe's floor applies to the TOTAL. A
+                             per-person minimum of 0.50 keeps even a party of one above
+                             it, so the server-side refusal stays unreachable in
+                             practice. It remains as a backstop: the floor varies by
+                             currency and the API can be called directly. */
+                          min="0.50"
+                          /* 0.01, not a coarser step: the input sits in a native form,
+                             so the browser enforces step alignment and step="0.50"
+                             would reject 10.10 or 18.75 with a stepMismatch — amounts
+                             the backend explicitly accepts (two decimals, matching
+                             DECIMAL(10,2)). The minimum is the guard here; the step is
+                             only a spinner increment. */
+                          step="0.01"
+                          value={depositAmount}
+                          onChange={(e) => {
+                            setDepositAmount(e.target.value);
+                            setAmountTouched(true);
+                          }}
+                          className="max-w-[140px]"
+                        />
+                        <span className="text-sm text-muted-foreground">
+                          {paymentTerms?.currency || "EUR"}
+                        </span>
+                        {Number.parseFloat(depositAmount) > 0 && peopleForTerms > 0 && (
+                          <span className="text-sm text-muted-foreground">
+                            {t("reservations.depositTotal", {
+                              total: (Number.parseFloat(depositAmount) * peopleForTerms).toFixed(2),
+                              currency: paymentTerms?.currency || "EUR",
+                              people: peopleForTerms,
+                            })}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {t("reservations.depositHelp")}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Next to the confirm button on purpose: the cap does not block the
+                  save, so this is information for the person about to click, not a
+                  validation error. Worded as what it costs, never as a refusal. */}
+              {capWarning && (
+                <p
+                  role="status"
+                  className="text-sm text-amber-600 dark:text-amber-500 basis-full sm:basis-auto sm:mr-auto"
+                >
+                  ⚠️ {capWarning}
+                </p>
+              )}
+
               {/* Botons cancel·lar i guardar a la dreta */}
               <div className="flex gap-2 ml-auto">
                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
@@ -835,7 +1262,11 @@ const ReservationDialog = ({ open, onOpenChange, reservation, defaultTime, defau
                     arrives the language box can still be empty, and saving would
                     send language:"" — which the backend resolves to the customer's
                     language or a hardcoded "es", never the restaurant's. */}
-                <Button type="submit" disabled={updateMutation.isPending || configLoading}>
+                {/* Not while a ticked deposit's terms are still loading: the amount on
+                    screen may be the previous day's suggestion. */}
+                <Button type="submit"
+                        disabled={updateMutation.isPending || configLoading
+                                  || (depositAvailable && askForDeposit && paymentTermsLoading)}>
                   {updateMutation.isPending ? tCommon("saving") : reservation ? t("tables.saveChanges") : t("reservations.create")}
                 </Button>
               </div>
