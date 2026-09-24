@@ -354,8 +354,11 @@ const DayCalendar = ({ selectedDate, onDateChange, onEdit, isFullscreen = false,
       toast.success(`✅ ${t("payments.markedAsPaid")}`);
       setDetailsDialogOpen(false);
     },
-    onError: () => {
-      toast.error(`❌ ${tCommon("error")}`);
+    // The backend's reason matters here: a 409 already_paid_online means the guest
+    // paid by card while staff were taking the deposit in person — a double payment
+    // staff have to refund. A bare "Error" hid that.
+    onError: (error: Error) => {
+      toast.error(`❌ ${error.message || tCommon("error")}`);
     },
   });
 

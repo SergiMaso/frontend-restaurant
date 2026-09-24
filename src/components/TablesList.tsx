@@ -195,6 +195,10 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
       generateCapacityTables(capacities, { reseat: true }),
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: tablesKey });
+      // Re-seated bookings got new table_ids; the list and the calendar kept the old
+      // ones until their next poll, and capacity mode read the wrong area from them.
+      // A prefix match on the tenant-scoped key (switching restaurant reloads the page).
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
       const total = Object.values(result.created).reduce((a, b) => a + b, 0);
       toast.success(
         result.reseated > 0
@@ -220,9 +224,10 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
       }
 
       setHomeless(null);
-      // Nothing to move — there is nothing to confirm, so do not make them press a
-      // second button to be told so.
-      if (result.reseated === 0) {
+      // Applied on the first click only when there is nothing to lose: no bookings
+      // to move AND no tables to delete. Any existing table — whatever it is — gets
+      // the preview first.
+      if (result.reseated === 0 && !hasTables) {
         applyMutation.mutate(capacities);
         return;
       }
@@ -236,6 +241,15 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
     inside: Number(insideSeats) || 0,
     terrace: Number(terraceSeats) || 0,
   };
+  // Blank boxes are 0 + 0, and generating that deleted every table (the API now
+  // refuses it too).
+  const noSeats = capacityValues.inside + capacityValues.terrace === 0;
+  // Whether anything exists that generating would delete. Not "is it a real plan":
+  // a hand-made plan of paired one-seat tables is indistinguishable from generated
+  // seats, and generating also resets every seat to available, so a seat staff had
+  // marked unavailable would be lost too. Two earlier attempts to tell the plans
+  // apart both let one be replaced on the first click (review gate, 2026-09-24).
+  const hasTables = (tables || []).length > 0;
 
   // What the restaurant currently holds, per area. In capacity mode the individual
   // tables are an implementation detail — a hundred cards each listing ninety-nine
@@ -430,14 +444,26 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
             </div>
             <p className="text-sm text-muted-foreground">{t("tables.setCapacityWarning")}</p>
 
+            {noSeats && (
+              <p className="text-sm text-destructive">{t("tables.capacityNoSeats")}</p>
+            )}
+
             {preview && (
               <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
-                <p className="font-medium">
-                  {t("tables.capacityWillMove", { count: preview.reseated })}
-                </p>
-                <p className="text-muted-foreground mt-1">
-                  {t("tables.capacityWillMoveHelp")}
-                </p>
+                {preview.reseated > 0 ? (
+                  <>
+                    <p className="font-medium">
+                      {t("tables.capacityWillMove", { count: preview.reseated })}
+                    </p>
+                    <p className="text-muted-foreground mt-1">
+                      {t("tables.capacityWillMoveHelp")}
+                    </p>
+                  </>
+                ) : (
+                  <p className="font-medium">
+                    {t("tables.capacityReplacesPlan", { count: preview.removed })}
+                  </p>
+                )}
               </div>
             )}
 
@@ -462,7 +488,7 @@ const TablesList = ({ onEdit }: TablesListProps = {}) => {
               {tCommon("cancel")}
             </Button>
             <Button
-              disabled={capacityPending}
+              disabled={capacityPending || noSeats}
               onClick={() =>
                 preview
                   ? applyMutation.mutate(capacityValues)

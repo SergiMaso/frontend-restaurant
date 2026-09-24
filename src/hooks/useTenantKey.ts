@@ -21,3 +21,12 @@ export function useTenantKey(parts: readonly unknown[]): readonly unknown[] {
   const { selectedRestaurant } = useRestaurant();
   return [...parts, selectedRestaurant?.id ?? null];
 }
+
+/**
+ * Everything computed from the day rules (hours, sittings, caps, deposits). Saving
+ * hours or rules invalidated only the hours, so the booking dialog kept offering a
+ * day's old sittings for five minutes and the save failed with "l'hora … no està
+ * disponible". A prefix match: tenant keys end with the restaurant id, and switching
+ * restaurant reloads the page, so only this restaurant's entries are cached anyway.
+ */
+export const DAY_RULE_DERIVED_KEYS = ["time-slots", "payment-terms", "slot-capacity"] as const;

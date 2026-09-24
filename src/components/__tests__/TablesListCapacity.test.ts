@@ -181,3 +181,36 @@ describe('TablesList — capacity re-seating', () => {
     expect(terrace).toContain('disabled={capacityPending}');
   });
 });
+
+describe('Capacity dialog — found in review (2026-09-23)', () => {
+  const src = readFileSync(resolve(__dirname, '../TablesList.tsx'), 'utf8');
+
+  it('cannot generate zero seats in total', () => {
+    // Blank boxes were 0 + 0 and deleted every table; the bot then refused everything.
+    expect(src).toMatch(/const noSeats = capacityValues\.inside \+ capacityValues\.terrace === 0/);
+    expect(src).toMatch(/disabled=\{capacityPending \|\| noSeats\}/);
+  });
+
+  it('never replaces existing tables without showing the preview', () => {
+    // Telling a real plan from generated seats is not reliable (paired one-seat tables
+    // look identical, and generation resets seat status), so any existing table means
+    // the preview comes first.
+    expect(src).toMatch(/const hasTables = \(tables \|\| \[\]\)\.length > 0;/);
+    expect(src).toMatch(/if \(result\.reseated === 0 && !hasTables\)/);
+    expect(src).toContain('capacityReplacesPlan');
+  });
+
+  it('refreshes the bookings after re-seating them', () => {
+    const apply = src.slice(src.indexOf('const applyMutation'), src.indexOf('const previewMutation'));
+    expect(apply).toContain('invalidateQueries({ queryKey: ["appointments"] })');
+  });
+
+  it('has the new strings in every language', () => {
+    for (const lang of ['ca', 'es', 'en', 'it']) {
+      const d = JSON.parse(readFileSync(
+        resolve(__dirname, `../../i18n/locales/${lang}/dashboard.json`), 'utf8'));
+      expect(d.tables.capacityNoSeats, lang).toBeTruthy();
+      expect(d.tables.capacityReplacesPlan, lang).toContain('{{count}}');
+    }
+  });
+});

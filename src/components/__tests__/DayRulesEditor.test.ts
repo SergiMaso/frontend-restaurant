@@ -31,7 +31,8 @@ describe('DayRulesEditor — inherit vs override', () => {
   it('offers a reset only once something IS overridden', () => {
     // The only way back to inheriting. Always showing it suggests a value exists here
     // when none does.
-    expect(editor).toMatch(/overridden\s*&&\s*\(/);
+    // (and, for deposits, only for someone allowed to reset them)
+    expect(editor).toMatch(/overridden\s*&&\s*(onReset\s*&&\s*)?\(/);
     expect(editor).toContain('onReset');
   });
 
@@ -99,7 +100,8 @@ describe('State cannot leak between days', () => {
     // Tuesday. A key is what forces the remount.
     const dialogUsage = weekday.slice(weekday.indexOf('<DayEditorDialog'));
     expect(
-      /key=\{selectedDay\.day_of_week\}/.test(dialogUsage),
+      // The weekday must be part of the key (now alongside an opening counter).
+      /key=\{`?\$?\{?selectedDay\.day_of_week\}/.test(dialogUsage),
       'without a key, one weekday’s hours and slot caps get saved onto another',
     ).toBe(true);
   });
@@ -126,5 +128,75 @@ describe('Inherited deposits are resolved per service', () => {
     // shows the wrong figure in that place only, which is easy to overlook.
     const lookups = editor.match(/inheritedPayment\?\.\[service\]/g) || [];
     expect(lookups.length).toBeGreaterThanOrEqual(2);
+  });
+});
+
+describe('DayRulesEditor — found in review (2026-09-23)', () => {
+  it('declares Section at module level, not inside the editor', () => {
+    // Inside the editor it was a new component type every render: React remounted it,
+    // and the input being typed into, on every keystroke — focus lost after each digit.
+    const body = editor.slice(editor.indexOf('const DayRulesEditor = ('),
+                              editor.indexOf('const SlotRows = ('));
+    expect(body).not.toMatch(/const Section = /);
+    expect(editor.indexOf('const Section = ')).toBeLessThan(
+      editor.indexOf('const DayRulesEditor = ('));
+  });
+
+  it('seeds a customised service with the inherited CAPS, not just the times', () => {
+    // A customised service owns its whole list; seeding null removed every other
+    // sitting's limit.
+    const seed = editor.slice(editor.indexOf('const startOverridingSlots'),
+                              editor.indexOf('setSlots(service, seeded)'));
+    expect(seed).toContain('inheritedSlotCaps');
+    expect(seed).not.toMatch(/seeded\[time\]\s*=\s*null/);
+    for (const dialog of [weekday, dateDialog]) {
+      expect(dialog).toContain('inheritedSlotCaps=');
+    }
+  });
+
+  it('shows an inherited "no deposit" as unticked', () => {
+    expect(editor).toMatch(/block\?\.required \?\? inherited\?\.required \?\? true/);
+    expect(dateDialog).toMatch(/required:\s*wd\?\.required \?\? true/);
+  });
+
+  it('does not let the last sitting of a customised service be removed', () => {
+    // The backend refuses an empty service map, so it was a save that always failed.
+    expect(editor).toMatch(/disabled=\{lastOne\}/);
+  });
+
+  it('locks deposits for anyone but the owner, in both dialogs', () => {
+    for (const dialog of [weekday, dateDialog]) {
+      expect(dialog).toContain('canEditDeposits={isOwner}');
+    }
+    expect(editor).toContain('readOnly={!canEditDeposits}');
+  });
+
+  it('has the new strings in every language', () => {
+    for (const lang of ['ca', 'es', 'en', 'it']) {
+      const d = JSON.parse(readFileSync(
+        resolve(__dirname, `../../i18n/locales/${lang}/dashboard.json`), 'utf8'));
+      expect(d.dayRules.lastSlot, lang).toBeTruthy();
+      expect(d.dayRules.ownerOnlyDeposits, lang).toBeTruthy();
+    }
+  });
+});
+
+describe('Saving hours or rules refreshes what depends on them', () => {
+  it('invalidates the sittings, deposit terms and caps the booking dialog reads', () => {
+    // Only the hours were invalidated, so the booking dialog kept offering a day's
+    // old sittings for five minutes and the save failed. Found in review.
+    for (const dialog of [weekday, dateDialog]) {
+      expect(dialog).toMatch(/DAY_RULE_DERIVED_KEYS\.forEach/);
+    }
+    const keys = readFileSync(resolve(__dirname, '../../hooks/useTenantKey.ts'), 'utf8');
+    for (const k of ['time-slots', 'payment-terms', 'slot-capacity']) {
+      expect(keys).toContain(`"${k}"`);
+    }
+  });
+
+  it('rebuilds the weekday dialog on every opening, not only per weekday', () => {
+    // Reopening the same day after Cancel kept the discarded edits.
+    expect(weekday).toMatch(/key=\{`\$\{selectedDay\.day_of_week\}-\$\{openCount\}`\}/);
+    expect(weekday).toMatch(/setOpenCount\(\(n\) => n \+ 1\)/);
   });
 });

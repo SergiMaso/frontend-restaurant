@@ -152,7 +152,9 @@
     "capacityWillMove": "{{count}} reservas futuras se reubicarán en las plazas nuevas",
     "capacityWillMoveHelp": "Mantienen la fecha, la hora y el pago: solo cambian de sitio. Todavía no se ha cambiado nada.",
     "capacityNoFit": "{{count}} reservas no caben. No se ha cambiado nada.",
-    "capacityNoFitPeople": "{{count}} personas"
+    "capacityNoFitPeople": "{{count}} personas",
+    "capacityNoSeats": "Hace falta al menos una plaza en alguna zona. Para cerrar, hazlo desde el horario.",
+    "capacityReplacesPlan": "Esto sustituirá el plano de mesas actual ({{count}} mesas, con sus combinaciones). No hay reservas que mover."
   },
   "reservations": {
     "title": "Gestión de Reservas",
@@ -232,7 +234,12 @@
     "depositLinkNotSent": "Reserva creada y depósito solicitado, pero no se pudo enviar el WhatsApp. Enlace: {{url}}",
     "createdButDepositFailed": "Reserva creada correctamente, pero sin depósito: {{reason}}",
     "exceedsAreaCapacity": "{{people}} personas no caben en {{area}}: hay {{seats}} plazas en total.",
-    "exceedsLargestArea": "{{people}} personas no caben en ninguna zona: la mayor tiene {{seats}} plazas."
+    "exceedsLargestArea": "{{people}} personas no caben en ninguna zona: la mayor tiene {{seats}} plazas.",
+    "walkInSnappedOver": "Se apuntará al turno de las {{slot}}, que quedará {{n}} personas por encima.",
+    "walkInSnapped": "Se apuntará al turno de las {{slot}}.",
+    "capNotASitting": "Esta hora no es ninguno de los turnos ({{sittings}}) y el sistema no la guardará.",
+    "capOverflow": "Esta hora no es ninguno de los turnos y ninguno de los dos contiguos tiene sitio. Se puede hacer, pero el turno de las {{slot}} quedará {{n}} personas por encima.",
+    "capExceeded": "El turno de las {{slot}} solo tiene {{left}} plazas libres."
   },
   "customers": {
     "title": "Clientes",
@@ -289,7 +296,8 @@
     "languageLabel": "Idioma Preferido",
     "selectLanguage": "Selecciona idioma",
     "saveChanges": "Guardar Cambios",
-    "yesDelete": "Sí, eliminar"
+    "yesDelete": "Sí, eliminar",
+    "storedId": "Identificador guardado (no es un teléfono)"
   },
   "users": {
     "title": "Gestión de Usuarios",
@@ -665,6 +673,8 @@
     "ownDeposit": "{{amount}} {{currency}} · a partir de {{people}}",
     "depositRequired": "Pedir depósito",
     "amountPerPerson": "Importe por persona",
-    "fromPeople": "A partir de"
+    "fromPeople": "A partir de",
+    "lastSlot": "No se puede quitar el último turno. Para cerrar este servicio, hazlo desde el horario.",
+    "ownerOnlyDeposits": "Solo el propietario puede cambiar los depósitos."
   }
 }

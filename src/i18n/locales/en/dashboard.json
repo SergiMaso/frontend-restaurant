@@ -152,7 +152,9 @@
     "capacityWillMove": "{{count}} future bookings will be moved onto the new seats",
     "capacityWillMoveHelp": "They keep their date, time and payment — only where they sit changes. Nothing has been changed yet.",
     "capacityNoFit": "{{count}} bookings do not fit. Nothing was changed.",
-    "capacityNoFitPeople": "{{count}} people"
+    "capacityNoFitPeople": "{{count}} people",
+    "capacityNoSeats": "At least one seat is needed in some area. To close, use the opening hours.",
+    "capacityReplacesPlan": "This replaces the current table plan ({{count}} tables, with their pairings). No bookings need to move."
   },
   "reservations": {
     "title": "Reservation Management",
@@ -232,7 +234,12 @@
     "depositLinkNotSent": "Reservation created and deposit requested, but the WhatsApp could not be sent. Link: {{url}}",
     "createdButDepositFailed": "Reservation created, but without a deposit: {{reason}}",
     "exceedsAreaCapacity": "{{people}} people do not fit in {{area}}: it holds {{seats}} seats in all.",
-    "exceedsLargestArea": "{{people}} people do not fit in any area: the largest holds {{seats}}."
+    "exceedsLargestArea": "{{people}} people do not fit in any area: the largest holds {{seats}}.",
+    "walkInSnappedOver": "It will be booked into the {{slot}} sitting, which will be {{n}} people over.",
+    "walkInSnapped": "It will be booked into the {{slot}} sitting.",
+    "capNotASitting": "This time is not one of the sittings ({{sittings}}), so it will not be saved.",
+    "capOverflow": "This time is not one of the sittings and neither neighbouring sitting has room. It can be done, but the {{slot}} sitting will be {{n}} people over.",
+    "capExceeded": "The {{slot}} sitting only has {{left}} places left."
   },
   "customers": {
     "title": "Customers",
@@ -289,7 +296,8 @@
     "languageLabel": "Preferred Language",
     "selectLanguage": "Select language",
     "saveChanges": "Save Changes",
-    "yesDelete": "Yes, delete"
+    "yesDelete": "Yes, delete",
+    "storedId": "Stored identifier (not a phone number)"
   },
   "users": {
     "title": "User Management",
@@ -665,6 +673,8 @@
     "ownDeposit": "{{amount}} {{currency}} · from {{people}}",
     "depositRequired": "Ask for a deposit",
     "amountPerPerson": "Amount per person",
-    "fromPeople": "From"
+    "fromPeople": "From",
+    "lastSlot": "The last sitting can't be removed. To close this service, do it from the opening hours.",
+    "ownerOnlyDeposits": "Only the owner can change deposits."
   }
 }

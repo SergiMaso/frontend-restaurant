@@ -23,13 +23,17 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { getWeeklyDefaults, updateWeeklyDefault, type WeeklyDefault } from "@/services/api";
 import { useRestaurantConfig } from "@/hooks/useRestaurantConfig";
+import { useRestaurant } from "@/contexts/RestaurantContext";
+import { useAuth } from "@/contexts/AuthContext";
 import DayRulesEditor, { type DayRulesValue } from "@/components/DayRulesEditor";
-import { useTenantKey } from "@/hooks/useTenantKey";
+import { useTenantKey, DAY_RULE_DERIVED_KEYS } from "@/hooks/useTenantKey";
 
 const WeeklyScheduleManager = () => {
   const queryClient = useQueryClient();
   const [selectedDay, setSelectedDay] = useState<WeeklyDefault | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  // Bumped on every open, so the dialog is rebuilt from the saved day each time.
+  const [openCount, setOpenCount] = useState(0);
   const { t } = useTranslation("dashboard");
   const { t: tCommon } = useTranslation("common");
 
@@ -64,6 +68,7 @@ const slotSummary = (slots?: string[]) => {
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: weeklyDefaultsKey });
       queryClient.invalidateQueries({ queryKey: openingHoursKey });
+      DAY_RULE_DERIVED_KEYS.forEach((k) => queryClient.invalidateQueries({ queryKey: [k] }));
       toast.success(`✅ ${t("weeklySchedule.configUpdated")}! ${response.days_updated || 0} ${t("weeklySchedule.daysAffected")}.`);
       setDialogOpen(false);
     },
@@ -74,6 +79,7 @@ const slotSummary = (slots?: string[]) => {
 
   const handleDayClick = (day: WeeklyDefault) => {
     setSelectedDay(day);
+    setOpenCount((n) => n + 1);
     setDialogOpen(true);
   };
 
@@ -183,8 +189,12 @@ const slotSummary = (slots?: string[]) => {
              Monday's slot caps, and saving wrote them onto Tuesday.
 
              Pre-existing for the hour fields; adding slot and deposit state made it
-             a great deal more destructive. */
-          key={selectedDay.day_of_week}
+             a great deal more destructive.
+
+             And per OPENING, not only per weekday: reopening the same day after
+             Cancel kept the discarded edits, and a later save of just the hours
+             wrote them too. */
+          key={`${selectedDay.day_of_week}-${openCount}`}
           day={selectedDay}
           open={dialogOpen}
           onOpenChange={setDialogOpen}
@@ -222,6 +232,8 @@ const DayEditorDialog = ({ day, open, onOpenChange, onSave, isLoading }: DayEdit
     timeSlotsMode, fixedTimeSlotsLunch, fixedTimeSlotsDinner,
     paymentEnabled, getConfigNumber, getConfigValue,
   } = useRestaurantConfig();
+  const { selectedRestaurant } = useRestaurant();
+  const { isOwner } = useAuth();
 
   // Map day_of_week (0=Monday, 6=Sunday) to translation keys
   const getDayName = (dayOfWeek: number) => {
@@ -357,6 +369,11 @@ const DayEditorDialog = ({ day, open, onOpenChange, onSave, isLoading }: DayEdit
               /* Global config has a single deposit for the whole restaurant, so both
                  services legitimately inherit the same figure here. The per-service
                  shape matters one level down, where a weekday CAN differ. */
+              // A weekday inherits the restaurant-wide caps.
+              inheritedSlotCaps={{
+                lunch: selectedRestaurant?.slot_config?.lunch ?? {},
+                dinner: selectedRestaurant?.slot_config?.dinner ?? {},
+              }}
               inheritedPayment={(() => {
                 const global = {
                   amount: getConfigNumber("payment_deposit_amount", 0),
@@ -366,6 +383,7 @@ const DayEditorDialog = ({ day, open, onOpenChange, onSave, isLoading }: DayEdit
                 return { lunch: global, dinner: global };
               })()}
               paymentsAvailable={paymentEnabled}
+              canEditDeposits={isOwner}
               openServices={
                 status === "lunch_only" ? ["lunch"]
                   : status === "dinner_only" ? ["dinner"]

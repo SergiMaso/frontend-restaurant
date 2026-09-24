@@ -14,6 +14,18 @@ export interface DayRulesValue {
   payment_config?: PaymentConfig | null;
 }
 
+export interface InheritedPayment {
+  amount?: number;
+  minPeople?: number;
+  currency?: string;
+  /**
+   * Whether the level above asks for a deposit at all. Without it the checkbox showed
+   * "required" for a weekday that had turned deposits off, and typing an amount wrote
+   * an override that still inherited required=false — a deposit shown, never charged.
+   */
+  required?: boolean;
+}
+
 interface DayRulesEditorProps {
   value: DayRulesValue;
   onChange: (next: DayRulesValue) => void;
@@ -22,16 +34,61 @@ interface DayRulesEditorProps {
   /** Slots inherited from the level above, shown as placeholders. */
   inheritedSlots: Record<Service, string[]>;
   /**
+   * The caps those inherited slots carry. A customised service owns its WHOLE slot
+   * list, so seeding every inherited time with null ("no limit") silently removed the
+   * caps on every sitting except the one being changed — and allowed overbooking.
+   */
+  inheritedSlotCaps?: Partial<Record<Service, Record<string, number | null>>>;
+  /**
    * Deposit inherited from the level above, PER SERVICE. A weekday can override lunch
    * and dinner differently, so one figure for both would suggest the wrong price for
    * whichever service it did not come from.
    */
-  inheritedPayment?: Partial<Record<Service, { amount?: number; minPeople?: number; currency?: string }>>;
+  inheritedPayment?: Partial<Record<Service, InheritedPayment>>;
   /** False when the restaurant cannot take deposits — the payment sections disappear. */
   paymentsAvailable: boolean;
+  /**
+   * Only owners (and superadmins) change deposit rules; the API refuses anyone else.
+   * The section stays visible, read-only, so an admin can see what applies.
+   */
+  canEditDeposits?: boolean;
   /** Which services are open; a closed one has nothing to configure. */
   openServices: Service[];
 }
+
+/**
+ * One collapsible block. Defined at module level on purpose: declared inside the
+ * editor, it was a new component type on every render, so React unmounted and
+ * remounted it — and the input being typed into — on every keystroke. Focus was lost
+ * after each digit of a cap or an amount.
+ */
+const Section = ({ title, summary, overridden, expanded, onToggle, onReset, resetTitle,
+                   children }: {
+  title: string; summary: string; overridden: boolean; expanded: boolean;
+  onToggle: () => void; onReset?: () => void; resetTitle: string;
+  children: React.ReactNode;
+}) => (
+  <div className="rounded-md border border-border/40">
+    <div className="flex items-center gap-2 px-2 py-1.5">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex items-center gap-1 text-sm hover:underline"
+      >
+        {expanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+        {title}
+      </button>
+      <span className="text-xs text-muted-foreground ml-auto">{summary}</span>
+      {/* Only offered once something IS overridden — the one way back to inheriting. */}
+      {overridden && onReset && (
+        <Button type="button" variant="ghost" size="sm" onClick={onReset} title={resetTitle}>
+          <RotateCcw className="h-3 w-3" />
+        </Button>
+      )}
+    </div>
+    {expanded && <div className="px-3 pb-3 pt-1 space-y-2">{children}</div>}
+  </div>
+);
 
 /**
  * Slots and deposits for one day, shared by the weekday template and the single-date
@@ -44,8 +101,8 @@ interface DayRulesEditorProps {
  * place staff go for hours.
  */
 const DayRulesEditor = ({
-  value, onChange, timeSlotsMode, inheritedSlots, inheritedPayment,
-  paymentsAvailable, openServices,
+  value, onChange, timeSlotsMode, inheritedSlots, inheritedSlotCaps, inheritedPayment,
+  paymentsAvailable, canEditDeposits = true, openServices,
 }: DayRulesEditorProps) => {
   const { t } = useTranslation("dashboard");
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -71,9 +128,11 @@ const DayRulesEditor = ({
   };
 
   const startOverridingSlots = (service: Service) => {
-    // Seed from what is inherited so the first edit is a change, not a blank slate.
+    // Seed from what is inherited — times AND caps — so the first edit is a change to
+    // one sitting, not the removal of every other sitting's limit.
+    const caps = inheritedSlotCaps?.[service] || {};
     const seeded: Record<string, number | null> = {};
-    (inheritedSlots[service] || []).forEach((time) => { seeded[time] = null; });
+    (inheritedSlots[service] || []).forEach((time) => { seeded[time] = caps[time] ?? null; });
     setSlots(service, seeded);
   };
 
@@ -106,48 +165,22 @@ const DayRulesEditor = ({
   const paymentSummary = (service: Service) => {
     const own = paymentFor(service);
     const inherited = inheritedPayment?.[service];
+    const required = own?.required ?? inherited?.required ?? true;
     if (!own) {
-      if (!inherited?.amount) return t("dayRules.inheritedNoDeposit");
+      if (!required || !inherited?.amount) return t("dayRules.inheritedNoDeposit");
       return t("dayRules.inheritedDeposit", {
         amount: inherited.amount,
         currency: inherited.currency || "EUR",
         people: inherited.minPeople ?? 1,
       });
     }
-    if (own.required === false) return t("dayRules.noDepositHere");
+    if (!required) return t("dayRules.noDepositHere");
     return t("dayRules.ownDeposit", {
       amount: own.amount ?? inherited?.amount ?? "–",
       currency: inherited?.currency || "EUR",
       people: own.min_people ?? inherited?.minPeople ?? 1,
     });
   };
-
-  const Section = ({ id, title, summary, overridden, onReset, children }: {
-    id: string; title: string; summary: string; overridden: boolean;
-    onReset: () => void; children: React.ReactNode;
-  }) => (
-    <div className="rounded-md border border-border/40">
-      <div className="flex items-center gap-2 px-2 py-1.5">
-        <button
-          type="button"
-          onClick={() => toggle(id)}
-          className="flex items-center gap-1 text-sm hover:underline"
-        >
-          {expanded[id] ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
-          {title}
-        </button>
-        <span className="text-xs text-muted-foreground ml-auto">{summary}</span>
-        {/* Only offered once something IS overridden — the one way back to inheriting. */}
-        {overridden && (
-          <Button type="button" variant="ghost" size="sm" onClick={onReset}
-                  title={t("dayRules.reset")}>
-            <RotateCcw className="h-3 w-3" />
-          </Button>
-        )}
-      </div>
-      {expanded[id] && <div className="px-3 pb-3 pt-1 space-y-2">{children}</div>}
-    </div>
-  );
 
   return (
     <div className="space-y-3">
@@ -159,11 +192,13 @@ const DayRulesEditor = ({
 
           {showSlots && (
             <Section
-              id={`slots-${service}`}
               title={t("dayRules.slots")}
               summary={slotSummary(service)}
               overridden={!!slotsFor(service)}
+              expanded={!!expanded[`slots-${service}`]}
+              onToggle={() => toggle(`slots-${service}`)}
               onReset={() => setSlots(service, null)}
+              resetTitle={t("dayRules.reset")}
             >
               {!slotsFor(service) ? (
                 <Button type="button" variant="outline" size="sm"
@@ -181,15 +216,18 @@ const DayRulesEditor = ({
 
           {paymentsAvailable && (
             <Section
-              id={`pay-${service}`}
               title={t("dayRules.payment")}
               summary={paymentSummary(service)}
               overridden={!!paymentFor(service)}
-              onReset={() => setPayment(service, null)}
+              expanded={!!expanded[`pay-${service}`]}
+              onToggle={() => toggle(`pay-${service}`)}
+              onReset={canEditDeposits ? () => setPayment(service, null) : undefined}
+              resetTitle={t("dayRules.reset")}
             >
               <PaymentRows
                 block={paymentFor(service)}
                 inherited={inheritedPayment?.[service]}
+                readOnly={!canEditDeposits}
                 onChange={(next) => setPayment(service, next)}
               />
             </Section>
@@ -208,6 +246,9 @@ const SlotRows = ({ slots, onChange }: {
   const { t } = useTranslation("dashboard");
   const [newTime, setNewTime] = useState("");
   const times = Object.keys(slots).sort();
+  // The backend refuses a customised service with no sittings, so removing the last
+  // one only produced a save that failed. Closing a service is done with its hours.
+  const lastOne = times.length <= 1;
 
   const setCap = (time: string, raw: string) => {
     const next = { ...slots };
@@ -232,6 +273,8 @@ const SlotRows = ({ slots, onChange }: {
           <span className="text-xs text-muted-foreground">{t("dayRules.people")}</span>
           <Button
             type="button" variant="ghost" size="sm" className="ml-auto"
+            disabled={lastOne}
+            title={lastOne ? t("dayRules.lastSlot") : undefined}
             onClick={() => {
               const next = { ...slots };
               delete next[time];
@@ -263,23 +306,29 @@ const SlotRows = ({ slots, onChange }: {
 };
 
 /** Deposit for one service. Each field is separately inheritable. */
-const PaymentRows = ({ block, inherited, onChange }: {
+const PaymentRows = ({ block, inherited, readOnly = false, onChange }: {
   block: ServicePaymentConfig | null;
-  inherited?: { amount?: number; minPeople?: number; currency?: string } | null;
+  inherited?: InheritedPayment | null;
+  readOnly?: boolean;
   onChange: (next: ServicePaymentConfig | null) => void;
 }) => {
   const { t } = useTranslation("dashboard");
-  const required = block?.required ?? true;
+  // What actually applies: this level's choice, else the level above's, else yes.
+  const required = block?.required ?? inherited?.required ?? true;
 
   const patch = (fields: Partial<ServicePaymentConfig>) =>
     onChange({ ...(block || {}), ...fields });
 
   return (
     <div className="space-y-2">
+      {readOnly && (
+        <p className="text-xs text-muted-foreground">{t("dayRules.ownerOnlyDeposits")}</p>
+      )}
       <div className="flex items-center gap-2">
         <Checkbox
           id={`req-${JSON.stringify(block)}`}
           checked={required}
+          disabled={readOnly}
           onCheckedChange={(checked) => patch({ required: checked === true })}
         />
         <Label className="cursor-pointer text-sm">{t("dayRules.depositRequired")}</Label>
@@ -290,6 +339,7 @@ const PaymentRows = ({ block, inherited, onChange }: {
           <Label className="text-xs">{t("dayRules.amountPerPerson")}</Label>
           <Input
             type="number" min="0" step="0.01"
+            disabled={readOnly}
             value={block?.amount == null ? "" : String(block.amount)}
             /* Empty shows the inherited figure as a placeholder, so "not set here"
                never looks like "set to nothing". */
@@ -304,6 +354,7 @@ const PaymentRows = ({ block, inherited, onChange }: {
           <Label className="text-xs ml-2">{t("dayRules.fromPeople")}</Label>
           <Input
             type="number" min="1" step="1"
+            disabled={readOnly}
             value={block?.min_people == null ? "" : String(block.min_people)}
             placeholder={inherited?.minPeople != null ? String(inherited.minPeople) : "1"}
             onChange={(e) => patch({
