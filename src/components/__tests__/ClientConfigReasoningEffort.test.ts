@@ -23,8 +23,19 @@ describe('ClientConfigManager — reasoning effort', () => {
     expect(offered).toEqual(['none', 'low', 'medium', 'high']);
   });
 
-  it('is chosen from a list, not typed', () => {
-    expect(source).toMatch(/config\.key === 'ai_reasoning_effort' \? \([\s\S]{0,300}?<Select/);
+  it('is chosen from a list, not typed — with the two voice reasoning settings', () => {
+    // One picker serves all three since 2026-09-25 (GPT-Live backend, Gemini Live).
+    expect(source).toMatch(/config\.key in REASONING_PICKERS \? \([\s\S]{0,300}?<Select/);
+    const pickers = source.match(/const REASONING_PICKERS[^=]*= \{([\s\S]*?)\n\};/)?.[1] ?? '';
+    for (const key of ['ai_reasoning_effort', 'gpt_live_reasoning_effort', 'google_live_thinking_level']) {
+      expect(pickers).toContain(`${key}: { options:`);
+    }
+  });
+
+  it('never offers Gemini a level it refuses', () => {
+    const block = source.match(/const GOOGLE_THINKING_LEVEL_OPTIONS = \[([\s\S]*?)\];/)?.[1] ?? '';
+    const offered = [...block.matchAll(/value: '([a-z_]+)'/g)].map(m => m[1]);
+    expect(offered).toEqual(['low', 'medium', 'high']);
   });
 
   it('does not leak into the voice provider list', () => {
