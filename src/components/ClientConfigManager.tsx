@@ -48,6 +48,38 @@ const REASONING_EFFORT_OPTIONS = [
 ];
 
 /**
+ * GPT-Live's backend (luna): the same four efforts. Unset, the backend reasons at its
+ * own default, which it reports as medium.
+ */
+const GPT_LIVE_REASONING_OPTIONS = [
+  { value: 'none', label: 'none — no reasoning' },
+  { value: 'low', label: 'low' },
+  { value: 'medium', label: 'medium' },
+  { value: 'high', label: 'high' },
+];
+
+/**
+ * Gemini Live's thinkingLevel. No 'none' and no 'minimal': the extended-thinking model
+ * refuses minimal, and gemini-3.8-live takes no level at all (the backend leaves it
+ * out for that model whatever is chosen here).
+ */
+const GOOGLE_THINKING_LEVEL_OPTIONS = [
+  { value: 'low', label: 'low' },
+  { value: 'medium', label: 'medium' },
+  { value: 'high', label: 'high' },
+];
+
+/**
+ * Every reasoning setting, picked from a list: the API refuses anything else with a
+ * 400. test_frontend_contracts.py checks each list against app.REASONING_LEVELS.
+ */
+const REASONING_PICKERS: Record<string, { options: { value: string; label: string }[]; placeholder: string }> = {
+  ai_reasoning_effort: { options: REASONING_EFFORT_OPTIONS, placeholder: 'none — no reasoning' },
+  gpt_live_reasoning_effort: { options: GPT_LIVE_REASONING_OPTIONS, placeholder: "model's default (medium)" },
+  google_live_thinking_level: { options: GOOGLE_THINKING_LEVEL_OPTIONS, placeholder: 'not sent' },
+};
+
+/**
  * The voice providers the backend knows how to connect to.
  *
  * `openai` is the Realtime API: one model hears, thinks and speaks. `openai_live`
@@ -339,15 +371,15 @@ const ClientConfigManager = () => {
                                     )}
                                   </SelectContent>
                                 </Select>
-                              ) : config.key === 'ai_reasoning_effort' ? (
+                              ) : config.key in REASONING_PICKERS ? (
                                 // A list, not free text: the API refuses anything
-                                // outside these four with a 400.
+                                // outside these values with a 400.
                                 <Select value={editValue} onValueChange={setEditValue}>
                                   <SelectTrigger className="max-w-[220px]">
-                                    <SelectValue placeholder="none — no reasoning" />
+                                    <SelectValue placeholder={REASONING_PICKERS[config.key].placeholder} />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    {REASONING_EFFORT_OPTIONS.map((option) => (
+                                    {REASONING_PICKERS[config.key].options.map((option) => (
                                       <SelectItem key={option.value} value={option.value}>
                                         {option.label}
                                       </SelectItem>
